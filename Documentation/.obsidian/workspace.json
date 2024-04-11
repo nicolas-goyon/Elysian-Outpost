@@ -1,0 +1,166 @@
+{
+  "main": {
+    "id": "bf8a8a2b78d928ec",
+    "type": "split",
+    "children": [
+      {
+        "id": "40d8e0c9b344ac98",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "98eb4dfc902182a7",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Project management.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "24d051046f1a5be9",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "465fd79a3fd46d44",
+    "type": "split",
+    "children": [
+      {
+        "id": "37ab0b817d4a6b80",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8a89ee666caef684",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "475c01eaf83f8c11",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "2a12f19c78004f38",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "4f55e872f7f438cb",
+    "type": "split",
+    "children": [
+      {
+        "id": "472b52f728c8f499",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f7d92230b806acc7",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "543fc0a7f93fe2cb",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "d6bddc1b866d886f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "9cebebe6c120319d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "24d051046f1a5be9",
+  "lastOpenFiles": [
+    "Project management.md"
+  ]
+}
