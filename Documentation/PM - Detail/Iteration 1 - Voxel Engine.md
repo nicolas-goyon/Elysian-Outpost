@@ -35,6 +35,10 @@
 
 # Choices
 
+## General 
+
+Each objects and things should be handled the most as some microservices, they should have the least dependencies from one to the others. MUST APPLY SOLID PRINCIPLES. For each interaction, an interface should be used and cleared declared methods and specifications should be done.
+
 ## Voxel data storage
 
 TODO : I don't know what to store in the voxel, because i would like to store what kind of block is it (not only the color) and the level pheromone but i think it should be stored in another data structure because its not linked to the voxel display and engine.
@@ -45,6 +49,9 @@ Should I implement the voxel system for the players and little assets ? like hav
 
 TODO 
 Should I implement a physics engine inside the Voxel engine or should i put them appart and having it like micro-services that interact but not coupled ? Isn't it too hard to make ?  
+
+TODO 
+Is it the job to the Voxel engine to know what block is displayed ? or is it the core that only send to the engine what block should be displayed ? Like does the core send every blocs and the engine does whatever or is it the engine to filter things ? or both ?
 
 ## Storage
 
@@ -73,3 +80,65 @@ An Octree seems to be a good way to store chunks of the map. I mostly think a tr
 ## Level of Detail 
 TODO : 
 I think blocks should have only one color, assets are blocks with 1/16 or 1/32 ratio in my opinion. but still don't know if i should use some assets(.obj) and prefab or should i use voxels for assets ?
+
+
+
+
+# Modeling
+
+
+ ```mermaid
+ flowchart TD
+	Core -- Uses --> WorldGeneration
+	WorldGeneration -- Create --> Cube
+	Cube -- Export --> Voxels
+	WorldGeneration -- Returns Cubes --> Core
+	Core -- Send Voxels --> Engine
+	Engine -- Uses --> Voxels
+	
+	Engine --> Display
+
+	Core -- Create --> PFDS(PathFinding Data Structure)
+	Agents -- Uses --> PathFinding
+	PathFinding -- Uses --> PFDS
+	Agents -- Interact --- Core
+	EventHandler -- Interact --- Core
+```
+
+
+
+Here are some specifications from the previous graph.
+
+### Engine uses Voxels
+
+The engine need to get the following informations from the voxels :
+- Position
+- Color
+- TODO
+
+### Pathfinding using Pathfinding data structure
+
+The pathfinding algorithm need to get the following things from the pathfinding data structure : 
+- Get accessible blocs from a bloc (coordinates) and the cost to go on.
+- Get the closest block to the objective based on a euristic
+
+### Agent using Pathfinding
+
+An agent need to get what path to follow based on his position and the targeted position
+
+
+### Agent interact with the core
+
+- An agent need to know if a block is changed near to his path, if so recalculate his path. (not sure at the beginning, could cost some ressources).
+- An agent need to know if his path has been affected by a block changed (new block or block remove in the path) to recalculate if the path is still valid.
+- An agent need to notify the core that he stepped on a block to put some pheromone on it.
+- An agent need to know where is the nearest food that isn't already the target of another agent. (for citizen and animals)
+- A food corp needs to notify if its growing time is finished, and what its state is now.
+- A Citizen needs to change the state of entities and blocks around him, delete some, add or change the states.
+- A solier citizen need to know if some creatures are near him, if he can target some or things like this.
+
+TODO : Maybe need to split this up, i don't really know how to do it
+
+
+
+### Core create blocks
