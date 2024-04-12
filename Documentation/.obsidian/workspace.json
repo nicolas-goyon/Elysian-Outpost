@@ -13,19 +13,19 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Project management.md",
+                "file": "Elysion-Outpost.md",
                 "mode": "source",
                 "source": false
               }
             }
           },
           {
-            "id": "24d051046f1a5be9",
+            "id": "b1b793116d493a7d",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "file": "Description.md",
                 "mode": "source",
                 "source": false
               }
@@ -98,8 +98,8 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
-                "collapseAll": false,
+                "file": "Description.md",
+                "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
                 "showSearch": false,
@@ -115,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "file": "Description.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,16 +138,16 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md"
+                "file": "Description.md"
               }
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -159,8 +159,25 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "24d051046f1a5be9",
+  "active": "b1b793116d493a7d",
   "lastOpenFiles": [
-    "Project management.md"
+    "BrainStorming.md",
+    "Elysion-Outpost.md",
+    "BrainStorming - images/Houses/_cee93662-6a9b-4566-b487-8ba46cc424bf.jpg",
+    "BrainStorming - images/Houses/_cd28d445-2841-4b83-bbd6-e4d5ac464105.jpg",
+    "BrainStorming - images/Houses/_eb105eea-367b-41a0-af96-1eb465e215a0.jpg",
+    "BrainStorming - images/Houses/_c8e6ec9b-f172-45a4-b407-82058e003c73.jpg",
+    "BrainStorming - images/Houses/_504c2919-2c47-4aa9-abce-8aaae277bb6f.jpg",
+    "BrainStorming - images/Houses/_4610e75e-369f-439c-9e80-ac3240798e51.jpg",
+    "BrainStorming - images/Houses/_6197418b-aec6-4306-8f78-f57665cb7d85.jpg",
+    "BrainStorming - images/Houses/_7d6ce781-f814-41d5-8bf0-cea730359081.jpg",
+    "BrainStorming - images/Houses/_692d950e-83a4-478b-923f-a56e9b9cf27b.jpg",
+    "BrainStorming - images/Houses/_40bf51a4-e615-4757-9dff-d80262d6a33f.jpg",
+    "BrainStorming - images/Houses",
+    "BrainStorming - images",
+    "BrainStorming - images/General - Creatures - Human",
+    "Description.md",
+    "Project management.md",
+    "PM - Detail/Iteration 1 - Voxel Engine.md"
   ]
 }
