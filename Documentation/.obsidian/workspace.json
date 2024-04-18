@@ -13,26 +13,13 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Elysion-Outpost.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "b1b793116d493a7d",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Description.md",
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
                 "mode": "source",
                 "source": false
               }
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -98,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Description.md",
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -115,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Description.md",
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Description.md"
+                "file": "PM - Detail/Iteration 1 - Voxel Engine.md"
               }
             }
           }
@@ -147,7 +134,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -159,10 +147,12 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "b1b793116d493a7d",
+  "active": "98eb4dfc902182a7",
   "lastOpenFiles": [
-    "BrainStorming.md",
+    "Project management.md",
     "Elysion-Outpost.md",
+    "Description.md",
+    "BrainStorming.md",
     "BrainStorming - images/Houses/_cee93662-6a9b-4566-b487-8ba46cc424bf.jpg",
     "BrainStorming - images/Houses/_cd28d445-2841-4b83-bbd6-e4d5ac464105.jpg",
     "BrainStorming - images/Houses/_eb105eea-367b-41a0-af96-1eb465e215a0.jpg",
@@ -176,8 +166,6 @@
     "BrainStorming - images/Houses",
     "BrainStorming - images",
     "BrainStorming - images/General - Creatures - Human",
-    "Description.md",
-    "Project management.md",
     "PM - Detail/Iteration 1 - Voxel Engine.md"
   ]
 }

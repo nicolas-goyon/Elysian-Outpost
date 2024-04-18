@@ -86,59 +86,45 @@ I think blocks should have only one color, assets are blocks with 1/16 or 1/32 r
 
 # Modeling
 
-
- ```mermaid
- flowchart TD
-	Core -- Uses --> WorldGeneration
-	WorldGeneration -- Create --> Cube
-	Cube -- Export --> Voxels
-	WorldGeneration -- Returns Cubes --> Core
-	Core -- Send Voxels --> Engine
-	Engine -- Uses --> Voxels
-	
-	Engine --> Display
-
-	Core -- Create --> PFDS(PathFinding Data Structure)
-	Agents -- Uses --> PathFinding
-	PathFinding -- Uses --> PFDS
-	Agents -- Interact --- Core
-	EventHandler -- Interact --- Core
-```
+Here is a Drawio of the current modeling : 
+- https://drive.google.com/file/d/1G88aJrY81_tYl7XVz7-ToLaw_Sz5Yqzn/view?usp=sharing
 
 
+## Detail 
 
-Here are some specifications from the previous graph.
+### World Simulation 
 
-### Engine uses Voxels
+#### Simulation -> World Generation 
+- Generate block (Position)
+- Generate chunk (Position)
 
-The engine need to get the following informations from the voxels :
-- Position
-- Color
-- TODO
+#### Simulation -> Entity Engine
+- Display entities
 
-### Pathfinding using Pathfinding data structure
+#### Simulation -> Voxel Engine
+- Display voxels
 
-The pathfinding algorithm need to get the following things from the pathfinding data structure : 
-- Get accessible blocs from a bloc (coordinates) and the cost to go on.
-- Get the closest block to the objective based on a euristic
+#### Simulation -> Block
 
-### Agent using Pathfinding
+This is needed to create voxels for the Voxel Engine.
 
-An agent need to get what path to follow based on his position and the targeted position
+- GetPosition
+- GetType
+- Get Pheromon Level
 
+### Player 
 
-### Agent interact with the core
+#### Player -> World Simulation
 
-- An agent need to know if a block is changed near to his path, if so recalculate his path. (not sure at the beginning, could cost some ressources).
-- An agent need to know if his path has been affected by a block changed (new block or block remove in the path) to recalculate if the path is still valid.
-- An agent need to notify the core that he stepped on a block to put some pheromone on it.
-- An agent need to know where is the nearest food that isn't already the target of another agent. (for citizen and animals)
-- A food corp needs to notify if its growing time is finished, and what its state is now.
-- A Citizen needs to change the state of entities and blocks around him, delete some, add or change the states.
-- A solier citizen need to know if some creatures are near him, if he can target some or things like this.
+Incomplete !
 
-TODO : Maybe need to split this up, i don't really know how to do it
+- Place template to world
+- Select Entities
+- Pause game
+- Command Entity
 
+### Entity 
 
+#### Entity -> PathFinding
 
-### Core create blocks
+- GetPathToObjective
