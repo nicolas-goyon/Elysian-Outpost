@@ -12,8 +12,6 @@ GameObject:
   - component: {fileID: 504906606930388677}
   - component: {fileID: 3150266828041710435}
   - component: {fileID: 5213185380573401339}
-  - component: {fileID: 864920304085335829}
-  - component: {fileID: 8356531691687885471}
   m_Layer: 0
   m_Name: Voxel
   m_TagString: Untagged
@@ -107,32 +105,3 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &864920304085335829
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6274876457034633981}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d916a9779f0df9c449bfb495ec96142c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  color: {r: 1, g: 0.36037737, b: 0.36037737, a: 0}
-  position:
-    x: 1.58
-    y: 0.27
-    z: 0
---- !u!114 &8356531691687885471
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6274876457034633981}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b10ae076dc286b64a8e74beb21881878, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
