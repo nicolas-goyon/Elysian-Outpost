@@ -1,3 +1,4 @@
+using System;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -9,7 +10,6 @@ public class VoxelsHolderAuthoring : MonoBehaviour
 
     public class Baker : Baker<VoxelsHolderAuthoring> {
         public override void Bake(VoxelsHolderAuthoring authoring) {
-            Entity entity = GetEntity(TransformUsageFlags.None);
             BlobBuilder blobBuilder = new(Allocator.Temp);
 
             ref BlobVoxelsHolder blobVoxelsHolder = ref blobBuilder.ConstructRoot<BlobVoxelsHolder>();
@@ -22,15 +22,22 @@ public class VoxelsHolderAuthoring : MonoBehaviour
 
             BlobAssetReference<BlobVoxelsHolder> blobAssetReference = blobBuilder.CreateBlobAssetReference<BlobVoxelsHolder>(Allocator.Persistent);
 
+            blobBuilder.Dispose();
+
+            Entity entity = GetEntity(TransformUsageFlags.None);
             AddComponent(entity, new VoxelsHolder { BlobAssetReference = blobAssetReference });
 
-            blobBuilder.Dispose();
         }
+
     }
 }
 
-public struct VoxelsHolder : IComponentData {
+public struct VoxelsHolder : IComponentData, IDisposable { 
     public BlobAssetReference<BlobVoxelsHolder> BlobAssetReference;
+
+    public void Dispose() {
+        BlobAssetReference.Dispose();
+    }
 }
 
 public struct BlobVoxelsHolder : IComponentData { 

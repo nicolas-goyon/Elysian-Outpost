@@ -33,13 +33,18 @@ public partial class VoxelPlacementSystem : SystemBase {
         VoxelsHolder voxelsHolder = SystemAPI.GetSingleton<VoxelsHolder>();
         ref BlobArray<VoxelType> voxelTypes = ref voxelsHolder.BlobAssetReference.Value.voxels;
 
+        if (!VoxelControl.Instance.TryDequeue(out VoxelChunkData chunk)) {
+            return;
+        }
 
-
-        while (VoxelControl.Instance.TryDequeue(out VoxelDataPosition voxel)) {
+        for (int i = 0; i < chunk.GetIndex(); i++) {
+            VoxelDataPosition voxel = chunk.GetVoxelDataPosition(i);
             float3 position = new(voxel.position.x, voxel.position.y, voxel.position.z);
             CreateVoxel(voxelTypes[voxel.voxelId].floatColor, commandBuffer, voxelPrefab, position);
-
         }
+
+        chunk.Dispose();
+
 
         commandBuffer.Playback(EntityManager);
         commandBuffer.Dispose();
@@ -50,7 +55,7 @@ public partial class VoxelPlacementSystem : SystemBase {
 
 
     [BurstCompile]
-    private Entity CreateVoxel(float4 color,  EntityCommandBuffer commandBuffer, Entity voxelPrefab, float3 position) {
+    private void CreateVoxel(float4 color,  EntityCommandBuffer commandBuffer, Entity voxelPrefab, float3 position) {
         LocalTransform voxelTransform = new() {
             Position = position,
             Rotation = quaternion.identity,
@@ -64,7 +69,6 @@ public partial class VoxelPlacementSystem : SystemBase {
 
         commandBuffer.SetComponent(entity, voxelTransform);
 
-        return entity;
+        //return entity;
     }
-
 }

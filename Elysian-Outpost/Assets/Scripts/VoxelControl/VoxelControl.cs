@@ -19,7 +19,8 @@ public class VoxelControl : MonoBehaviour
 
     // private VoxelData[] voxels; // Maybe keep track of the voxels TODO
 
-    private NativeQueue<VoxelDataPosition> voxelDataQueue;
+    //private NativeQueue<VoxelDataPosition> voxelDataQueue;
+    private NativeQueue<VoxelChunkData> chunkVoxelQueue;
 
 
     private readonly int width = 160;
@@ -28,17 +29,20 @@ public class VoxelControl : MonoBehaviour
 
 
     private bool isSpaceUp = true;
-    Unity.Mathematics.Random random = new(123);
+    //Unity.Mathematics.Random random = new(123);
 
 
     private void Start() {
-        voxelDataQueue = new NativeQueue<VoxelDataPosition>(Allocator.Persistent);
+        //voxelDataQueue = new NativeQueue<VoxelDataPosition>(Allocator.Persistent);
+        chunkVoxelQueue = new NativeQueue<VoxelChunkData>(Allocator.Persistent);
 
     }
 
 
     private void OnDestroy() {
-        voxelDataQueue.Dispose();
+        //voxelDataQueue.Dispose();
+        chunkVoxelQueue.Dispose();
+
     }
 
 
@@ -59,24 +63,26 @@ public class VoxelControl : MonoBehaviour
 
     [BurstCompile]
     private void CreateMultipleToQueue(int startIndex, int amount) {
+
+        VoxelChunkData chunkData = new(amount);
         for (int i = 0; i < amount; i++) {
-            CreateVoxelToQueue(startIndex + i);
+            int3 position = new((startIndex + i) % width, 0, (startIndex + i) / width);
+            int voxelId = 3;
+            chunkData.AddVoxelDataPosition(new VoxelDataPosition(position, voxelId));
         }
+
+        chunkVoxelQueue.Enqueue(chunkData);
+        index += amount;
     }
 
 
-    [BurstCompile]
-    private void CreateVoxelToQueue(int indexInBuffer) {
-        //int4 randomColor = new((byte) random.NextInt(0, 255), (byte) random.NextInt(0, 255), (byte) random.NextInt(0, 255), 255);
-        int3 position = new(indexInBuffer % width, 0, indexInBuffer / width);
-        int voxelId = 3;
 
-        voxelDataQueue.Enqueue(new VoxelDataPosition(position, voxelId));
-        index++;
+    public bool TryDequeue(out VoxelChunkData voxelData) {
+        return chunkVoxelQueue.TryDequeue(out voxelData);
     }
 
-    public bool TryDequeue(out VoxelDataPosition voxelData) {
-        return voxelDataQueue.TryDequeue(out voxelData);
+    public bool IsQueueEmpty() {
+        return chunkVoxelQueue.IsEmpty();
     }
 
 
@@ -85,9 +91,6 @@ public class VoxelControl : MonoBehaviour
         return width;
     }
 
-    public bool IsQueueEmpty() {
-        return voxelDataQueue.IsEmpty();
-    }
 
     public int GetIndex() {
         return index;
