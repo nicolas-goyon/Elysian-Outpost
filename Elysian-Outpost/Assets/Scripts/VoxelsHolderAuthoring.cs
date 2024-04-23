@@ -10,7 +10,7 @@ public class VoxelsHolderAuthoring : MonoBehaviour
     public class Baker : Baker<VoxelsHolderAuthoring> {
         public override void Bake(VoxelsHolderAuthoring authoring) {
             Entity entity = GetEntity(TransformUsageFlags.None);
-            BlobBuilder blobBuilder = new (Allocator.Temp);
+            BlobBuilder blobBuilder = new(Allocator.Temp);
 
             ref BlobVoxelsHolder blobVoxelsHolder = ref blobBuilder.ConstructRoot<BlobVoxelsHolder>();
             BlobBuilderArray<VoxelType> voxelsData = blobBuilder.Allocate(ref blobVoxelsHolder.voxels, authoring.voxelsHolderSO.voxels.Length);
