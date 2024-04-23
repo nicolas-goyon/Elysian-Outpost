@@ -30,10 +30,15 @@ public partial class VoxelPlacementSystem : SystemBase {
         VoxelConfigData config = SystemAPI.GetSingleton<VoxelConfigData>();
         Entity voxelPrefab = config.voxelPrefab;
 
-        while( VoxelControl.Instance.TryDequeue(out VoxelDataPosition voxel)) {
-            float3 position = new(voxel.x, voxel.y, voxel.z);
-            CreateVoxel(voxel.color, commandBuffer, voxelPrefab, position);
-            
+        VoxelsHolder voxelsHolder = SystemAPI.GetSingleton<VoxelsHolder>();
+        ref BlobArray<VoxelType> voxelTypes = ref voxelsHolder.BlobAssetReference.Value.voxels;
+
+
+
+        while (VoxelControl.Instance.TryDequeue(out VoxelDataPosition voxel)) {
+            float3 position = new(voxel.position.x, voxel.position.y, voxel.position.z);
+            CreateVoxel(voxelTypes[voxel.voxelId].floatColor, commandBuffer, voxelPrefab, position);
+
         }
 
         commandBuffer.Playback(EntityManager);
@@ -45,7 +50,7 @@ public partial class VoxelPlacementSystem : SystemBase {
 
 
     [BurstCompile]
-    private Entity CreateVoxel(int4 color,  EntityCommandBuffer commandBuffer, Entity voxelPrefab, float3 position) {
+    private Entity CreateVoxel(float4 color,  EntityCommandBuffer commandBuffer, Entity voxelPrefab, float3 position) {
         LocalTransform voxelTransform = new() {
             Position = position,
             Rotation = quaternion.identity,
@@ -53,8 +58,8 @@ public partial class VoxelPlacementSystem : SystemBase {
         };
 
         Entity entity = commandBuffer.Instantiate(voxelPrefab);
-        commandBuffer.AddComponent(entity, new VoxelInfo { color = color });
-        commandBuffer.AddComponent(entity, new URPMaterialPropertyBaseColor { Value = ((float4)color) / 255f });
+        commandBuffer.AddComponent(entity, new VoxelInfo { voxelId = 10 });
+        commandBuffer.AddComponent(entity, new URPMaterialPropertyBaseColor { Value = color });
 
 
         commandBuffer.SetComponent(entity, voxelTransform);

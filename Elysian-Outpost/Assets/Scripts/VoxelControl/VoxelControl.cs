@@ -1,6 +1,5 @@
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -68,8 +67,11 @@ public class VoxelControl : MonoBehaviour
 
     [BurstCompile]
     private void CreateVoxelToQueue(int indexInBuffer) {
-        int4 randomColor = new((byte) random.NextInt(0, 255), (byte) random.NextInt(0, 255), (byte) random.NextInt(0, 255), 255);
-        voxelDataQueue.Enqueue(new VoxelDataPosition(1, randomColor, indexInBuffer % width, 0, indexInBuffer / width));
+        //int4 randomColor = new((byte) random.NextInt(0, 255), (byte) random.NextInt(0, 255), (byte) random.NextInt(0, 255), 255);
+        int3 position = new(indexInBuffer % width, 0, indexInBuffer / width);
+        int voxelId = 3;
+
+        voxelDataQueue.Enqueue(new VoxelDataPosition(position, voxelId));
         index++;
     }
 
@@ -85,6 +87,10 @@ public class VoxelControl : MonoBehaviour
 
     public bool IsQueueEmpty() {
         return voxelDataQueue.IsEmpty();
+    }
+
+    public int GetIndex() {
+        return index;
     }
 
 
