@@ -43,13 +43,3 @@ public struct VoxelsHolder : IComponentData, IDisposable {
 public struct BlobVoxelsHolder : IComponentData { 
     public BlobArray<VoxelType> voxels;
 }
-
-public struct VoxelType {
-    public float4 floatColor;
-
-    public VoxelType(float4 color) {
-        this.floatColor = color;
-    }
-
-
-}

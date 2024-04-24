@@ -23,9 +23,10 @@ public class VoxelControl : MonoBehaviour
     private NativeQueue<VoxelChunkData> chunkVoxelQueue;
 
 
-    private readonly int width = 160;
+    private readonly int width = 5; // 5 chunks
 
     private int index = 0;
+    private int spawnedAmount;
 
 
     private bool isSpaceUp = true;
@@ -53,7 +54,7 @@ public class VoxelControl : MonoBehaviour
     private void Update() {
         if (isSpaceUp && Input.GetKey(KeyCode.Space)) {
             isSpaceUp = false;
-            CreateMultipleToQueue(index, 1000);
+            CreateChunkToQueue(index);
 
         } else {
             isSpaceUp = true;
@@ -62,17 +63,26 @@ public class VoxelControl : MonoBehaviour
 
 
     [BurstCompile]
-    private void CreateMultipleToQueue(int startIndex, int amount) {
+    private void CreateChunkToQueue(int startIndex) {
+        int2 chunkPosition = new(startIndex % width, startIndex / width);
+        Debug.Log(chunkPosition + " : " + startIndex + " => " + startIndex % width + " , " + startIndex / width);
 
-        VoxelChunkData chunkData = new(amount);
+        VoxelChunkBuilder voxelChunkBuilder = new(chunkPosition);
+
+        int amount = VoxelChunkBuilder.CHUNK_SIZE.x * VoxelChunkBuilder.CHUNK_SIZE.y * VoxelChunkBuilder.CHUNK_SIZE.z;
+
         for (int i = 0; i < amount; i++) {
-            int3 position = new((startIndex + i) % width, 0, (startIndex + i) / width);
             int voxelId = 3;
-            chunkData.AddVoxelDataPosition(new VoxelDataPosition(position, voxelId));
+            voxelChunkBuilder.AddVoxelDataPosition(new Voxel {
+                kind = VoxelKind.Solid,
+                voxelId = voxelId
+            });
+
         }
 
-        chunkVoxelQueue.Enqueue(chunkData);
-        index += amount;
+        chunkVoxelQueue.Enqueue(voxelChunkBuilder.Build());
+        index ++;
+        spawnedAmount += amount;
     }
 
 
@@ -94,6 +104,10 @@ public class VoxelControl : MonoBehaviour
 
     public int GetIndex() {
         return index;
+    }
+
+    public int GetAmountOfSpawnedVoxels() {
+        return spawnedAmount;
     }
 
 

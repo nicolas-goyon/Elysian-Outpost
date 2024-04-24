@@ -1,9 +1,11 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using UnityEngine.Rendering;
 
 
 [BurstCompile]
@@ -38,9 +40,7 @@ public partial class VoxelPlacementSystem : SystemBase {
         }
 
         for (int i = 0; i < chunk.GetIndex(); i++) {
-            VoxelDataPosition voxel = chunk.GetVoxelDataPosition(i);
-            float3 position = new(voxel.position.x, voxel.position.y, voxel.position.z);
-            CreateVoxel(voxelTypes[voxel.voxelId].floatColor, commandBuffer, voxelPrefab, position);
+            CreateVoxel(chunk, commandBuffer, ref voxelTypes, voxelPrefab, i);
         }
 
         chunk.Dispose();
@@ -51,11 +51,11 @@ public partial class VoxelPlacementSystem : SystemBase {
     }
 
 
-
-
-
     [BurstCompile]
-    private void CreateVoxel(float4 color,  EntityCommandBuffer commandBuffer, Entity voxelPrefab, float3 position) {
+    private void CreateVoxel(VoxelChunkData chunk, EntityCommandBuffer commandBuffer, ref BlobArray<VoxelType> voxelTypes, Entity voxelPrefab, int index) { 
+        Voxel newVoxel = chunk.GetVoxelDataPosition(index);
+        float3 position = chunk.GetVoxelPosition(index);
+
         LocalTransform voxelTransform = new() {
             Position = position,
             Rotation = quaternion.identity,
@@ -63,12 +63,14 @@ public partial class VoxelPlacementSystem : SystemBase {
         };
 
         Entity entity = commandBuffer.Instantiate(voxelPrefab);
-        commandBuffer.AddComponent(entity, new VoxelInfo { voxelId = 10 });
-        commandBuffer.AddComponent(entity, new URPMaterialPropertyBaseColor { Value = color });
-
+        commandBuffer.AddComponent(entity, newVoxel);
+        commandBuffer.AddComponent(entity, new URPMaterialPropertyBaseColor { Value = voxelTypes[(int)newVoxel.kind].floatColor });
 
         commandBuffer.SetComponent(entity, voxelTransform);
-
-        //return entity;
     }
+
+
+
+
+
 }

@@ -39,7 +39,7 @@ public class UIData : MonoBehaviour
             nextUpdateTime += updateInterval;
         }
 
-        voxelCount.text = voxelControl.GetIndex().ToString();
+        voxelCount.text = voxelControl.GetAmountOfSpawnedVoxels().ToString();
         
     }
 }
