@@ -14,11 +14,11 @@ public partial class VoxelPlacementSystem : SystemBase {
     [BurstCompile]
     protected override void OnUpdate() {
 
-        if (VoxelControl.Instance.IsQueueEmpty()) {
-            return;
-        }
+        //if (VoxelControl.Instance.IsQueueEmpty()) {
+        //    return;
+        //}
 
-        PlaceAll();
+        //PlaceAll();
 
 
     }
@@ -53,7 +53,7 @@ public partial class VoxelPlacementSystem : SystemBase {
 
     [BurstCompile]
     private void CreateVoxel(VoxelChunkData chunk, EntityCommandBuffer commandBuffer, ref BlobArray<VoxelType> voxelTypes, Entity voxelPrefab, int index) { 
-        Voxel newVoxel = chunk.GetVoxelDataPosition(index);
+        Voxel newVoxel = chunk.GetVoxel(index);
         float3 position = chunk.GetVoxelPosition(index);
 
         LocalTransform voxelTransform = new() {

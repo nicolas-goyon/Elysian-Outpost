@@ -52,7 +52,7 @@ public class VoxelControl : MonoBehaviour
 
     [BurstCompile]
     private void Update() {
-        if (isSpaceUp && Input.GetKey(KeyCode.Space)) {
+        if (isSpaceUp && Input.GetKeyDown(KeyCode.Space)) {
             isSpaceUp = false;
             CreateChunkToQueue(index);
 
@@ -65,7 +65,7 @@ public class VoxelControl : MonoBehaviour
     [BurstCompile]
     private void CreateChunkToQueue(int startIndex) {
         int2 chunkPosition = new(startIndex % width, startIndex / width);
-        Debug.Log(chunkPosition + " : " + startIndex + " => " + startIndex % width + " , " + startIndex / width);
+        //Debug.Log(chunkPosition + " : " + startIndex + " => " + startIndex % width + " , " + startIndex / width);
 
         VoxelChunkBuilder voxelChunkBuilder = new(chunkPosition);
 

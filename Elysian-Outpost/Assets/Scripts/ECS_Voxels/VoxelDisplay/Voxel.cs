@@ -28,7 +28,7 @@ public struct VoxelType {
 }
 
 public class VoxelChunkBuilder {
-    public readonly static int3 CHUNK_SIZE = new(16, 16, 16);
+    public static int3 CHUNK_SIZE {get { return VoxelChunkData.CHUNK_SIZE; } }
 
     private NativeArray<Voxel> voxels;
     private int index;
@@ -59,8 +59,8 @@ public class VoxelChunkBuilder {
 
     public float3 GetVoxelPosition(int index) {
         int x = index % CHUNK_SIZE.x;
-        int y = (index / CHUNK_SIZE.x) % CHUNK_SIZE.y;
-        int z = index / (CHUNK_SIZE.x * CHUNK_SIZE.y);
+        int y = index / (CHUNK_SIZE.x * CHUNK_SIZE.z);
+        int z = (index / CHUNK_SIZE.x) % CHUNK_SIZE.z;
 
         return new float3(x, y, z);
     }
@@ -75,7 +75,7 @@ public class VoxelChunkBuilder {
 
 
 public struct VoxelChunkData {
-    private static int3 CHUNK_SIZE = new(16, 16, 16);
+    public readonly static int3 CHUNK_SIZE = new(16, 20, 10);
 
     private NativeArray<Voxel> voxels;
 
@@ -89,8 +89,12 @@ public struct VoxelChunkData {
         this.chunkPosition = chunkPosition;
     }
 
-    public Voxel GetVoxelDataPosition(int index) {
+    public Voxel GetVoxel(int index) {
         return voxels[index];
+    }
+
+    public Voxel GetVoxel(int x, int y, int z) {
+        return voxels[x + z * CHUNK_SIZE.x + y * CHUNK_SIZE.x * CHUNK_SIZE.z];
     }
 
     public void Dispose() {
@@ -108,8 +112,8 @@ public struct VoxelChunkData {
 
     public float3 GetVoxelPosition(int index) {
         int x = index % CHUNK_SIZE.x;
-        int y = (index / CHUNK_SIZE.x) % CHUNK_SIZE.y;
-        int z = index / (CHUNK_SIZE.x * CHUNK_SIZE.y);
+        int y = index / (CHUNK_SIZE.x * CHUNK_SIZE.z);
+        int z = (index / CHUNK_SIZE.x) % CHUNK_SIZE.z;
 
         int xOffset = chunkPosition.x * CHUNK_SIZE.x;
         int yOffset = 0 * CHUNK_SIZE.y;

@@ -6,8 +6,6 @@ public class CameraMovements : MonoBehaviour
     [SerializeField] private float speedMultiplier = 2f;
     [SerializeField] private float sensitivity = .5f;
 
-    [SerializeField] private float maxXAngle = 280;
-    [SerializeField] private float minXAngle = 80;
     [SerializeField] private GameInputs gameInputs;
     // Start is called before the first frame update
     void Start()
