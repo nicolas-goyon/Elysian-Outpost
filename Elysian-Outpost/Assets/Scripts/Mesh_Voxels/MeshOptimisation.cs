@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst;
+using Global_Voxels;
 
 [BurstCompile]
 public class MeshOptimisation {

@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using Global_Voxels;
 
 public class VoxelsHolderAuthoring : MonoBehaviour
 {

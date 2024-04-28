@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Burst;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Global_Voxels;
 
 [BurstCompile]
 public struct CustomMesh
@@ -39,12 +40,8 @@ public struct CustomMesh
 
 
     [BurstCompile]
-    public GameObject GenerateGameObject() {
-        GameObject display = Object.Instantiate(new GameObject(name));
-
-        // Set the rotation pivot to the center of the object
-        //display.transform.localPosition = new Vector3(-width * pixelSize / 2, 0, -height * pixelSize / 2);
-
+    public void GenerateGameObject() {
+        GameObject display = new GameObject(name);
 
         display.transform.SetParent(parent);
 
@@ -98,9 +95,9 @@ public struct CustomMesh
         mesh.triangles = triangles;
         mesh.uv = uvs;
 
-        //mesh.RecalculateBounds();
+        mesh.RecalculateBounds();
         mesh.RecalculateNormals();
-        return display;
+        //return display;
 
     }
 

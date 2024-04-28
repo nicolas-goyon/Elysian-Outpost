@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine.Rendering;
+using Global_Voxels;
 
 
 [BurstCompile]
