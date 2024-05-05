@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Unity.Burst;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Global_Voxels;
 
 [BurstCompile]
 public struct CustomMesh

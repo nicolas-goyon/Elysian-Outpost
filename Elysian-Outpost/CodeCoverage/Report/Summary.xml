@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CoverageReport scope="Summary">
+  <Summary>
+    <Generatedon>4/30/2024 - 6:17:31 PM</Generatedon>
+    <Parser>MultiReportParser (5x OpenCoverParser)</Parser>
+    <Assemblies>4</Assemblies>
+    <Classes>20</Classes>
+    <Files>16</Files>
+    <Coveredlines>275</Coveredlines>
+    <Uncoveredlines>587</Uncoveredlines>
+    <Coverablelines>862</Coverablelines>
+    <Totallines>1924</Totallines>
+    <Linecoverage>31.9</Linecoverage>
+    <Coveredbranches>0</Coveredbranches>
+    <Totalbranches>0</Totalbranches>
+    <Coveredmethods>27</Coveredmethods>
+    <Totalmethods>118</Totalmethods>
+    <Methodcoverage>22.8</Methodcoverage>
+  </Summary>
+  <Coverage>
+    <Assembly name="Assembly-CSharp" classes="11" coverage="0" coveredlines="0" coverablelines="475" totallines="1789" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="71" methodcoverage="0">
+      <Class name="CameraInputs" coverage="0" coveredlines="0" coverablelines="84" totallines="293" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="30" methodcoverage="0" />
+      <Class name="CameraMovements" coverage="0" coveredlines="0" coverablelines="20" totallines="44" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="3" methodcoverage="0" />
+      <Class name="ChunkMesh" coverage="0" coveredlines="0" coverablelines="84" totallines="223" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="9" methodcoverage="0" />
+      <Class name="CustomMesh" coverage="0" coveredlines="0" coverablelines="59" totallines="112" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="2" methodcoverage="0" />
+      <Class name="DisjointSet" coverage="0" coveredlines="0" coverablelines="46" totallines="306" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="6" methodcoverage="0" />
+      <Class name="GameInputs" coverage="0" coveredlines="0" coverablelines="15" totallines="34" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="5" methodcoverage="0" />
+      <Class name="MeshBuildData" coverage="0" coveredlines="0" coverablelines="14" totallines="306" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="2" methodcoverage="0" />
+      <Class name="MeshOptimisation" coverage="0" coveredlines="0" coverablelines="103" totallines="306" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="7" methodcoverage="0" />
+      <Class name="Test_Meshes" coverage="0" coveredlines="0" coverablelines="22" totallines="100" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="3" methodcoverage="0" />
+      <Class name="UIData" coverage="0" coveredlines="0" coverablelines="21" totallines="45" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="3" methodcoverage="0" />
+      <Class name="VoxelControlToMesh" coverage="0" coveredlines="0" coverablelines="7" totallines="20" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="1" methodcoverage="0" />
+    </Assembly>
+    <Assembly name="ECS_Voxels" classes="6" coverage="0" coveredlines="0" coverablelines="87" totallines="317" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="20" methodcoverage="0">
+      <Class name="VoxelConfig" coverage="0" coveredlines="0" coverablelines="4" totallines="26" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="1" methodcoverage="0" />
+      <Class name="VoxelControl" coverage="0" coveredlines="0" coverablelines="52" totallines="113" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="13" methodcoverage="0" />
+      <Class name="VoxelPlacementSystem" coverage="0" coveredlines="0" coverablelines="23" totallines="75" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="3" methodcoverage="0" />
+      <Class name="VoxelsHolder" coverage="0" coveredlines="0" coverablelines="3" totallines="43" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="1" methodcoverage="0" />
+      <Class name="VoxelsHolderAuthoring" coverage="0" coveredlines="0" coverablelines="2" totallines="43" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="1" methodcoverage="0" />
+      <Class name="VoxelTypeSO" coverage="0" coveredlines="0" coverablelines="3" totallines="17" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="1" methodcoverage="0" />
+    </Assembly>
+    <Assembly name="Tests" classes="1" coverage="88.5" coveredlines="186" coverablelines="210" totallines="298" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="5" totalmethods="5" methodcoverage="100">
+      <Class name="CunkTest" coverage="88.5" coveredlines="186" coverablelines="210" totallines="298" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="5" totalmethods="5" methodcoverage="100" />
+    </Assembly>
+    <Assembly name="VoxelCommon" classes="2" coverage="98.8" coveredlines="89" coverablelines="90" totallines="350" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="22" totalmethods="22" methodcoverage="100">
+      <Class name="VoxelChunkBuilder" coverage="100" coveredlines="21" coverablelines="21" totallines="175" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="6" totalmethods="6" methodcoverage="100" />
+      <Class name="VoxelChunkData" coverage="98.5" coveredlines="68" coverablelines="69" totallines="175" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="16" totalmethods="16" methodcoverage="100" />
+    </Assembly>
+  </Coverage>
+</CoverageReport>

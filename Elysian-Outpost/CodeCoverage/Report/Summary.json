@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "generatedon": "2024-04-30T17:17:31Z",
+    "parser": "MultiReportParser (5x OpenCoverParser)",
+    "assemblies": 4,
+    "classes": 20,
+    "files": 16,
+    "coveredlines": 275,
+    "uncoveredlines": 587,
+    "coverablelines": 862,
+    "totallines": 1924,
+    "linecoverage": 31.9,
+    "coveredbranches": 0,
+    "totalbranches": 0,
+    "coveredmethods": 27,
+    "totalmethods": 118,
+    "methodcoverage": 22.8
+ },
+  "coverage": {
+    "assemblies": [
+      { "name": "Assembly-CSharp", "classes": 11, "coverage": 0, "coveredlines": 0, "coverablelines": 475, "totallines": 1789, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 71, "classesinassembly": [
+        { "name": "CameraInputs", "coverage": 0, "coveredlines": 0, "coverablelines": 84, "totallines": 293, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 30 },
+        { "name": "CameraMovements", "coverage": 0, "coveredlines": 0, "coverablelines": 20, "totallines": 44, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 3 },
+        { "name": "ChunkMesh", "coverage": 0, "coveredlines": 0, "coverablelines": 84, "totallines": 223, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 9 },
+        { "name": "CustomMesh", "coverage": 0, "coveredlines": 0, "coverablelines": 59, "totallines": 112, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 2 },
+        { "name": "DisjointSet", "coverage": 0, "coveredlines": 0, "coverablelines": 46, "totallines": 306, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 6 },
+        { "name": "GameInputs", "coverage": 0, "coveredlines": 0, "coverablelines": 15, "totallines": 34, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 5 },
+        { "name": "MeshBuildData", "coverage": 0, "coveredlines": 0, "coverablelines": 14, "totallines": 306, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 2 },
+        { "name": "MeshOptimisation", "coverage": 0, "coveredlines": 0, "coverablelines": 103, "totallines": 306, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 7 },
+        { "name": "Test_Meshes", "coverage": 0, "coveredlines": 0, "coverablelines": 22, "totallines": 100, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 3 },
+        { "name": "UIData", "coverage": 0, "coveredlines": 0, "coverablelines": 21, "totallines": 45, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 3 },
+        { "name": "VoxelControlToMesh", "coverage": 0, "coveredlines": 0, "coverablelines": 7, "totallines": 20, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 1 } ] },
+      { "name": "ECS_Voxels", "classes": 6, "coverage": 0, "coveredlines": 0, "coverablelines": 87, "totallines": 317, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 20, "classesinassembly": [
+        { "name": "VoxelConfig", "coverage": 0, "coveredlines": 0, "coverablelines": 4, "totallines": 26, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 1 },
+        { "name": "VoxelControl", "coverage": 0, "coveredlines": 0, "coverablelines": 52, "totallines": 113, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 13 },
+        { "name": "VoxelPlacementSystem", "coverage": 0, "coveredlines": 0, "coverablelines": 23, "totallines": 75, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 3 },
+        { "name": "VoxelsHolder", "coverage": 0, "coveredlines": 0, "coverablelines": 3, "totallines": 43, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 1 },
+        { "name": "VoxelsHolderAuthoring", "coverage": 0, "coveredlines": 0, "coverablelines": 2, "totallines": 43, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 1 },
+        { "name": "VoxelTypeSO", "coverage": 0, "coveredlines": 0, "coverablelines": 3, "totallines": 17, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 1 } ] },
+      { "name": "Tests", "classes": 1, "coverage": 88.5, "coveredlines": 186, "coverablelines": 210, "totallines": 298, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 100, "coveredmethods": 5, "totalmethods": 5, "classesinassembly": [
+        { "name": "CunkTest", "coverage": 88.5, "coveredlines": 186, "coverablelines": 210, "totallines": 298, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 100, "coveredmethods": 5, "totalmethods": 5 } ] },
+      { "name": "VoxelCommon", "classes": 2, "coverage": 98.8, "coveredlines": 89, "coverablelines": 90, "totallines": 350, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 100, "coveredmethods": 22, "totalmethods": 22, "classesinassembly": [
+        { "name": "VoxelChunkBuilder", "coverage": 100, "coveredlines": 21, "coverablelines": 21, "totallines": 175, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 100, "coveredmethods": 6, "totalmethods": 6 },
+        { "name": "VoxelChunkData", "coverage": 98.5, "coveredlines": 68, "coverablelines": 69, "totallines": 175, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 100, "coveredmethods": 16, "totalmethods": 16 } ] } ]
+  }
+}

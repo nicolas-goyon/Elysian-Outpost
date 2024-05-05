@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "file": "Description.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "file": "Description.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md",
+                "file": "Description.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "PM - Detail/Iteration 1 - Voxel Engine.md"
+                "file": "Description.md"
               }
             }
           }
@@ -149,6 +149,7 @@
   },
   "active": "98eb4dfc902182a7",
   "lastOpenFiles": [
+    "PM - Detail/Iteration 1 - Voxel Engine.md",
     "Project management.md",
     "Elysion-Outpost.md",
     "Description.md",
@@ -165,7 +166,6 @@
     "BrainStorming - images/Houses/_40bf51a4-e615-4757-9dff-d80262d6a33f.jpg",
     "BrainStorming - images/Houses",
     "BrainStorming - images",
-    "BrainStorming - images/General - Creatures - Human",
-    "PM - Detail/Iteration 1 - Voxel Engine.md"
+    "BrainStorming - images/General - Creatures - Human"
   ]
 }

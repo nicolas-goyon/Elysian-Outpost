@@ -1,8 +1,8 @@
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Mathematics;
 using UnityEngine;
-using Global_Voxels;
+using Unity.Mathematics;
+
 
 [BurstCompile]
 public class VoxelControl : MonoBehaviour
@@ -19,7 +19,7 @@ public class VoxelControl : MonoBehaviour
 
 
     // private VoxelData[] voxels; // Maybe keep track of the voxels TODO
-
+   
     //private NativeQueue<VoxelDataPosition> voxelDataQueue;
     private NativeQueue<VoxelChunkData> chunkVoxelQueue;
 
@@ -69,7 +69,7 @@ public class VoxelControl : MonoBehaviour
 
         VoxelChunkBuilder voxelChunkBuilder = new(chunkPosition, Allocator.Persistent);
 
-        int amount = VoxelChunkBuilder.CHUNK_SIZE.x * VoxelChunkBuilder.CHUNK_SIZE.y * VoxelChunkBuilder.CHUNK_SIZE.z;
+        int amount = VoxelChunkData.CHUNK_SIZE.x * VoxelChunkData.CHUNK_SIZE.y * VoxelChunkData.CHUNK_SIZE.z;
         Unity.Mathematics.Random random = new(123);
         for (int i = 0; i < amount; i++) {
             voxelChunkBuilder.AddVoxelDataPosition(new Voxel {

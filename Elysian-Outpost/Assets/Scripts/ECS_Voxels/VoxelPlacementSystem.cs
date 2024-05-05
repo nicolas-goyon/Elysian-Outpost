@@ -1,12 +1,10 @@
-using Unity.Burst;
 using Unity.Collections;
+using Unity.Burst;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
+using Unity.Transforms;
+using UnityEngine;
 using Unity.Mathematics;
 using Unity.Rendering;
-using Unity.Transforms;
-using UnityEngine.Rendering;
-using Global_Voxels;
 
 
 [BurstCompile]
@@ -40,7 +38,7 @@ public partial class VoxelPlacementSystem : SystemBase {
             return;
         }
 
-        for (int i = 0; i < chunk.GetIndex(); i++) {
+        for (int i = 0; i < VoxelChunkData.CHUNK_VOLUME; i++) {
             CreateVoxel(chunk, commandBuffer, ref voxelTypes, voxelPrefab, i);
         }
 
@@ -59,7 +57,7 @@ public partial class VoxelPlacementSystem : SystemBase {
 
         LocalTransform voxelTransform = new() {
             Position = position,
-            Rotation = quaternion.identity,
+            Rotation = Quaternion.identity,
             Scale = 1
         };
 
