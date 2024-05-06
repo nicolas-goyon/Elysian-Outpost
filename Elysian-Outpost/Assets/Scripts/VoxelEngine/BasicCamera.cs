@@ -73,17 +73,17 @@ namespace VoxelMaster
             }
         }
 
-        void OnGUI()
-        {
-            if (GUI.Button(new Rect(10, 10, 200, 20), "Voxel Generation")) Application.LoadLevel("Voxel Master Generation");
-            if (GUI.Button(new Rect(10, 30, 200, 20), "Voxel Shapes")) Application.LoadLevel("Voxel Master Shapes");
-            if (GUI.Button(new Rect(10, 50, 200, 20), "Voxel Helpers")) Application.LoadLevel("Voxel Master Helpers");
-            if (GUI.Button(new Rect(10, 70, 200, 20), "Voxel Loading-Saving System")) Application.LoadLevel("Voxel Master Loading-Saving System");
+        //void OnGUI()
+        //{
+        //    if (GUI.Button(new Rect(10, 10, 200, 20), "Voxel Generation")) Application.LoadLevel("Voxel Master Generation");
+        //    if (GUI.Button(new Rect(10, 30, 200, 20), "Voxel Shapes")) Application.LoadLevel("Voxel Master Shapes");
+        //    if (GUI.Button(new Rect(10, 50, 200, 20), "Voxel Helpers")) Application.LoadLevel("Voxel Master Helpers");
+        //    if (GUI.Button(new Rect(10, 70, 200, 20), "Voxel Loading-Saving System")) Application.LoadLevel("Voxel Master Loading-Saving System");
 
-            if (Application.loadedLevelName == "Voxel Master Loading-Saving System")
-            {
-                GUI.Label(new Rect(220, 30, 200, 30), "Press R to save");
-            }
-        }
+        //    if (Application.loadedLevelName == "Voxel Master Loading-Saving System")
+        //    {
+        //        GUI.Label(new Rect(220, 30, 200, 30), "Press R to save");
+        //    }
+        //}
     }
 }
