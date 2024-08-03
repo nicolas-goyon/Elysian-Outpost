@@ -1,6 +1,0 @@
-
-# [[BrainStorming]]
-
-# [[Description]]
-
-# [[Project management]]
