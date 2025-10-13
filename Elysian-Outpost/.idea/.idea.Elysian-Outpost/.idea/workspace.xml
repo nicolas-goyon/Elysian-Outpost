@@ -5,14 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/ExampleMesh.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/ExampleMesh.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/InstanciatedChunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/InstanciatedChunk.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/MeshOptimizer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/MeshOptimizer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OcclusionAlgorithms/VoxelOcclusionOptimizer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OcclusionAlgorithms/VoxelOcclusionOptimizer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSet.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSet.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSetMeshOptimizer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSetMeshOptimizer.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/ObjExporter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/ObjExporter.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -118,7 +110,7 @@
       <option name="presentableId" value="Default" />
       <updated>1760286880051</updated>
       <workItem from="1760286884468" duration="6500000" />
-      <workItem from="1760368514948" duration="693000" />
+      <workItem from="1760368514948" duration="1287000" />
     </task>
     <servers />
   </component>

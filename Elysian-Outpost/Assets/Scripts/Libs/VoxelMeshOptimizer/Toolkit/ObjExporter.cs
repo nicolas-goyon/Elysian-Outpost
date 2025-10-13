@@ -70,46 +70,51 @@ public static class ObjExporter
     public static UnityEngine.Mesh ToUnityMesh(Mesh mesh)
     {
         if (mesh is null) throw new ArgumentNullException(nameof(mesh));
-
-        var unityMesh = new UnityEngine.Mesh();
+    
+        UnityEngine.Mesh unityMesh = new UnityEngine.Mesh();
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
         Dictionary<Vector3, int> vertexIndices = new Dictionary<Vector3, int>();
+        Dictionary<Vector3, Vector3> vertexNormals = new Dictionary<Vector3, Vector3>();
 
-        // Collect unique vertices and build triangles
         foreach (MeshQuad quad in mesh.Quads)
         {
-            AddVertex(quad.Vertex0, vertexIndices, vertices);
-            AddVertex(quad.Vertex1, vertexIndices, vertices);
-            AddVertex(quad.Vertex2, vertexIndices, vertices);
-            AddVertex(quad.Vertex3, vertexIndices, vertices);
-
-            // Convert quad to two triangles
-            int i0 = vertexIndices[quad.Vertex0] - 1; // Convert to 0-based for Unity
+            AddVertexWithNormal(quad.Vertex0, quad.Normal);
+            AddVertexWithNormal(quad.Vertex1, quad.Normal);
+            AddVertexWithNormal(quad.Vertex2, quad.Normal);
+            AddVertexWithNormal(quad.Vertex3, quad.Normal);
+    
+            int i0 = vertexIndices[quad.Vertex0] - 1;
             int i1 = vertexIndices[quad.Vertex1] - 1;
             int i2 = vertexIndices[quad.Vertex2] - 1;
             int i3 = vertexIndices[quad.Vertex3] - 1;
-
-            // First triangle
-            triangles.Add(i0);
-            triangles.Add(i1);
-            triangles.Add(i2);
-
-            // Second triangle
-            triangles.Add(i2);
-            triangles.Add(i3);
-            triangles.Add(i0);
+    
+            triangles.Add(i0); triangles.Add(i1); triangles.Add(i2);
+            triangles.Add(i2); triangles.Add(i3); triangles.Add(i0);
         }
-
-        // Convert System.Numerics.Vector3 to UnityEngine.Vector3
-        var unityVertices = vertices.Select(v => new UnityEngine.Vector3(v.X, v.Y, v.Z)).ToArray();
-
+    
+        // Convert to Unity types
+        UnityEngine.Vector3[] unityVertices = vertices.Select(v => new UnityEngine.Vector3(v.X, v.Y, v.Z)).ToArray();
+        UnityEngine.Vector3[] unityNormals = vertices.Select(v => {
+            Vector3 n = vertexNormals[v];
+            return new UnityEngine.Vector3(n.X, n.Y, n.Z);
+        }).ToArray();
+    
         unityMesh.vertices = unityVertices;
+        unityMesh.normals = unityNormals;
         unityMesh.triangles = triangles.ToArray();
-        unityMesh.RecalculateNormals();
         unityMesh.RecalculateBounds();
-
+    
         return unityMesh;
+
+        // Collect unique vertices and normals
+        void AddVertexWithNormal(Vector3 v, Vector3 n)
+        {
+            if (vertexIndices.ContainsKey(v)) return;
+            vertices.Add(v);
+            vertexIndices[v] = vertices.Count; // 1-based
+            vertexNormals[v] = n;
+        }
     }
 }
 }
