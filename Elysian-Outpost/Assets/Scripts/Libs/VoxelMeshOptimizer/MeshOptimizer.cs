@@ -1,8 +1,8 @@
 namespace Libs.VoxelMeshOptimizer
 {
 
-    public interface MeshOptimizer
+    public interface MeshOptimizer<T> where T : Mesh
     {
-        public Mesh Optimize(Chunk<Voxel> chunk);
+        public T Optimize(Chunk<Voxel> chunk);
     }
 }

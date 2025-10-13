@@ -6,8 +6,8 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
         private int[] parent; // parent[i] = parent of i
 
         private int[] size; // size[i] = number of sites in tree rooted at i
-
         // Note: not necessarily correct if i is not a root node
+        
         private int count; // number of components
 
         /**

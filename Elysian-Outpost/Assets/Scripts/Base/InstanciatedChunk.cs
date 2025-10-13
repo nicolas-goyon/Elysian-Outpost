@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Libs.VoxelMeshOptimizer.Toolkit;
+using UnityEngine;
 
 namespace Base
 {
@@ -14,7 +15,7 @@ namespace Base
 
             public void SetMesh(ExampleMesh exampleMesh)
             {
-                meshFilter.mesh = exampleMesh.ToUnityObject();
+                meshFilter.mesh = ObjExporter.ToUnityMesh(exampleMesh);
             }
 
     }

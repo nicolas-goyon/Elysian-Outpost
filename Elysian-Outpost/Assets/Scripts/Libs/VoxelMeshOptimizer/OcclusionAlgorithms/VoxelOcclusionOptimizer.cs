@@ -2,7 +2,9 @@
 
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common;
+using UnityEngine;
 
 namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
 {
@@ -84,7 +86,7 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
 
             // Dictionary to store the visible planes keyed by the slice index.
             uint sliceCount = chunk.GetDepth(sliceAxis);
-            var planesBySlice = new VisiblePlane[sliceCount];
+            VisiblePlane[] planesBySlice = new VisiblePlane[sliceCount];
 
             chunk.ForEachCoordinate(
                 major: majorA, majorAsc: majorAO,
@@ -92,28 +94,25 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
                 minor: minorA, minorAsc: minorAO,
                 (uint x, uint y, uint z) =>
                 {
-                    var faces = visibilityMap.GetVisibleFaces(x, y, z);
-                    // if (!faces.HasFlag(faceFlag)) return null;
+                    VoxelFace faces = visibilityMap.GetVisibleFaces(x, y, z);
+                    if (!faces.HasFlag(faceFlag)) return;
 
                     // Retrieve the current slice index.
                     uint sliceIndex = AxisExtensions.GetDepthFromAxis(sliceAxis, axisOrder, x, y, z, chunk);
 
                     // Select the appropriate visible plane.
-                    if (planesBySlice[sliceIndex] == null)
-                    {
-                        planesBySlice[sliceIndex] = new VisiblePlane(
-                            majorA, majorAO,
-                            middleA, middleAO,
-                            minorA, minorAO,
-                            sliceIndex,
-                            planeWidth, planeHeight
-                        );
-                    }
+                    planesBySlice[sliceIndex] ??= new VisiblePlane(
+                        majorA, majorAO,
+                        middleA, middleAO,
+                        minorA, minorAO,
+                        sliceIndex,
+                        planeWidth, planeHeight
+                    );
 
-                    var plane = planesBySlice[sliceIndex];
+                    VisiblePlane plane = planesBySlice[sliceIndex];
 
                     // Compute the 2D position on the plane from the 3D coordinates.
-                    var (planeX, planeY) = AxisExtensions.GetSlicePlanePosition(
+                    (uint planeX, uint planeY) = AxisExtensions.GetSlicePlanePosition(
                         majorA, majorAO,
                         middleA, middleAO,
                         minorA, minorAO,
@@ -124,14 +123,7 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
             );
 
             // Gather the resulting non-empty planes.
-            var result = new List<VisiblePlane>();
-            foreach (var plane in planesBySlice)
-            {
-                if (plane != null && !plane.IsPlaneEmpty)
-                {
-                    result.Add(plane);
-                }
-            }
+            List<VisiblePlane> result = planesBySlice.Where(plane => plane is { IsPlaneEmpty: false }).ToList();
 
             return result;
         }

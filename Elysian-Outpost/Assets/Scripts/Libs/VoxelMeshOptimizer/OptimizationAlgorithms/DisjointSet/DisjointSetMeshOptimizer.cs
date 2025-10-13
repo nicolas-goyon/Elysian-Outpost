@@ -5,22 +5,32 @@ using Libs.VoxelMeshOptimizer.OcclusionAlgorithms;
 namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 {
 
-    public class DisjointSetMeshOptimizer : MeshOptimizer
+    public class DisjointSetMeshOptimizer<T> : MeshOptimizer<T> where T : Mesh
     {
-        private Mesh mesh;
+        private T mesh;
 
-        public DisjointSetMeshOptimizer(Mesh mesh)
+        public DisjointSetMeshOptimizer(T mesh)
         {
-            if (!mesh.Quads.Any())
+            if (mesh == null)
             {
-                throw new ArgumentException("Mesh must be empty");
+                throw new ArgumentNullException(nameof(mesh));
+            }
+            
+            if (mesh.Quads == null)
+            {
+                throw new ArgumentException("Mesh quads cannot be null");
+            }
+            
+            if (mesh.Quads.Any())
+            {
+                throw new ArgumentException($"Mesh must be empty, currently has { mesh.Quads.Count } quads");
             }
 
             this.mesh = mesh;
         }
 
 
-        public Mesh Optimize(Chunk<Voxel> chunk)
+        public T Optimize(Chunk<Voxel> chunk)
         {
             var occluder = new VoxelOcclusionOptimizer(chunk);
             var visibileFaces = occluder.ComputeVisibleFaces();
