@@ -12,6 +12,8 @@ namespace ScriptableObjectsDefinition
         
         public string MaterialName = "voxel_mat";
         public string TextureFilePath = "TextureAtlasRessource.png";
+        
+        private const float textureOffset = 0.5f; // Offset to avoid texture bleeding
 
         private int AtlasSizeX => AtlasTexture != null ? AtlasTexture.width : 0;
         private int AtlasSizeY => AtlasTexture != null ? AtlasTexture.height : 0;
@@ -61,19 +63,10 @@ namespace ScriptableObjectsDefinition
         {
             (uint x, uint y, uint w, uint h) = GetTextureRect(index);
 
-            float u0 = (x + 0.5f) / AtlasSizeX;
-            float v0 = (y + 0.5f) / AtlasSizeY;
-            float u1 = (x + w - 0.5f) / AtlasSizeX;
-            float v1 = (y + h - 0.5f) / AtlasSizeY;
-            
-            // Round down to 0.01 precision to avoid floating point issues
-            // FIXME: This is a hacky workaround, find a better solution
-            u0 = (float)Math.Round(u0, 2);
-            v0 = (float)Math.Round(v0, 2);
-            u1 = (float)Math.Round(u1, 2);
-            v1 = (float)Math.Round(v1, 2);
-            
-            
+            float u0 = (x + textureOffset) / AtlasSizeX;
+            float v0 = (y + textureOffset) / AtlasSizeY;
+            float u1 = (x + w - textureOffset) / AtlasSizeX;
+            float v1 = (y + h - textureOffset) / AtlasSizeY;
 
             return (u0, v0, u1, v1);
         }

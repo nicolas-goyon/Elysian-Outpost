@@ -5,44 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Resources/TextureAtlasRessource.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Resources/TextureAtlasRessource.png.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Readme.asset" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Readme.asset.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/ChunkBase.obj" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/ChunkBase.obj.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/ChunkOccluded.obj" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/ChunkOccluded.obj.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Cube.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Cube.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/ExampleMesh.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/ExampleMesh.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/InstanciatedChunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/InstanciatedChunk.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/MeshQuad.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/MeshQuad.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSetVisiblePlaneOptimizer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSetVisiblePlaneOptimizer.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/ObjExporter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/ObjExporter.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/PerlinNoiseChunkGen.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/PerlinNoiseChunkGen.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/VoxelVisibilityMap.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/VoxelVisibilityMap.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Icons.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Icons/URP.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Icons/URP.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Layout.wlt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Layout.wlt.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Editor.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Editor/ReadmeEditor.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Editor/ReadmeEditor.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Readme.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Readme.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/_Recovery.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/_Recovery/0 (1).unity" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/_Recovery/0 (1).unity.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/_Recovery/0 (2).unity" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/_Recovery/0 (2).unity.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/_Recovery/0.unity" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/_Recovery/0.unity.meta" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -151,7 +115,7 @@
       <updated>1760286880051</updated>
       <workItem from="1760286884468" duration="6500000" />
       <workItem from="1760368514948" duration="7493000" />
-      <workItem from="1760436358123" duration="7102000" />
+      <workItem from="1760436358123" duration="7891000" />
     </task>
     <servers />
   </component>

@@ -123,7 +123,7 @@ public static class ObjExporter
         if (mesh is null) throw new ArgumentNullException(nameof(mesh));
         if (atlas is null) throw new ArgumentNullException(nameof(atlas));
 
-        var vertices = new List<Vector3>();
+        List<Vector3> vertices = new();
         var vertexIndices = new Dictionary<Vector3, int>();
         var uvs = new List<Vector2>();
         var uvIndices = new Dictionary<Vector2, int>();
