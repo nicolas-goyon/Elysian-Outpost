@@ -465,6 +465,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Base.SingleObject
   _templateObject: {fileID: 8870143165198125435, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
+  _textureAtlas: {fileID: 11400000, guid: 78a71dbd94021d34d935f20a2e0086e0, type: 2}
 --- !u!65 &996680517
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -605,6 +606,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7623021574284192450, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 71ecfe7b6b8d02a4487b873bb08031e3, type: 2}
     - target: {fileID: 8870143165198125435, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
       propertyPath: m_Name
       value: Cube

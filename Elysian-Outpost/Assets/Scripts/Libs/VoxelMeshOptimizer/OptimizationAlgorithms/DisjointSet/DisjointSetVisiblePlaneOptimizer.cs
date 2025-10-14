@@ -169,7 +169,7 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 
 
 
-                int voxelId = voxels[minX, minY]!.ID;
+                uint voxelId = voxels[minX, minY]!.ID;
 
 
                 switch (plane.MajorAxis, plane.MajorAxisOrder)

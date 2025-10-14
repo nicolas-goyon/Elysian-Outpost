@@ -1,4 +1,5 @@
 ﻿using Libs.VoxelMeshOptimizer.Toolkit;
+using ScriptableObjectsDefinition;
 using UnityEngine;
 
 namespace Base
@@ -13,9 +14,9 @@ namespace Base
             }
         
 
-            public void SetMesh(ExampleMesh exampleMesh)
+            public void SetMesh(ExampleMesh exampleMesh, TextureAtlas atlas)
             {
-                meshFilter.mesh = ObjExporter.ToUnityMesh(exampleMesh);
+                meshFilter.mesh = ObjExporter.ToUnityMesh(exampleMesh, atlas);
             }
 
     }

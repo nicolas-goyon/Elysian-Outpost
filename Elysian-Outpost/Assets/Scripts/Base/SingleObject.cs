@@ -5,6 +5,7 @@ using Libs.VoxelMeshOptimizer;
 using Libs.VoxelMeshOptimizer.OcclusionAlgorithms;
 using Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet;
 using Libs.VoxelMeshOptimizer.Toolkit;
+using ScriptableObjectsDefinition;
 using UnityEngine;
 
 namespace Base
@@ -12,18 +13,31 @@ namespace Base
     public class SingleObject : MonoBehaviour
     {
         [SerializeField] private GameObject _templateObject;
+        [SerializeField] private TextureAtlas _textureAtlas;
+        
 
         
         private void Start()
         {
             // Initialize a default mesh here.
             ExampleChunk exampleChunk = new ExampleChunk(PerlinNoiseChunkGen.CreatePerlinLandscape(50, 123));
+            string filePath = Path.Combine("C:\\Users\\Nico\\Documents\\github\\Elysian-Outpost\\Elysian-Outpost\\Assets\\Resources", "ChunkBase" + ".obj");
+            
+            
+            
             Debug.Log("Starting optimization...");
+            
+            
             DisjointSetMeshOptimizer<ExampleMesh> optimizer = new (new ExampleMesh(new List<MeshQuad>()));
             ExampleMesh baseMesh = optimizer.Optimize(exampleChunk);
-            string filePath = Path.Combine("C:\\Users\\Nico\\Documents\\github\\Elysian-Outpost\\Elysian-Outpost\\Assets\\Resources", "ChunkBase" + ".obj");
-            File.WriteAllText(filePath, ObjExporter.MeshToObjString(baseMesh));
             Create(baseMesh, transform.position + Vector3.right * 2);
+            
+            
+            var (obj, mtl) = ObjExporter.MeshToObjString(baseMesh, _textureAtlas);
+            File.WriteAllText(filePath, obj);
+            File.WriteAllText(Path.ChangeExtension(filePath, ".mtl"), mtl);
+            Debug.Log($"Optimization finished.");
+            Debug.Log($"OBJ and MTL files written to {filePath} and {Path.ChangeExtension(filePath, ".mtl")}");
             
             
             // var occluder = new VoxelOcclusionOptimizer(exampleChunk);
@@ -42,7 +56,7 @@ namespace Base
             InstanciatedChunk singleObject = obj.GetComponent<InstanciatedChunk>();
             obj.transform.position = position;
             
-            singleObject.SetMesh(mesh);
+            singleObject.SetMesh(mesh, _textureAtlas);
             
             return singleObject;
         }

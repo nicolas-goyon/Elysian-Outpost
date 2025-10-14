@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Numerics;
 using System.Text;
+using ScriptableObjectsDefinition;
+using UnityEngine;
+using Vector2 = UnityEngine.Vector2;
+using Vector3 = System.Numerics.Vector3;
 
 namespace Libs.VoxelMeshOptimizer.Toolkit{
 
@@ -13,108 +16,217 @@ namespace Libs.VoxelMeshOptimizer.Toolkit{
 /// </summary>
 public static class ObjExporter
 {
-    /// <summary>
-    /// Exports the provided <paramref name="mesh"/> into an OBJ file at <paramref name="filePath"/>.
-    /// </summary>
-    /// <param name="mesh">Mesh to export.</param>
-    /// <param name="filePath">Destination file path.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="mesh"/> or <paramref name="filePath"/> is null.</exception>
-    public static string MeshToObjString(Mesh mesh)
+
+
+    private static void AddVertex(Vector3 v, Dictionary<Vector3, int> vertexIndices, List<Vector3> vertices)
+    {
+        if (vertexIndices.ContainsKey(v)) return;
+        vertices.Add(v);
+        vertexIndices[v] = vertices.Count; // 1-based
+    }
+
+    public static UnityEngine.Mesh ToUnityMesh(
+        Mesh mesh,
+        TextureAtlas atlas)
     {
         if (mesh is null) throw new ArgumentNullException(nameof(mesh));
+        if (atlas is null) throw new ArgumentNullException(nameof(atlas));
 
-        List<Vector3> vertices = new List<Vector3>();
-        Dictionary<Vector3, int> vertexIndices = new Dictionary<Vector3, int>();
-
-        StringBuilder sb = new StringBuilder();
-
-        // Collect unique vertices and assign indices (1-based as per OBJ spec)
+        UnityEngine.Mesh unityMesh = new();
+        List<UnityEngine.Vector3> vertices = new();
+        List<int> triangles = new();
+        List<UnityEngine.Vector3> normals = new();
+        List<Vector2> uvs = new();
+        
+        Debug.Log($"Converting mesh with {mesh.Quads.Count} quads to Unity Mesh.");
         foreach (MeshQuad quad in mesh.Quads)
+        {
+            uint voxelId = quad.VoxelID;
+            (float u0, float v0, float u1, float v1) = atlas.GetTextureUv(voxelId);
+            
+            // Convert to Unity coordinates (right-handed to left-handed)
+            var vert0 = new UnityEngine.Vector3(quad.Vertex0.X, quad.Vertex0.Y, quad.Vertex0.Z);
+            var vert1 = new UnityEngine.Vector3(quad.Vertex1.X, quad.Vertex1.Y, quad.Vertex1.Z);
+            var vert2 = new UnityEngine.Vector3(quad.Vertex2.X, quad.Vertex2.Y, quad.Vertex2.Z);
+            var vert3 = new UnityEngine.Vector3(quad.Vertex3.X, quad.Vertex3.Y, quad.Vertex3.Z);
+            
+            var normal = new UnityEngine.Vector3(quad.Normal.X, quad.Normal.Y, quad.Normal.Z);
+
+            int baseIndex = vertices.Count;
+            
+            // Add vertices
+            vertices.Add(vert0);
+            vertices.Add(vert1);
+            vertices.Add(vert2);
+            vertices.Add(vert3);
+            
+            // Add UVs (Unity's UV coordinate system has origin at bottom-left)
+            uvs.Add(new Vector2(u0, v0));
+            uvs.Add(new Vector2(u1, v0));
+            uvs.Add(new Vector2(u1, v1));
+            uvs.Add(new Vector2(u0, v1));
+            
+            // Add normals
+            normals.Add(normal);
+            normals.Add(normal);
+            normals.Add(normal);
+            normals.Add(normal);
+            
+            // Add triangles (clockwise winding order for Unity)
+            triangles.Add(baseIndex);
+            triangles.Add(baseIndex + 1);
+            triangles.Add(baseIndex + 2);
+            
+            triangles.Add(baseIndex + 2);
+            triangles.Add(baseIndex + 3);
+            triangles.Add(baseIndex);
+            
+            // Debug information
+            Debug.Log($"Quad: V0{vert0} V1{vert1} V2{vert2} V3{vert3} Normal{normal} VoxelID{voxelId}");
+            Debug.Log($"UVs: ({u0},{v0}) ({u1},{v0}) ({u1},{v1}) ({u0},{v1})");
+        }
+
+        unityMesh.vertices = vertices.ToArray();
+        unityMesh.normals = normals.ToArray();
+        unityMesh.uv = uvs.ToArray();
+        unityMesh.triangles = triangles.ToArray();
+        
+        unityMesh.RecalculateBounds();
+        unityMesh.RecalculateNormals(); // Ensure normals are correct
+        unityMesh.Optimize(); // Optimize the mesh for better performance
+        
+        return unityMesh;
+    }
+
+
+
+    
+    
+    /// <summary>
+    /// Exports the provided <paramref name="mesh"/> into OBJ and MTL strings
+    /// using the provided <paramref name="atlas"/> to generate texture
+    /// coordinates. Each <see cref="MeshQuad.VoxelID"/> is looked up in
+    /// <paramref name="voxelTextureMap"/> to determine which texture cell to
+    /// use in the atlas.
+    /// </summary>
+    /// <param name="mesh">Mesh to export.</param>
+    /// <param name="atlas">Texture atlas describing UV layout.</param>
+    /// <param name="voxelTextureMap">Mapping from voxel identifier to atlas index.</param>
+    /// <param name="textureFileName">Name of the texture file referenced by the MTL.</param>
+    /// <param name="materialName">Optional material name. The corresponding MTL file will be named &lt;materialName&gt;.mtl.</param>
+    /// <returns>A tuple containing the OBJ and MTL contents.</returns>
+    public static (string obj, string mtl) MeshToObjString(
+        Mesh mesh,
+        TextureAtlas atlas
+        )
+    {
+        if (mesh is null) throw new ArgumentNullException(nameof(mesh));
+        if (atlas is null) throw new ArgumentNullException(nameof(atlas));
+
+        var vertices = new List<Vector3>();
+        var vertexIndices = new Dictionary<Vector3, int>();
+        var uvs = new List<Vector2>();
+        var uvIndices = new Dictionary<Vector2, int>();
+        var normals = new List<Vector3>();
+        var normalIndices = new Dictionary<Vector3, int>();
+        var faces = new List<(int v0, int v1, int v2, int v3, int t0, int t1, int t2, int t3, int n)>();
+
+        foreach (var quad in mesh.Quads)
         {
             AddVertex(quad.Vertex0, vertexIndices, vertices);
             AddVertex(quad.Vertex1, vertexIndices, vertices);
             AddVertex(quad.Vertex2, vertexIndices, vertices);
             AddVertex(quad.Vertex3, vertexIndices, vertices);
-        }
 
-        // Write vertex positions
-        foreach (Vector3 v in vertices)
-        {
-            sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "v {0} {1} {2}", v.X, v.Y, v.Z));
-        }
 
-        // Write faces using quad indices
-        foreach (MeshQuad quad in mesh.Quads)
-        {
+            var (u0, v0, u1, v1) = atlas.GetTextureUv(quad.VoxelID);
+
+            var uv0 = new Vector2(u0, v0);
+            var uv1 = new Vector2(u1, v0);
+            var uv2 = new Vector2(u1, v1);
+            var uv3 = new Vector2(u0, v1);
+
+            AddUv(uv0, uvIndices, uvs);
+            AddUv(uv1, uvIndices, uvs);
+            AddUv(uv2, uvIndices, uvs);
+            AddUv(uv3, uvIndices, uvs);
+
+            AddNormal(quad.Normal, normalIndices, normals);
+
             int i0 = vertexIndices[quad.Vertex0];
             int i1 = vertexIndices[quad.Vertex1];
             int i2 = vertexIndices[quad.Vertex2];
             int i3 = vertexIndices[quad.Vertex3];
-            sb.AppendLine($"f {i0} {i1} {i2} {i3}");
+            int t0 = uvIndices[uv0];
+            int t1 = uvIndices[uv1];
+            int t2 = uvIndices[uv2];
+            int t3 = uvIndices[uv3];
+            int n = normalIndices[quad.Normal];
+
+            faces.Add((i0, i1, i2, i3, t0, t1, t2, t3, n));
         }
 
-        return sb.ToString();
+        Console.WriteLine(uvs.Count());
 
+        var sbObj = new StringBuilder();
+        string mtlFileName = atlas.MaterialName + ".mtl";
+        sbObj.AppendLine($"mtllib {mtlFileName}");
+
+        foreach (var v in vertices)
+        {
+            sbObj.AppendLine(string.Format("v {0} {1} {2}", v.X, v.Y, v.Z));
+        }
+
+        foreach (var uv in uvs)
+        {
+            Console.WriteLine(uv);
+            sbObj.AppendLine(string.Format("vt {0} {1}", uv.x, uv.y));
+        }
+
+        foreach (var n in normals)
+        {
+            sbObj.AppendLine(string.Format(CultureInfo.InvariantCulture, "vn {0} {1} {2}", n.X, n.Y, n.Z));
+        }
+
+        sbObj.AppendLine($"usemtl {atlas.MaterialName}");
+
+        foreach (var f in faces)
+        {
+            sbObj.AppendLine($"f {f.v0}/{f.t0}/{f.n} {f.v1}/{f.t1}/{f.n} {f.v2}/{f.t2}/{f.n} {f.v3}/{f.t3}/{f.n}");
+        }
+
+        var sbMtl = new StringBuilder();
+        sbMtl.AppendLine($"newmtl {atlas.MaterialName}");
+        sbMtl.AppendLine("Kd 1 1 1");
+        sbMtl.AppendLine($"map_Kd {atlas.TextureFilePath}");
+
+        return (sbObj.ToString(), sbMtl.ToString());
     }
 
-
-    private static void AddVertex(Vector3 v, Dictionary<Vector3, int> vertexIndices, List<Vector3> vertices)
+    private static void AddUv(Vector2 uv, Dictionary<Vector2, int> uvIndices, List<Vector2> uvs)
     {
-        if (!vertexIndices.ContainsKey(v))
+        if (!uvIndices.ContainsKey(uv))
         {
-            vertices.Add(v);
-            vertexIndices[v] = vertices.Count; // 1-based
+            uvs.Add(uv);
+            uvIndices[uv] = uvs.Count; // 1-based
         }
     }
 
-    public static UnityEngine.Mesh ToUnityMesh(Mesh mesh)
+    private static void AddNormal(Vector3 n, Dictionary<Vector3, int> normalIndices, List<Vector3> normals)
     {
-        if (mesh is null) throw new ArgumentNullException(nameof(mesh));
-    
-        UnityEngine.Mesh unityMesh = new UnityEngine.Mesh();
-        List<Vector3> vertices = new List<Vector3>();
-        List<int> triangles = new List<int>();
-        Dictionary<Vector3, int> vertexIndices = new Dictionary<Vector3, int>();
-        Dictionary<Vector3, Vector3> vertexNormals = new Dictionary<Vector3, Vector3>();
-
-        foreach (MeshQuad quad in mesh.Quads)
+        if (!normalIndices.ContainsKey(n))
         {
-            AddVertexWithNormal(quad.Vertex0, quad.Normal);
-            AddVertexWithNormal(quad.Vertex1, quad.Normal);
-            AddVertexWithNormal(quad.Vertex2, quad.Normal);
-            AddVertexWithNormal(quad.Vertex3, quad.Normal);
-    
-            int i0 = vertexIndices[quad.Vertex0] - 1;
-            int i1 = vertexIndices[quad.Vertex1] - 1;
-            int i2 = vertexIndices[quad.Vertex2] - 1;
-            int i3 = vertexIndices[quad.Vertex3] - 1;
-    
-            triangles.Add(i0); triangles.Add(i1); triangles.Add(i2);
-            triangles.Add(i2); triangles.Add(i3); triangles.Add(i0);
-        }
-    
-        // Convert to Unity types
-        UnityEngine.Vector3[] unityVertices = vertices.Select(v => new UnityEngine.Vector3(v.X, v.Y, v.Z)).ToArray();
-        UnityEngine.Vector3[] unityNormals = vertices.Select(v => {
-            Vector3 n = vertexNormals[v];
-            return new UnityEngine.Vector3(n.X, n.Y, n.Z);
-        }).ToArray();
-    
-        unityMesh.vertices = unityVertices;
-        unityMesh.normals = unityNormals;
-        unityMesh.triangles = triangles.ToArray();
-        unityMesh.RecalculateBounds();
-    
-        return unityMesh;
-
-        // Collect unique vertices and normals
-        void AddVertexWithNormal(Vector3 v, Vector3 n)
-        {
-            if (vertexIndices.ContainsKey(v)) return;
-            vertices.Add(v);
-            vertexIndices[v] = vertices.Count; // 1-based
-            vertexNormals[v] = n;
+            normals.Add(n);
+            normalIndices[n] = normals.Count; // 1-based
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    
 }
 }

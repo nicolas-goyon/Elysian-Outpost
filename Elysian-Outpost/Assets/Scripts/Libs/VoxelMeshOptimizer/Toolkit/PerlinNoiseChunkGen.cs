@@ -31,7 +31,7 @@ namespace Libs.VoxelMeshOptimizer.Toolkit
                     int h = Math.Clamp((int)(height + 5f), 0, size - 1);
                     for (int y = 0; y <= h; y++)
                     {
-                        voxels[x, y, z] = 1;
+                        voxels[x, y, z] = (y > 10) ? (ushort)1 : (ushort)6; // Use different IDs for different heights
                     }
                 }
             }

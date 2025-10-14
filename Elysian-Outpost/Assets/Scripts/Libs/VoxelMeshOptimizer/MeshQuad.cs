@@ -12,7 +12,7 @@ namespace Libs.VoxelMeshOptimizer
         public Vector3 Vertex3; // top-left
 
         public Vector3 Normal;
-        public int VoxelID;
+        public uint VoxelID;
 
     }
 }
