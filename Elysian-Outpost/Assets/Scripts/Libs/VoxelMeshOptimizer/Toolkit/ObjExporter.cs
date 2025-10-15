@@ -38,7 +38,6 @@ public static class ObjExporter
         List<UnityEngine.Vector3> normals = new();
         List<Vector2> uvs = new();
         
-        Debug.Log($"Converting mesh with {mesh.Quads.Count} quads to Unity Mesh.");
         foreach (MeshQuad quad in mesh.Quads)
         {
             uint voxelId = quad.VoxelID;
@@ -81,9 +80,6 @@ public static class ObjExporter
             triangles.Add(baseIndex + 3);
             triangles.Add(baseIndex);
             
-            // Debug information
-            Debug.Log($"Quad: V0{vert0} V1{vert1} V2{vert2} V3{vert3} Normal{normal} VoxelID{voxelId}");
-            Debug.Log($"UVs: ({u0},{v0}) ({u1},{v0}) ({u1},{v1}) ({u0},{v1})");
         }
 
         unityMesh.vertices = vertices.ToArray();

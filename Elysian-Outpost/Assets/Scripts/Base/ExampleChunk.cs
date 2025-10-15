@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 using Libs.VoxelMeshOptimizer;
+using UnityEngine;
+using Vector3 = System.Numerics.Vector3;
 
 namespace Base
 {
