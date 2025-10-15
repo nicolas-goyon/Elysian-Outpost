@@ -5,17 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/CameraMouvements.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/CameraMouvements.cs.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/GameInputs.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/GameInputs.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/ChunkBase.obj" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/ChunkBase.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/ExampleChunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/ExampleChunk.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/ObjExporter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Toolkit/ObjExporter.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -127,6 +117,7 @@
       <workItem from="1760286884468" duration="6500000" />
       <workItem from="1760368514948" duration="7493000" />
       <workItem from="1760436358123" duration="17202000" />
+      <workItem from="1760530322407" duration="1227000" />
     </task>
     <servers />
   </component>
