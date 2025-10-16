@@ -1,9 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Base;
-using Libs.VoxelMeshOptimizer;
-using Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet;
 using ScriptableObjectsDefinition;
 using Unity.Mathematics;
 using UnityEngine;
@@ -16,28 +13,31 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     [SerializeField] private int _chunkSize = 50;
     [SerializeField] private int _viewDistanceInChunks = 3;
     
-    private Dictionary<int3, InstanciatedChunk> _loadedChunks = new();
-    
+    private readonly Dictionary<int3, InstanciatedChunk> _loadedChunks = new();
+    private readonly HashSet<int3> _chunksAwaitingGeneration = new();
+
     private Vector3 lastPosition;
 
     private MainGeneration gen;
+    private ChunkGenerationThread _chunkGenerationThread;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         gen = new MainGeneration(_chunkSize,123);
-        
+        _chunkGenerationThread = new ChunkGenerationThread(gen);
     }
 
     // Update is called once per frame
-    async void Update()
+    void Update()
     {
-        
+        ProcessGeneratedChunks();
+
         List<int3> requiredChunks = GetChunksInViewDistance(PositionToInt());
         foreach (int3 chunkPos in requiredChunks)
         {
-            if (_loadedChunks.ContainsKey(chunkPos)) continue;
-            LoadChunk(chunkPos);
+            if (_loadedChunks.ContainsKey(chunkPos) || _chunksAwaitingGeneration.Contains(chunkPos)) continue;
+            QueueChunk(chunkPos);
             break;
         }
         List<(int3, InstanciatedChunk)> chunksToUnload = GetChunksToUnload();
@@ -46,6 +46,11 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
             _loadedChunks.Remove(pos);
             Destroy(obj);
         }
+    }
+
+    private void OnDestroy()
+    {
+        _chunkGenerationThread?.Dispose();
     }
 
     #region Get Chunks to Load/Unload
@@ -106,14 +111,19 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     #endregion
     
     
-    private void LoadChunk(int3 chunkPos)
+    private void QueueChunk(int3 chunkPos)
     {
-        var mesh = GenerateTerrainAt(chunkPos);
-        // Create the chunk on the main thread
-        InstanciatedChunk chunkInstance = Create(mesh, chunkPos);
-        _loadedChunks[chunkPos] = chunkInstance;
+        if (_chunkGenerationThread == null)
+        {
+            return;
+        }
+
+        if (_chunksAwaitingGeneration.Add(chunkPos))
+        {
+            _chunkGenerationThread.EnqueueChunk(chunkPos);
+        }
     }
-    
+
     private int3 PositionToInt()
     {
         return new int3(Mathf.FloorToInt(transform.position.x), Mathf.FloorToInt(transform.position.y), Mathf.FloorToInt(transform.position.z));
@@ -121,24 +131,57 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
     
     
-    private ExampleMesh GenerateTerrainAt(int3 position)
-    {
-
-        ExampleChunk exampleChunk = new(gen.GenerateChunkAt(position.x, position.z));
-
-        DisjointSetMeshOptimizer<ExampleMesh> optimizer = new(new ExampleMesh(new List<MeshQuad>()));
-        return optimizer.Optimize(exampleChunk);
-    }
-    
-    
     private InstanciatedChunk Create(ExampleMesh mesh, int3 position)
     {
         GameObject obj = Instantiate(_templateObject);
         InstanciatedChunk singleObject = obj.GetComponent<InstanciatedChunk>();
         obj.transform.position = new Vector3(position.x, position.y, position.z);
-            
+
         singleObject.SetMesh(mesh, _textureAtlas);
-            
+
         return singleObject;
+    }
+
+    private void ProcessGeneratedChunks()
+    {
+        if (_chunkGenerationThread == null)
+        {
+            return;
+        }
+
+        while (_chunkGenerationThread.TryDequeueGeneratedMesh(out var result))
+        {
+            (int3 position, ExampleMesh mesh) = result;
+            _chunksAwaitingGeneration.Remove(position);
+
+            if (!IsChunkWithinViewDistance(position))
+            {
+                continue;
+            }
+
+            if (_loadedChunks.ContainsKey(position))
+            {
+                continue;
+            }
+
+            InstanciatedChunk chunkInstance = Create(mesh, position);
+            _loadedChunks[position] = chunkInstance;
+        }
+    }
+
+    private bool IsChunkWithinViewDistance(int3 chunkPosition)
+    {
+        int3 centerPosition = PositionToInt();
+        int centerChunkX = Mathf.FloorToInt(centerPosition.x / (float)_chunkSize);
+        int centerChunkZ = Mathf.FloorToInt(centerPosition.z / (float)_chunkSize);
+
+        int chunkX = Mathf.RoundToInt(chunkPosition.x / (float)_chunkSize);
+        int chunkZ = Mathf.RoundToInt(chunkPosition.z / (float)_chunkSize);
+
+        int deltaX = chunkX - centerChunkX;
+        int deltaZ = chunkZ - centerChunkZ;
+
+        float distance = Mathf.Sqrt(deltaX * deltaX + deltaZ * deltaZ);
+        return distance <= _viewDistanceInChunks;
     }
 }
