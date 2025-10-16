@@ -16,27 +16,26 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     private readonly Dictionary<int3, InstanciatedChunk> _loadedChunks = new();
     private readonly HashSet<int3> _chunksAwaitingGeneration = new();
 
-    private Vector3 lastPosition;
+    private Vector3 _lastPosition;
 
-    private MainGeneration gen;
+    private MainGeneration _gen;
     private ChunkGenerationThread _chunkGenerationThread;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private void Start()
     {
-        gen = new MainGeneration(_chunkSize,123);
-        _chunkGenerationThread = new ChunkGenerationThread(gen);
+        _gen = new MainGeneration(_chunkSize,123);
+        _chunkGenerationThread = new ChunkGenerationThread(_gen);
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
         ProcessGeneratedChunks();
 
         List<int3> requiredChunks = GetChunksInViewDistance(PositionToInt());
-        foreach (int3 chunkPos in requiredChunks)
+        foreach (int3 chunkPos in requiredChunks.Where(chunkPos => !_loadedChunks.ContainsKey(chunkPos) && !_chunksAwaitingGeneration.Contains(chunkPos)))
         {
-            if (_loadedChunks.ContainsKey(chunkPos) || _chunksAwaitingGeneration.Contains(chunkPos)) continue;
             QueueChunk(chunkPos);
             break;
         }

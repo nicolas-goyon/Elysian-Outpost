@@ -115,9 +115,9 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common
         /// </summary>
         public override string ToString()
         {
-            string majorSign = MajorAxisOrder == AxisOrder.Ascending ? "+" : "-";
-            string middleSign = MiddleAxisOrder == AxisOrder.Ascending ? "+" : "-";
-            string minorSign = MinorAxisOrder == AxisOrder.Ascending ? "+" : "-";
+            string majorSign = MajorAxisOrder == AxisOrder.ASCENDING ? "+" : "-";
+            string middleSign = MiddleAxisOrder == AxisOrder.ASCENDING ? "+" : "-";
+            string minorSign = MinorAxisOrder == AxisOrder.ASCENDING ? "+" : "-";
 
             return
                 $"Plane(Major={majorSign}{MajorAxis}, Middle={middleSign}{MiddleAxis}, Minor={minorSign}{MinorAxis}, SliceIndex={SliceIndex})";
@@ -135,9 +135,9 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common
             StringBuilder sb = new StringBuilder();
 
             // Indique les signes +/- selon AxisOrder
-            string majorSign = MajorAxisOrder == AxisOrder.Ascending ? "+" : "-";
-            string middleSign = MiddleAxisOrder == AxisOrder.Ascending ? "+" : "-";
-            string minorSign = MinorAxisOrder == AxisOrder.Ascending ? "+" : "-";
+            string majorSign = MajorAxisOrder == AxisOrder.ASCENDING ? "+" : "-";
+            string middleSign = MiddleAxisOrder == AxisOrder.ASCENDING ? "+" : "-";
+            string minorSign = MinorAxisOrder == AxisOrder.ASCENDING ? "+" : "-";
 
             // Header avec ordre ascendant/descendant
             sb.AppendLine(ToString());

@@ -3,12 +3,11 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 
     public struct DisjointSet
     {
-        private int[] parent; // parent[i] = parent of i
+        private readonly int[] _parent; 
 
-        private int[] size; // size[i] = number of sites in tree rooted at i
-        // Note: not necessarily correct if i is not a root node
+        private readonly int[] _size;
         
-        private int count; // number of components
+        private int _count; // number of components
 
         /**
             * Initializes an empty union-find data structure with
@@ -20,15 +19,15 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
             */
         public DisjointSet(int n)
         {
-            if (n < 0) throw new System.ArgumentOutOfRangeException("n should be over or equal to 0");
+            if (n < 0) throw new System.ArgumentOutOfRangeException(nameof(n), "must be non-negative");
 
-            count = n;
-            parent = new int[n];
-            size = new int[n];
+            _count = n;
+            _parent = new int[n];
+            _size = new int[n];
             for (int i = 0; i < n; i++)
             {
-                parent[i] = i;
-                size[i] = 1;
+                _parent[i] = i;
+                _size[i] = 1;
             }
         }
 
@@ -39,12 +38,12 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
             */
         public int GetCount()
         {
-            return count;
+            return _count;
         }
 
         public bool IsRoot(int p)
         {
-            return parent[p] == p;
+            return _parent[p] == p;
         }
 
 
@@ -55,16 +54,16 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
             * @return the canonical element of the set containing {@code p}
             * @throws IllegalArgumentException unless {@code 0 <= p < n}
             */
-        public int Find(int p)
+        public readonly int Find(int p)
         {
             Validate(p);
             int root = p;
-            while (root != parent[root])
-                root = parent[root];
+            while (root != _parent[root])
+                root = _parent[root];
             while (p != root)
             {
-                int newp = parent[p];
-                parent[p] = root;
+                int newp = _parent[p];
+                _parent[p] = root;
                 p = newp;
             }
 
@@ -72,9 +71,9 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
         }
 
         // validate that p is a valid index
-        private void Validate(int p)
+        private readonly void Validate(int p)
         {
-            int n = parent.Length;
+            int n = _parent.Length;
             if (p < 0 || p >= n)
             {
                 throw new System.IndexOutOfRangeException("index " + p + " is not between 0 and " + (n - 1));
@@ -97,18 +96,18 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
             if (rootP == rootQ) return;
 
             // make smaller root point to larger one
-            if (size[rootP] < size[rootQ])
+            if (_size[rootP] < _size[rootQ])
             {
-                parent[rootP] = rootQ;
-                size[rootQ] += size[rootP];
+                _parent[rootP] = rootQ;
+                _size[rootQ] += _size[rootP];
             }
             else
             {
-                parent[rootQ] = rootP;
-                size[rootP] += size[rootQ];
+                _parent[rootQ] = rootP;
+                _size[rootP] += _size[rootQ];
             }
 
-            count--;
+            _count--;
         }
 
     }

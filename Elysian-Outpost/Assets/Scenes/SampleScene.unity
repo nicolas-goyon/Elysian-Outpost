@@ -283,8 +283,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 306786aa8d554f03b484a0ddfd4e2c54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Base.CameraMovements
-  speed: 20
-  speedMultiplier: 2
+  speed: 40
+  speedMultiplier: 5
   sensitivity: 0.125
   gameInputs: {fileID: 330585548}
   maxYAngle: 80
@@ -304,7 +304,7 @@ MonoBehaviour:
   _templateObject: {fileID: 8870143165198125435, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
   _textureAtlas: {fileID: 11400000, guid: 78a71dbd94021d34d935f20a2e0086e0, type: 2}
   _chunkSize: 50
-  _viewDistanceInChunks: 3
+  _viewDistanceInChunks: 10
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,12 +3,12 @@ namespace Libs.VoxelMeshOptimizer
 
     public class VoxelVisibilityMap
     {
-        private VoxelFace[,,] _visibilityMap;
+        private readonly VoxelFace[,,] _visibilityMap;
         private readonly Chunk<Voxel> _chunk;
 
         public VoxelVisibilityMap(Chunk<Voxel> chunk)
         {
-            this._chunk = chunk;
+            _chunk = chunk;
             _visibilityMap = new VoxelFace[chunk.XDepth, chunk.YDepth, chunk.ZDepth];
             ComputeVisibilityMap();
         }
@@ -16,19 +16,19 @@ namespace Libs.VoxelMeshOptimizer
         private void ComputeVisibilityMap()
         {
             _chunk.ForEachCoordinate(
-                Axis.X, AxisOrder.Ascending,
-                Axis.Y, AxisOrder.Ascending,
-                Axis.Z, AxisOrder.Ascending,
+                Axis.X, AxisOrder.ASCENDING,
+                Axis.Y, AxisOrder.ASCENDING,
+                Axis.Z, AxisOrder.ASCENDING,
                 (uint x, uint y, uint z) =>
                 {
                     Voxel voxel = _chunk.Get(x, y, z);
                     if (voxel is not { IsSolid: true })
                     {
-                        _visibilityMap[x, y, z] = VoxelFace.None;
+                        _visibilityMap[x, y, z] = VoxelFace.NONE;
                         return;
                     }
 
-                    VoxelFace visibleFaces = VoxelFace.None;
+                    VoxelFace visibleFaces = VoxelFace.NONE;
 
                     // Check adjacent voxels
                     if (IsAdjacentVoxelTransparent(x, y, z + 1)) visibleFaces |= VoxelFace.Zpos;
@@ -53,7 +53,7 @@ namespace Libs.VoxelMeshOptimizer
         public VoxelFace GetVisibleFaces(uint x, uint y, uint z)
         {
             if (x >= _chunk.XDepth || y >= _chunk.YDepth || z >= _chunk.ZDepth)
-                return VoxelFace.None;
+                return VoxelFace.NONE;
             return _visibilityMap[x, y, z];
         }
     }

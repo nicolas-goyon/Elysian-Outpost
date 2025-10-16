@@ -12,7 +12,7 @@ namespace Libs.VoxelMeshOptimizer
     [Flags]
     public enum VoxelFace
     {
-        None = 0,
+        NONE = 0,
         Zpos = 1 << 0, // Back
         Zneg = 1 << 1, // Front
         Xneg = 1 << 2, // Left

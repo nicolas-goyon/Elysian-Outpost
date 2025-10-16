@@ -120,14 +120,14 @@ public static class ObjExporter
         if (atlas is null) throw new ArgumentNullException(nameof(atlas));
 
         List<Vector3> vertices = new();
-        var vertexIndices = new Dictionary<Vector3, int>();
-        var uvs = new List<Vector2>();
-        var uvIndices = new Dictionary<Vector2, int>();
-        var normals = new List<Vector3>();
-        var normalIndices = new Dictionary<Vector3, int>();
-        var faces = new List<(int v0, int v1, int v2, int v3, int t0, int t1, int t2, int t3, int n)>();
+        Dictionary<Vector3, int> vertexIndices = new();
+        List<Vector2> uvs = new();
+        Dictionary<Vector2, int> uvIndices = new();
+        List<Vector3> normals = new();
+        Dictionary<Vector3, int> normalIndices = new();
+        List<(int v0, int v1, int v2, int v3, int t0, int t1, int t2, int t3, int n)> faces = new();
 
-        foreach (var quad in mesh.Quads)
+        foreach (MeshQuad quad in mesh.Quads)
         {
             AddVertex(quad.Vertex0, vertexIndices, vertices);
             AddVertex(quad.Vertex1, vertexIndices, vertices);
@@ -135,12 +135,12 @@ public static class ObjExporter
             AddVertex(quad.Vertex3, vertexIndices, vertices);
 
 
-            var (u0, v0, u1, v1) = atlas.GetTextureUv(quad.VoxelID);
+            (float u0, float v0, float u1, float v1) = atlas.GetTextureUv(quad.VoxelID);
 
-            var uv0 = new Vector2(u0, v0);
-            var uv1 = new Vector2(u1, v0);
-            var uv2 = new Vector2(u1, v1);
-            var uv3 = new Vector2(u0, v1);
+            Vector2 uv0 = new(u0, v0);
+            Vector2 uv1 = new(u1, v0);
+            Vector2 uv2 = new(u1, v1);
+            Vector2 uv3 = new(u0, v1);
 
             AddUv(uv0, uvIndices, uvs);
             AddUv(uv1, uvIndices, uvs);
@@ -164,34 +164,34 @@ public static class ObjExporter
 
         Console.WriteLine(uvs.Count());
 
-        var sbObj = new StringBuilder();
+        StringBuilder sbObj = new();
         string mtlFileName = atlas.MaterialName + ".mtl";
         sbObj.AppendLine($"mtllib {mtlFileName}");
 
-        foreach (var v in vertices)
+        foreach (Vector3 v in vertices)
         {
             sbObj.AppendLine(string.Format("v {0} {1} {2}", v.X, v.Y, v.Z));
         }
 
-        foreach (var uv in uvs)
+        foreach (Vector2 uv in uvs)
         {
             Console.WriteLine(uv);
             sbObj.AppendLine(string.Format("vt {0} {1}", uv.x, uv.y));
         }
 
-        foreach (var n in normals)
+        foreach (Vector3 n in normals)
         {
             sbObj.AppendLine(string.Format(CultureInfo.InvariantCulture, "vn {0} {1} {2}", n.X, n.Y, n.Z));
         }
 
         sbObj.AppendLine($"usemtl {atlas.MaterialName}");
 
-        foreach (var f in faces)
+        foreach ((int v0, int v1, int v2, int v3, int t0, int t1, int t2, int t3, int n) f in faces)
         {
             sbObj.AppendLine($"f {f.v0}/{f.t0}/{f.n} {f.v1}/{f.t1}/{f.n} {f.v2}/{f.t2}/{f.n} {f.v3}/{f.t3}/{f.n}");
         }
 
-        var sbMtl = new StringBuilder();
+        StringBuilder sbMtl = new();
         sbMtl.AppendLine($"newmtl {atlas.MaterialName}");
         sbMtl.AppendLine("Kd 1 1 1");
         sbMtl.AppendLine($"map_Kd {atlas.TextureFilePath}");
@@ -201,20 +201,16 @@ public static class ObjExporter
 
     private static void AddUv(Vector2 uv, Dictionary<Vector2, int> uvIndices, List<Vector2> uvs)
     {
-        if (!uvIndices.ContainsKey(uv))
-        {
-            uvs.Add(uv);
-            uvIndices[uv] = uvs.Count; // 1-based
-        }
+        if (uvIndices.ContainsKey(uv)) return;
+        uvs.Add(uv);
+        uvIndices[uv] = uvs.Count; // 1-based
     }
 
     private static void AddNormal(Vector3 n, Dictionary<Vector3, int> normalIndices, List<Vector3> normals)
     {
-        if (!normalIndices.ContainsKey(n))
-        {
-            normals.Add(n);
-            normalIndices[n] = normals.Count; // 1-based
-        }
+        if (normalIndices.ContainsKey(n)) return;
+        normals.Add(n);
+        normalIndices[n] = normals.Count; // 1-based
     }
     
     

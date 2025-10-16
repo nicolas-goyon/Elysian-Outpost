@@ -45,14 +45,14 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
         {
             var result = new VisibleFaces();
 
-            result.PlanesByAxis[(Axis.X, AxisOrder.Ascending)] = BuildPlanesForAxis(Axis.X, AxisOrder.Ascending);
-            result.PlanesByAxis[(Axis.X, AxisOrder.Descending)] = BuildPlanesForAxis(Axis.X, AxisOrder.Descending);
+            result.PlanesByAxis[(Axis.X, AxisOrder.ASCENDING)] = BuildPlanesForAxis(Axis.X, AxisOrder.ASCENDING);
+            result.PlanesByAxis[(Axis.X, AxisOrder.DESCENDING)] = BuildPlanesForAxis(Axis.X, AxisOrder.DESCENDING);
 
-            result.PlanesByAxis[(Axis.Y, AxisOrder.Ascending)] = BuildPlanesForAxis(Axis.Y, AxisOrder.Ascending);
-            result.PlanesByAxis[(Axis.Y, AxisOrder.Descending)] = BuildPlanesForAxis(Axis.Y, AxisOrder.Descending);
+            result.PlanesByAxis[(Axis.Y, AxisOrder.ASCENDING)] = BuildPlanesForAxis(Axis.Y, AxisOrder.ASCENDING);
+            result.PlanesByAxis[(Axis.Y, AxisOrder.DESCENDING)] = BuildPlanesForAxis(Axis.Y, AxisOrder.DESCENDING);
 
-            result.PlanesByAxis[(Axis.Z, AxisOrder.Ascending)] = BuildPlanesForAxis(Axis.Z, AxisOrder.Ascending);
-            result.PlanesByAxis[(Axis.Z, AxisOrder.Descending)] = BuildPlanesForAxis(Axis.Z, AxisOrder.Descending);
+            result.PlanesByAxis[(Axis.Z, AxisOrder.ASCENDING)] = BuildPlanesForAxis(Axis.Z, AxisOrder.ASCENDING);
+            result.PlanesByAxis[(Axis.Z, AxisOrder.DESCENDING)] = BuildPlanesForAxis(Axis.Z, AxisOrder.DESCENDING);
 
             return result;
         }

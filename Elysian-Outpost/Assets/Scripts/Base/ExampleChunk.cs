@@ -44,13 +44,13 @@ namespace Base
         /// </summary>
         public ExampleChunk(string fileName)
         {
-            var lines = File.ReadAllLines(fileName);
+            string[] lines = File.ReadAllLines(fileName);
             if (lines.Length < 2)
             {
                 throw new ArgumentException("File must contain at least two lines", nameof(fileName));
             }
 
-            var sizes = lines[0].Split(',', StringSplitOptions.RemoveEmptyEntries);
+            string[] sizes = lines[0].Split(',', StringSplitOptions.RemoveEmptyEntries);
             if (sizes.Length != 3)
             {
                 throw new FormatException("First line must contain three comma-separated values.");
@@ -62,7 +62,7 @@ namespace Base
 
             _voxels = new ExampleVoxel[XDepth, YDepth, ZDepth];
 
-            var voxelIds = lines[1].Split(',', StringSplitOptions.RemoveEmptyEntries);
+            string[] voxelIds = lines[1].Split(',', StringSplitOptions.RemoveEmptyEntries);
             if (voxelIds.Length != XDepth * YDepth * ZDepth)
             {
                 throw new FormatException("Voxel count does not match chunk dimensions.");
@@ -146,25 +146,58 @@ namespace Base
 
             // 4) Triple-nested loop in the order: major -> middle -> minor
             //    We find which axis is major, middle, minor, then nest them accordingly.
-            foreach (var majorVal in BuildRange(GetDepth(majorA), majorAsc))
+            foreach (uint majorVal in BuildRange(GetDepth(majorA), majorAsc))
             {
-                foreach (var midVal in BuildRange(GetDepth(middleA), middleAsc))
+                foreach (uint midVal in BuildRange(GetDepth(middleA), middleAsc))
                 {
-                    foreach (var minVal in BuildRange(GetDepth(minorA), minorAsc))
+                    foreach (uint minVal in BuildRange(GetDepth(minorA), minorAsc))
                     {
                         uint x = 0, y = 0, z = 0;
 
-                        if (majorA == Axis.X) x = majorVal;
-                        else if (majorA == Axis.Y) y = majorVal;
-                        else if (majorA == Axis.Z) z = majorVal;
+                        switch (majorA)
+                        {
+                            case Axis.X:
+                                x = majorVal;
+                                break;
+                            case Axis.Y:
+                                y = majorVal;
+                                break;
+                            case Axis.Z:
+                                z = majorVal;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(majorA), majorA, null);
+                        }
 
-                        if (middleA == Axis.X) x = midVal;
-                        else if (middleA == Axis.Y) y = midVal;
-                        else if (middleA == Axis.Z) z = midVal;
+                        switch (middleA)
+                        {
+                            case Axis.X:
+                                x = midVal;
+                                break;
+                            case Axis.Y:
+                                y = midVal;
+                                break;
+                            case Axis.Z:
+                                z = midVal;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(middleA), middleA, null);
+                        }
 
-                        if (minorA == Axis.X) x = minVal;
-                        else if (minorA == Axis.Y) y = minVal;
-                        else if (minorA == Axis.Z) z = minVal;
+                        switch (minorA)
+                        {
+                            case Axis.X:
+                                x = minVal;
+                                break;
+                            case Axis.Y:
+                                y = minVal;
+                                break;
+                            case Axis.Z:
+                                z = minVal;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(minorA), minorA, null);
+                        }
 
                         action(x, y, z);
                     }
@@ -175,7 +208,7 @@ namespace Base
 
         private IEnumerable<uint> BuildRange(uint size, AxisOrder order)
         {
-            if (order == AxisOrder.Ascending)
+            if (order == AxisOrder.ASCENDING)
             {
                 for (uint i = 0; i < size; i++)
                     yield return i;
@@ -204,9 +237,9 @@ namespace Base
 
         public bool IsOutOfBound(uint x, uint y, uint z)
         {
-            return x < 0 || x >= GetDepth(Axis.X)
-                || y < 0 || y >= GetDepth(Axis.Y)
-                || z < 0 || z >= GetDepth(Axis.Z);
+            return x >= GetDepth(Axis.X)
+                || y >= GetDepth(Axis.Y)
+                || z >= GetDepth(Axis.Z);
         }
 
         public bool AreDifferentAxis(
@@ -226,8 +259,8 @@ namespace Base
         {
             // "Plane dimensions" = minor dimension (x-axis of the plane),
             //                      middle dimension (y-axis of the plane).
-            var planeWidth = GetDepth(middle);
-            var planeHeight = GetDepth(minor);
+            uint planeWidth = GetDepth(middle);
+            uint planeHeight = GetDepth(minor);
 
             return (planeWidth, planeHeight);
         }
@@ -239,7 +272,7 @@ namespace Base
         /// </summary>
         public ExampleMesh ToMesh()
         {
-            var list = new List<MeshQuad>();
+            List<MeshQuad> list = new();
 
             for (uint x = 0; x < XDepth; x++)
             {
@@ -247,7 +280,7 @@ namespace Base
                 {
                     for (uint z = 0; z < ZDepth; z++)
                     {
-                        var voxel = _voxels[x, y, z];
+                        ExampleVoxel voxel = _voxels[x, y, z];
                         if (!voxel.IsSolid)
                             continue;
 
@@ -255,74 +288,70 @@ namespace Base
                     }
                 }
             }
-            var mesh = new ExampleMesh(list);
+            ExampleMesh mesh = new(list);
 
             return mesh;
         }
 
         private static IEnumerable<MeshQuad> CreateVoxelQuads(uint x, uint y, uint z, ushort voxelId)
         {
-            var bx = (float)x;
-            var by = (float)y;
-            var bz = (float)z;
-
 
             yield return new MeshQuad
             {
-                Vertex0 = new Vector3(bx, by, bz),
-                Vertex1 = new Vector3(bx, by + 1, bz),
-                Vertex2 = new Vector3(bx + 1, by + 1, bz),
-                Vertex3 = new Vector3(bx + 1, by, bz),
+                Vertex0 = new Vector3(x, y, z),
+                Vertex1 = new Vector3(x, y + 1, z),
+                Vertex2 = new Vector3(x + 1, y + 1, z),
+                Vertex3 = new Vector3(x + 1, y, z),
                 Normal = new Vector3(0, 0, -1),
                 VoxelID = voxelId
             };
 
             yield return new MeshQuad
             {
-                Vertex0 = new Vector3(bx, by, bz + 1),
-                Vertex1 = new Vector3(bx + 1, by, bz + 1),
-                Vertex2 = new Vector3(bx + 1, by + 1, bz + 1),
-                Vertex3 = new Vector3(bx, by + 1, bz + 1),
+                Vertex0 = new Vector3(x, y, z + 1),
+                Vertex1 = new Vector3(x + 1, y, z + 1),
+                Vertex2 = new Vector3(x + 1, y + 1, z + 1),
+                Vertex3 = new Vector3(x, y + 1, z + 1),
                 Normal = new Vector3(0, 0, 1),
                 VoxelID = voxelId
             };
 
             yield return new MeshQuad
             {
-                Vertex0 = new Vector3(bx, by, bz),
-                Vertex1 = new Vector3(bx, by, bz + 1),
-                Vertex2 = new Vector3(bx, by + 1, bz + 1),
-                Vertex3 = new Vector3(bx, by + 1, bz),
+                Vertex0 = new Vector3(x, y, z),
+                Vertex1 = new Vector3(x, y, z + 1),
+                Vertex2 = new Vector3(x, y + 1, z + 1),
+                Vertex3 = new Vector3(x, y + 1, z),
                 Normal = new Vector3(-1, 0, 0),
                 VoxelID = voxelId
             };
 
             yield return new MeshQuad
             {
-                Vertex0 = new Vector3(bx + 1, by, bz + 1),
-                Vertex1 = new Vector3(bx + 1, by, bz),
-                Vertex2 = new Vector3(bx + 1, by + 1, bz),
-                Vertex3 = new Vector3(bx + 1, by + 1, bz + 1),
+                Vertex0 = new Vector3(x + 1, y, z + 1),
+                Vertex1 = new Vector3(x + 1, y, z),
+                Vertex2 = new Vector3(x + 1, y + 1, z),
+                Vertex3 = new Vector3(x + 1, y + 1, z + 1),
                 Normal = new Vector3(1, 0, 0),
                 VoxelID = voxelId
             };
 
             yield return new MeshQuad
             {
-                Vertex0 = new Vector3(bx, by, bz),
-                Vertex1 = new Vector3(bx + 1, by, bz),
-                Vertex2 = new Vector3(bx + 1, by, bz + 1),
-                Vertex3 = new Vector3(bx, by, bz + 1),
+                Vertex0 = new Vector3(x, y, z),
+                Vertex1 = new Vector3(x + 1, y, z),
+                Vertex2 = new Vector3(x + 1, y, z + 1),
+                Vertex3 = new Vector3(x, y, z + 1),
                 Normal = new Vector3(0, -1, 0),
                 VoxelID = voxelId
             };
 
             yield return new MeshQuad
             {
-                Vertex0 = new Vector3(bx, by + 1, bz + 1),
-                Vertex1 = new Vector3(bx + 1, by + 1, bz + 1),
-                Vertex2 = new Vector3(bx + 1, by + 1, bz),
-                Vertex3 = new Vector3(bx, by + 1, bz),
+                Vertex0 = new Vector3(x, y + 1, z + 1),
+                Vertex1 = new Vector3(x + 1, y + 1, z + 1),
+                Vertex2 = new Vector3(x + 1, y + 1, z),
+                Vertex3 = new Vector3(x, y + 1, z),
                 Normal = new Vector3(0, 1, 0),
                 VoxelID = voxelId
             };
@@ -336,10 +365,10 @@ namespace Base
         /// </summary>
         public void Save(string fileName)
         {
-            using var writer = new StreamWriter(fileName);
+            using StreamWriter writer = new(fileName);
             writer.WriteLine($"{XDepth},{YDepth},{ZDepth}");
 
-            var ids = new List<string>();
+            List<string> ids = new();
             for (uint x = 0; x < XDepth; x++)
             {
                 for (uint y = 0; y < YDepth; y++)

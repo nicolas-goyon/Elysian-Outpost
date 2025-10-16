@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Libs.VoxelMeshOptimizer.OcclusionAlgorithms;
+using Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common;
 
 namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 {
 
     public class DisjointSetMeshOptimizer<T> : MeshOptimizer<T> where T : Mesh
     {
-        private T mesh;
+        private T _mesh;
 
         public DisjointSetMeshOptimizer(T mesh)
         {
@@ -26,27 +28,23 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
                 throw new ArgumentException($"Mesh must be empty, currently has { mesh.Quads.Count } quads");
             }
 
-            this.mesh = mesh;
+            this._mesh = mesh;
         }
 
 
         public T Optimize(Chunk<Voxel> chunk)
         {
-            var occluder = new VoxelOcclusionOptimizer(chunk);
-            var visibileFaces = occluder.ComputeVisibleFaces();
+            VoxelOcclusionOptimizer occluder = new(chunk);
+            VisibleFaces visibleFaces = occluder.ComputeVisibleFaces();
 
-            foreach (var visibleFace in visibileFaces.PlanesByAxis)
+            foreach (DisjointSetVisiblePlaneOptimizer optimizer in from visibleFace in visibleFaces.PlanesByAxis from face in visibleFace.Value select new DisjointSetVisiblePlaneOptimizer(face, chunk))
             {
-                foreach (var face in visibleFace.Value)
-                {
-                    var optimizer = new DisjointSetVisiblePlaneOptimizer(face, chunk);
-                    optimizer.Optimize();
-                    var quads = optimizer.ToMeshQuads();
-                    mesh.Quads.AddRange(quads);
-                }
+                optimizer.Optimize();
+                List<MeshQuad> quads = optimizer.ToMeshQuads();
+                _mesh.Quads.AddRange(quads);
             }
 
-            return mesh;
+            return _mesh;
         }
     }
 }

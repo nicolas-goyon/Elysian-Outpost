@@ -19,8 +19,8 @@ namespace Libs.VoxelMeshOptimizer
 
     public enum AxisOrder
     {
-        Ascending,
-        Descending
+        ASCENDING,
+        DESCENDING
     }
 
 
@@ -30,14 +30,14 @@ namespace Libs.VoxelMeshOptimizer
         {
             return (axis, axisOrder) switch
             {
-                (Axis.X, AxisOrder.Ascending) => VoxelFace.Xneg,
-                (Axis.X, AxisOrder.Descending) => VoxelFace.Xpos,
+                (Axis.X, AxisOrder.ASCENDING) => VoxelFace.Xneg,
+                (Axis.X, AxisOrder.DESCENDING) => VoxelFace.Xpos,
 
-                (Axis.Y, AxisOrder.Ascending) => VoxelFace.Yneg,
-                (Axis.Y, AxisOrder.Descending) => VoxelFace.Ypos,
+                (Axis.Y, AxisOrder.ASCENDING) => VoxelFace.Yneg,
+                (Axis.Y, AxisOrder.DESCENDING) => VoxelFace.Ypos,
 
-                (Axis.Z, AxisOrder.Ascending) => VoxelFace.Zneg,
-                (Axis.Z, AxisOrder.Descending) => VoxelFace.Zpos,
+                (Axis.Z, AxisOrder.ASCENDING) => VoxelFace.Zneg,
+                (Axis.Z, AxisOrder.DESCENDING) => VoxelFace.Zpos,
 
                 _ => throw new ArgumentOutOfRangeException(),
             };
@@ -77,7 +77,7 @@ namespace Libs.VoxelMeshOptimizer
             uint totalDepth = chunk.GetDepth(axis);
 
             // Calculate the depth from the face determined by the axis order.
-            if (axisOrder == AxisOrder.Ascending) return relativeDepth;
+            if (axisOrder == AxisOrder.ASCENDING) return relativeDepth;
             else return totalDepth - 1 - relativeDepth;
         }
 
@@ -88,12 +88,14 @@ namespace Libs.VoxelMeshOptimizer
                 case Axis.X: vector.X = value; break;
                 case Axis.Y: vector.Y = value; break;
                 case Axis.Z: vector.Z = value; break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(axis), axis, null);
             }
         }
 
         public static Vector3 Direction(Axis axis, AxisOrder order)
         {
-            float sign = order == AxisOrder.Ascending ? -1f : 1f;
+            float sign = order == AxisOrder.ASCENDING ? -1f : 1f;
             return axis switch
             {
                 Axis.X => new Vector3(sign, 0, 0),
@@ -203,7 +205,7 @@ namespace Libs.VoxelMeshOptimizer
 
             // Get the corresponding total dimension for planeAxis1.
             uint totalPlane1 = chunk.GetDepth(planeAxis1);
-            uint planeX = planeAxis1Order == AxisOrder.Ascending
+            uint planeX = planeAxis1Order == AxisOrder.ASCENDING
                 ? coordForPlane1
                 : totalPlane1 - 1 - coordForPlane1;
 
@@ -218,7 +220,7 @@ namespace Libs.VoxelMeshOptimizer
 
             // Get the corresponding total dimension for planeAxis2.
             uint totalPlane2 = chunk.GetDepth(planeAxis2);
-            uint planeY = planeAxis2Order == AxisOrder.Ascending
+            uint planeY = planeAxis2Order == AxisOrder.ASCENDING
                 ? coordForPlane2
                 : totalPlane2 - 1 - coordForPlane2;
 
