@@ -8,7 +8,6 @@ namespace Base
     {
             private MeshFilter meshFilter;
             private MeshCollider meshCollider;
-            public ExampleChunk chunk { get; set; }
 
             private void Awake()
             {

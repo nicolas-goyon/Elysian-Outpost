@@ -303,8 +303,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GenerateTerrainAroundCamera
   _templateObject: {fileID: 8870143165198125435, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
   _textureAtlas: {fileID: 11400000, guid: 78a71dbd94021d34d935f20a2e0086e0, type: 2}
-  _chunkSize: 50
-  _viewDistanceInChunks: 10
+  _viewDistanceInChunks: 4
   gameInputs: {fileID: 330585548}
   spherePrefab: {fileID: 1106587680}
 --- !u!1 &410087039

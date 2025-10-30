@@ -8,21 +8,17 @@ namespace Base
 {
     public readonly struct ChunkMeshGenerationWorker
     {
-        private readonly MainGeneration _generator;
+        private readonly ExampleChunk _chunk;
 
-        public int3 ChunkPosition { get; }
-
-        public ChunkMeshGenerationWorker(MainGeneration generator, int3 chunkPosition)
+        public ChunkMeshGenerationWorker(ExampleChunk chunk)
         {
-            _generator = generator ?? throw new ArgumentNullException(nameof(generator));
-            ChunkPosition = chunkPosition;
+            _chunk = chunk;
         }
 
         public (ExampleChunk chunk, ExampleMesh) Execute()
         {
-            ExampleChunk chunk = new ExampleChunk(_generator.GenerateChunkAt(ChunkPosition.x, ChunkPosition.z));
             DisjointSetMeshOptimizer<ExampleMesh> optimizer = new(new ExampleMesh(new List<MeshQuad>()));
-            return (chunk, optimizer.Optimize(chunk));
+            return (_chunk, optimizer.Optimize(_chunk));
         }
     }
 }

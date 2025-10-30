@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,92 +12,65 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     [SerializeField] private GameObject _templateObject;
     [SerializeField] private TextureAtlas _textureAtlas;
 
-    [SerializeField] private int _chunkSize = 50;
-    [SerializeField] private int _viewDistanceInChunks = 3;
+    [SerializeField] private int _viewDistanceLoadingInChunks = 3;
+    [SerializeField] private int _viewDistanceUnloadingInChunks = 5;
     [SerializeField] private GameInputs gameInputs;
     [SerializeField] private GameObject spherePrefab;
     private GameObject _sphere;
-    
-    private readonly Dictionary<int3, InstanciatedChunk> _loadedChunks = new();
-    private readonly HashSet<int3> _chunksAwaitingGeneration = new();
 
     private Vector3 _lastPosition;
+    private TerrainHolder _terrainHolder;
 
-    private MainGeneration _gen;
-    private ChunkGenerationThread _chunkGenerationThread;
-    
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     private void Start()
     {
-        _gen = new MainGeneration(_chunkSize,123);
-        _chunkGenerationThread = new ChunkGenerationThread(_gen);
+        _terrainHolder = new TerrainHolder(_templateObject, _textureAtlas);
     }
 
     // Update is called once per frame
     private void Update()
     {
         // Raycast and add a sphere at the hit point on left click
-        if (gameInputs.IsLeftClick())
-        {
-            // Center of the screen
-            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-            if (Physics.Raycast(ray, out RaycastHit hitInfo))
-            {
-                Debug.Log("Hit " + hitInfo.collider.gameObject.name);
-                Vector3 hitPoint = hitInfo.point;
-                if (_sphere == null)
-                {
-                    _sphere = Instantiate(spherePrefab, hitPoint, Quaternion.identity);
-                }
-                _sphere.transform.position = hitPoint;
-                
-                (ExampleChunk chunk, uint3 voxelPosition) = GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
-                chunk?.RemoveVoxel(voxelPosition);
-            }
-        }
+        // if (gameInputs.IsLeftClick())
+        // {
+        //     // Center of the screen
+        //     Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+        //     if (Physics.Raycast(ray, out RaycastHit hitInfo))
+        //     {
+        //         // Debug.Log("Hit " + hitInfo.collider.gameObject.name);
+        //         Vector3 hitPoint = hitInfo.point;
+        //         if (_sphere == null)
+        //         {
+        //             _sphere = Instantiate(spherePrefab, hitPoint, Quaternion.identity);
+        //         }
+        //         _sphere.transform.position = hitPoint;
+        //         
+        //         (ExampleChunk chunk, uint3 voxelPosition) = _terrainHolder.GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
+        //         if (chunk == null) return;
+        //         chunk.RemoveVoxel(voxelPosition);
+        //         _terrainHolder.ReloadChunkAt(chunk.WorldPosition);
+        //     }
+        // }
             
         
         ProcessGeneratedChunks();
 
-        List<int3> requiredChunks = GetChunksInViewDistance(PositionToInt());
-        foreach (int3 chunkPos in requiredChunks.Where(chunkPos => !_loadedChunks.ContainsKey(chunkPos) && !_chunksAwaitingGeneration.Contains(chunkPos)))
+        List<int3> requiredChunks = GetChunksInViewDistance(PositionToInt(), _viewDistanceLoadingInChunks);
+        foreach (int3 chunkPos in requiredChunks)
         {
-            QueueChunk(chunkPos);
-            break;
+            _terrainHolder.GenerateNewChunkAt(chunkPos);
+            // TODO : Second thread need to be less greedy
         }
-        List<(int3, InstanciatedChunk)> chunksToUnload = GetChunksToUnload();
-        foreach ((int3 pos, InstanciatedChunk obj) in chunksToUnload)
+        List<int3> chunksToUnload = GetChunksToUnload();
+        foreach (int3 pos in chunksToUnload)
         {
-            _loadedChunks.Remove(pos);
-            Destroy(obj);
+            _terrainHolder.UnLoadChunkAt(pos);
         }
     }
     
-    private (ExampleChunk chunk, uint3 voxelPosition) GetHitChunkAndVoxelPositionAtRaycast(RaycastHit hitInfo)
-    {
-        Vector3 hitPoint = hitInfo.point;
-        int3 chunkPos = new int3(
-            Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
-            0,
-            Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
-        );
-
-        if (!_loadedChunks.TryGetValue(chunkPos, out InstanciatedChunk chunkInstance)) return (null, new uint3(0, 0, 0));
-        ExampleChunk chunk = chunkInstance.chunk;
-        if (chunk == null) return (null, new uint3(0, 0, 0));
-        
-        uint3 localVoxelPos = new uint3(
-            (uint)(Mathf.FloorToInt(hitPoint.x) - chunkPos.x),
-            (uint)(Mathf.FloorToInt(hitPoint.y ) - chunkPos.y),
-            (uint)(Mathf.FloorToInt(hitPoint.z) - chunkPos.z)
-        );
-        return (chunk, localVoxelPos);
-
-    }
 
     private void OnDestroy()
     {
-        _chunkGenerationThread?.Dispose();
+        _terrainHolder.Dispose();
     }
 
     #region Get Chunks to Load/Unload
@@ -105,16 +79,16 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     /// Checks which chunks are out of view distance and should be unloaded
     /// </summary>
     /// <returns>List of tuples containing chunk position and instance to be unloaded</returns>
-    private List<(int3, InstanciatedChunk)> GetChunksToUnload()
+    private List<int3> GetChunksToUnload()
     {
-        HashSet<int3> currentViewChunks = new HashSet<int3>(GetChunksInViewDistance(PositionToInt()));
+        HashSet<int3> currentViewChunks = new HashSet<int3>(GetChunksInViewDistance(PositionToInt(), _viewDistanceUnloadingInChunks));
 
-        List<(int3, InstanciatedChunk)> chunksToUnload = new List<(int3, InstanciatedChunk)>();
-        foreach ((int3 chunkPos, InstanciatedChunk chunkTask) in _loadedChunks.ToList())
+        List<int3> chunksToUnload = new List<int3>();
+        foreach ((int3 chunkPos, ExampleChunk chunkTask) in _terrainHolder.GetAllLoadedChunks())
         {
             if (!currentViewChunks.Contains(chunkPos))
             {
-                chunksToUnload.Add((chunkPos, chunkTask));
+                chunksToUnload.Add(chunkPos);
             }
         }
         return chunksToUnload;
@@ -125,15 +99,15 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     /// </summary>
     /// <param name="centerPosition">The center position to calculate chunks around</param>
     /// <returns>List of chunk positions (in chunk coordinates)</returns>
-    private List<int3> GetChunksInViewDistance(int3 centerPosition)
+    private List<int3> GetChunksInViewDistance(int3 centerPosition, int viewDistance)
     {
         List<int3> chunks = new List<int3>();
-        int centerChunkX = Mathf.FloorToInt(centerPosition.x / (float)_chunkSize);
-        int centerChunkZ = Mathf.FloorToInt(centerPosition.z / (float)_chunkSize);
+        int centerChunkX = Mathf.FloorToInt(centerPosition.x / (float)_terrainHolder._chunkSize);
+        int centerChunkZ = Mathf.FloorToInt(centerPosition.z / (float)_terrainHolder._chunkSize);
 
-        for (int x = -_viewDistanceInChunks; x <= _viewDistanceInChunks; x++)
+        for (int x = -viewDistance; x <= viewDistance; x++)
         {
-            for (int z = -_viewDistanceInChunks; z <= _viewDistanceInChunks; z++)
+            for (int z = -viewDistance; z <= viewDistance; z++)
             {
                 // Calculate the chunk position
                 int chunkX = centerChunkX + x;
@@ -141,12 +115,12 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
                 // Only include chunks within the circular view distance
                 float distance = Mathf.Sqrt(x * x + z * z);
-                if (distance <= _viewDistanceInChunks)
+                if (distance <= viewDistance)
                 {
                     chunks.Add(new int3(
-                        chunkX * _chunkSize,
+                        chunkX * _terrainHolder._chunkSize,
                         0, // Y is always 0 for chunk positions
-                        chunkZ * _chunkSize
+                        chunkZ * _terrainHolder._chunkSize
                     ));
                 }
             }
@@ -154,41 +128,10 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
         return chunks;
     }
-    // Use raycasting to find the chunk at the camera's position
-    private (ExampleChunk chunk, int3 position) GetChunkAtCamera()
-    {
-        Ray ray = new Ray(transform.position + Vector3.up * 1000, Vector3.down);
-        if (!Physics.Raycast(ray, out RaycastHit hitInfo, Mathf.Infinity)) return (null, new int3(0, 0, 0));
-        Vector3 hitPoint = hitInfo.point;
-        int3 chunkPos = new int3(
-            Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
-            0,
-            Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
-        );
-
-        if (_loadedChunks.TryGetValue(chunkPos, out InstanciatedChunk chunkInstance))
-        {
-            return (chunkInstance.chunk, chunkPos);
-        }
-
-        return (null, new int3(0, 0, 0));
-    }
     
     #endregion
     
     
-    private void QueueChunk(int3 chunkPos)
-    {
-        if (_chunkGenerationThread == null)
-        {
-            return;
-        }
-
-        if (_chunksAwaitingGeneration.Add(chunkPos))
-        {
-            _chunkGenerationThread.EnqueueChunk(chunkPos);
-        }
-    }
 
     private int3 PositionToInt()
     {
@@ -196,59 +139,10 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     }
 
     
-    
-    private InstanciatedChunk Create(ExampleMesh mesh, int3 position)
-    {
-        GameObject obj = Instantiate(_templateObject);
-        InstanciatedChunk singleObject = obj.GetComponent<InstanciatedChunk>();
-        obj.transform.position = new Vector3(position.x, position.y, position.z);
-
-        singleObject.SetMesh(mesh, _textureAtlas);
-
-        return singleObject;
-    }
 
     private void ProcessGeneratedChunks()
     {
-        if (_chunkGenerationThread == null)
-        {
-            return;
-        }
-
-        while (_chunkGenerationThread.TryDequeueGeneratedMesh(out var result))
-        {
-            (int3 position, ExampleChunk chunk, ExampleMesh mesh) = result;
-            _chunksAwaitingGeneration.Remove(position);
-
-            if (!IsChunkWithinViewDistance(position))
-            {
-                continue;
-            }
-
-            if (_loadedChunks.ContainsKey(position))
-            {
-                continue;
-            }
-
-            InstanciatedChunk chunkInstance = Create(mesh, position);
-            _loadedChunks[position] = chunkInstance;
-            _loadedChunks[position].chunk = chunk;
-        }
+        _terrainHolder.InstanciateOneChunk();
     }
 
-    private bool IsChunkWithinViewDistance(int3 chunkPosition)
-    {
-        int3 centerPosition = PositionToInt();
-        int centerChunkX = Mathf.FloorToInt(centerPosition.x / (float)_chunkSize);
-        int centerChunkZ = Mathf.FloorToInt(centerPosition.z / (float)_chunkSize);
-
-        int chunkX = Mathf.RoundToInt(chunkPosition.x / (float)_chunkSize);
-        int chunkZ = Mathf.RoundToInt(chunkPosition.z / (float)_chunkSize);
-
-        int deltaX = chunkX - centerChunkX;
-        int deltaZ = chunkZ - centerChunkZ;
-
-        float distance = Mathf.Sqrt(deltaX * deltaX + deltaZ * deltaZ);
-        return distance <= _viewDistanceInChunks;
-    }
 }

@@ -9,15 +9,13 @@ namespace Base
     public sealed class ChunkGenerationThread : IDisposable
     {
         private readonly ConcurrentQueue<ChunkMeshGenerationWorker> _pendingWorkers = new();
-        private readonly ConcurrentQueue<(int3 position, ExampleChunk chunk, ExampleMesh mesh)> _completedMeshes = new();
+        private readonly ConcurrentQueue<(ExampleChunk chunk, ExampleMesh mesh)> _completedMeshes = new();
         private readonly AutoResetEvent _signal = new(false);
         private readonly Thread _thread;
-        private readonly MainGeneration _generator;
         private volatile bool _running = true;
 
-        public ChunkGenerationThread(MainGeneration generator)
+        public ChunkGenerationThread()
         {
-            _generator = generator ?? throw new ArgumentNullException(nameof(generator));
             _thread = new Thread(ThreadLoop)
             {
                 IsBackground = true,
@@ -26,18 +24,18 @@ namespace Base
             _thread.Start();
         }
 
-        public void EnqueueChunk(int3 chunkPosition)
+        public void EnqueueChunk(ExampleChunk chunk)
         {
             if (!_running)
             {
                 throw new ObjectDisposedException(nameof(ChunkGenerationThread));
             }
 
-            _pendingWorkers.Enqueue(new ChunkMeshGenerationWorker(_generator, chunkPosition));
+            _pendingWorkers.Enqueue(new ChunkMeshGenerationWorker(chunk));
             _signal.Set();
         }
 
-        public bool TryDequeueGeneratedMesh(out (int3 position, ExampleChunk chunk, ExampleMesh mesh) result)
+        public bool TryDequeueGeneratedMesh(out (ExampleChunk chunk, ExampleMesh mesh) result)
         {
             return _completedMeshes.TryDequeue(out result);
         }
@@ -59,7 +57,7 @@ namespace Base
                 try
                 {
                     (ExampleChunk chunk, ExampleMesh mesh) = worker.Execute();
-                    _completedMeshes.Enqueue((worker.ChunkPosition, chunk, mesh));
+                    _completedMeshes.Enqueue((chunk, mesh));
                 }
                 catch (Exception ex)
                 {
@@ -67,7 +65,7 @@ namespace Base
                 }
             }
         }
-
+        
         public void Dispose()
         {
             if (!_running)

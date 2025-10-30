@@ -16,12 +16,15 @@ namespace Base
         public uint XDepth { get; }
         public uint YDepth { get; }
         public uint ZDepth { get; }
+        
+        public int3 WorldPosition { get; }
 
-        public ExampleChunk(ushort[,,] voxelArray)
+        public ExampleChunk(ushort[,,] voxelArray, int3 position)
         {
             XDepth = (uint)voxelArray.GetLength(0);
             YDepth = (uint)voxelArray.GetLength(1);
             ZDepth = (uint)voxelArray.GetLength(2);
+            WorldPosition = position;
 
             _voxels = new ExampleVoxel[XDepth, YDepth, ZDepth];
 
@@ -43,6 +46,7 @@ namespace Base
         /// Initializes a new chunk from a file on disk.
         /// The first line contains the comma separated dimensions (X,Y,Z)
         /// and the second line contains all voxel IDs in X-Y-Z order, separated by commas.
+        /// TODO : Need to hold the world position of the chunk as well.
         /// </summary>
         public ExampleChunk(string fileName)
         {
@@ -83,6 +87,7 @@ namespace Base
                 }
             }
         }
+        
 
         /// <summary>
         /// Returns all voxels in this chunk in no guaranteed order.
@@ -364,6 +369,7 @@ namespace Base
         /// Saves this chunk to a file. The first line contains the dimensions
         /// (X,Y,Z) separated by commas. The second line contains all voxel IDs
         /// separated by commas in X-Y-Z order.
+        /// TODO : Need to save the world position of the chunk as well.
         /// </summary>
         public void Save(string fileName)
         {
