@@ -55,10 +55,10 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
                 (ExampleChunk chunk, uint3 voxelPosition) = _terrainHolder.GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
                 if (chunk == null)
                 {
-                    Debug.Log($"No chunk at {hitInfo}");
+                    // Debug.Log($"No chunk at {hitInfo}");
                     return;
                 }
-                Debug.Log($"Removing voxel at {voxelPosition} in chunk at {chunk.WorldPosition}");
+                // Debug.Log($"Removing voxel at {voxelPosition} in chunk at {chunk.WorldPosition}");
                 chunk.RemoveVoxel(voxelPosition);
                 _terrainHolder.ReloadChunk(chunk);
             }
@@ -67,21 +67,27 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
         {
             isClicked = false;
         }
-            
+        
         
         ProcessGeneratedChunks();
+        
+        if (Vector3.Distance(_lastPosition, transform.position) < 10f)
+        {
+            return;
+        }
+        _lastPosition = transform.position;
 
-        List<int3> requiredChunks = GetChunksInViewDistance(PositionToInt(), _viewDistanceLoadingInChunks);
+        int3[] requiredChunks = GetChunksInViewDistance(PositionToInt(), _viewDistanceLoadingInChunks);
         foreach (int3 chunkPos in requiredChunks)
         {
             _terrainHolder.GenerateNewChunkAt(chunkPos);
             // TODO : Second thread need to be less greedy
         }
-        List<int3> chunksToUnload = GetChunksToUnload();
-        foreach (int3 pos in chunksToUnload)
-        {
-            _terrainHolder.UnLoadChunkAt(pos);
-        }
+        // List<int3> chunksToUnload = GetChunksToUnload();
+        // foreach (int3 pos in chunksToUnload)
+        // {
+        //     _terrainHolder.UnLoadChunkAt(pos);
+        // }
     }
     
 
@@ -112,37 +118,35 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns all chunk positions within the view distance from a center position
+    /// Returns all chunk positions within the view distance from a center position TODO : Lets say the view distance is square
     /// </summary>
     /// <param name="centerPosition">The center position to calculate chunks around</param>
+    /// <param name="viewDistance">The view distance in chunks</param>
     /// <returns>List of chunk positions (in chunk coordinates)</returns>
-    private List<int3> GetChunksInViewDistance(int3 centerPosition, int viewDistance)
+    private int3[] GetChunksInViewDistance(int3 centerPosition, int viewDistance)
     {
-        List<int3> chunks = new List<int3>();
-        int centerChunkX = Mathf.FloorToInt(centerPosition.x / (float)_terrainHolder._chunkSize);
-        int centerChunkZ = Mathf.FloorToInt(centerPosition.z / (float)_terrainHolder._chunkSize);
 
-        for (int x = -viewDistance; x <= viewDistance; x++)
+        int chunksInViewDistance = viewDistance * viewDistance * 4; 
+        int3[] chunks = new int3[chunksInViewDistance];
+        int centerPositionChunkX = Mathf.FloorToInt((float)centerPosition.x / _terrainHolder._chunkSize);
+        int centerPositionChunkZ = Mathf.FloorToInt((float)centerPosition.z / _terrainHolder._chunkSize);
+        int xStart = (centerPositionChunkX - viewDistance) * _terrainHolder._chunkSize;
+        int zStart = (centerPositionChunkZ - viewDistance)* _terrainHolder._chunkSize;
+        int xEnd = (centerPositionChunkX + viewDistance)* _terrainHolder._chunkSize;
+        int zEnd = (centerPositionChunkZ + viewDistance)* _terrainHolder._chunkSize;
+        int padding = _terrainHolder._chunkSize;
+        
+        int index = 0;
+        
+        
+        for (int x = xStart; x < xEnd; x += padding)
         {
-            for (int z = -viewDistance; z <= viewDistance; z++)
+            for (int z = zStart; z < zEnd; z += padding)
             {
-                // Calculate the chunk position
-                int chunkX = centerChunkX + x;
-                int chunkZ = centerChunkZ + z;
-
-                // Only include chunks within the circular view distance
-                float distance = Mathf.Sqrt(x * x + z * z);
-                if (distance <= viewDistance)
-                {
-                    chunks.Add(new int3(
-                        chunkX * _terrainHolder._chunkSize,
-                        0, // Y is always 0 for chunk positions
-                        chunkZ * _terrainHolder._chunkSize
-                    ));
-                }
+                chunks[index] = new int3(x, 0, z);
+                index++;
             }
         }
-
         return chunks;
     }
     
