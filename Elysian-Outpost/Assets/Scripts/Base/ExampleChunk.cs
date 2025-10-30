@@ -10,6 +10,7 @@ namespace Base
     public class ExampleChunk : Chunk<ExampleVoxel>
     {
         private readonly ExampleVoxel[,,] _voxels;
+        
 
         public uint XDepth { get; }
         public uint YDepth { get; }

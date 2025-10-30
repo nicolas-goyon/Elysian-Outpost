@@ -18,11 +18,11 @@ namespace Base
             ChunkPosition = chunkPosition;
         }
 
-        public ExampleMesh Execute()
+        public (ExampleChunk chunk, ExampleMesh) Execute()
         {
-            ExampleChunk exampleChunk = new(_generator.GenerateChunkAt(ChunkPosition.x, ChunkPosition.z));
+            ExampleChunk chunk = new ExampleChunk(_generator.GenerateChunkAt(ChunkPosition.x, ChunkPosition.z));
             DisjointSetMeshOptimizer<ExampleMesh> optimizer = new(new ExampleMesh(new List<MeshQuad>()));
-            return optimizer.Optimize(exampleChunk);
+            return (chunk, optimizer.Optimize(chunk));
         }
     }
 }

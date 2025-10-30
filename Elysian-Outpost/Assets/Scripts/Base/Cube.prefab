@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 3892617672783986254}
   - component: {fileID: 8302784807969669191}
   - component: {fileID: 7623021574284192450}
-  - component: {fileID: 184199506381052055}
   - component: {fileID: 1952374939887868978}
+  - component: {fileID: -3407371897651694065}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -91,8 +91,20 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &184199506381052055
-BoxCollider:
+--- !u!114 &1952374939887868978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8870143165198125435}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01883c3f7ee64cd1aa9a773a624d6104, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Base.InstanciatedChunk
+--- !u!64 &-3407371897651694065
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -109,18 +121,7 @@ BoxCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1952374939887868978
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8870143165198125435}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01883c3f7ee64cd1aa9a773a624d6104, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Base.InstanciatedChunk
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}

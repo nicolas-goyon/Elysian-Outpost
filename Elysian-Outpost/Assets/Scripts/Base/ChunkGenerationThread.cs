@@ -9,7 +9,7 @@ namespace Base
     public sealed class ChunkGenerationThread : IDisposable
     {
         private readonly ConcurrentQueue<ChunkMeshGenerationWorker> _pendingWorkers = new();
-        private readonly ConcurrentQueue<(int3 position, ExampleMesh mesh)> _completedMeshes = new();
+        private readonly ConcurrentQueue<(int3 position, ExampleChunk chunk, ExampleMesh mesh)> _completedMeshes = new();
         private readonly AutoResetEvent _signal = new(false);
         private readonly Thread _thread;
         private readonly MainGeneration _generator;
@@ -37,7 +37,7 @@ namespace Base
             _signal.Set();
         }
 
-        public bool TryDequeueGeneratedMesh(out (int3 position, ExampleMesh mesh) result)
+        public bool TryDequeueGeneratedMesh(out (int3 position, ExampleChunk chunk, ExampleMesh mesh) result)
         {
             return _completedMeshes.TryDequeue(out result);
         }
@@ -58,8 +58,8 @@ namespace Base
 
                 try
                 {
-                    ExampleMesh mesh = worker.Execute();
-                    _completedMeshes.Enqueue((worker.ChunkPosition, mesh));
+                    (ExampleChunk chunk, ExampleMesh mesh) = worker.Execute();
+                    _completedMeshes.Enqueue((worker.ChunkPosition, chunk, mesh));
                 }
                 catch (Exception ex)
                 {

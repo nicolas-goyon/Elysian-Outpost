@@ -118,6 +118,15 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""LeftClick"",
+                    ""type"": ""Button"",
+                    ""id"": ""7119e3ca-096c-4b61-b883-5e88ab3bb7e8"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -219,6 +228,17 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
                     ""action"": ""View"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f1979900-e184-42b8-888d-b382c451a9e3"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LeftClick"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -230,6 +250,7 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         m_CameraMovements_Movements = m_CameraMovements.FindAction("Movements", throwIfNotFound: true);
         m_CameraMovements_Speeding = m_CameraMovements.FindAction("Speeding", throwIfNotFound: true);
         m_CameraMovements_View = m_CameraMovements.FindAction("View", throwIfNotFound: true);
+        m_CameraMovements_LeftClick = m_CameraMovements.FindAction("LeftClick", throwIfNotFound: true);
     }
 
     ~@CameraInputs()
@@ -313,6 +334,7 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
     private readonly InputAction m_CameraMovements_Movements;
     private readonly InputAction m_CameraMovements_Speeding;
     private readonly InputAction m_CameraMovements_View;
+    private readonly InputAction m_CameraMovements_LeftClick;
     /// <summary>
     /// Provides access to input actions defined in input action map "CameraMovements".
     /// </summary>
@@ -336,6 +358,10 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "CameraMovements/View".
         /// </summary>
         public InputAction @View => m_Wrapper.m_CameraMovements_View;
+        /// <summary>
+        /// Provides access to the underlying input action "CameraMovements/LeftClick".
+        /// </summary>
+        public InputAction @LeftClick => m_Wrapper.m_CameraMovements_LeftClick;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -371,6 +397,9 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
             @View.started += instance.OnView;
             @View.performed += instance.OnView;
             @View.canceled += instance.OnView;
+            @LeftClick.started += instance.OnLeftClick;
+            @LeftClick.performed += instance.OnLeftClick;
+            @LeftClick.canceled += instance.OnLeftClick;
         }
 
         /// <summary>
@@ -391,6 +420,9 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
             @View.started -= instance.OnView;
             @View.performed -= instance.OnView;
             @View.canceled -= instance.OnView;
+            @LeftClick.started -= instance.OnLeftClick;
+            @LeftClick.performed -= instance.OnLeftClick;
+            @LeftClick.canceled -= instance.OnLeftClick;
         }
 
         /// <summary>
@@ -452,5 +484,12 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnView(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "LeftClick" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLeftClick(InputAction.CallbackContext context);
     }
 }

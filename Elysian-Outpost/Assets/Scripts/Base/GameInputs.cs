@@ -24,5 +24,9 @@ namespace Base
         public Vector2 GetViewDelta() {
             return _inputActions.CameraMovements.View.ReadValue<Vector2>();
         }
+        
+        public bool IsLeftClick() {
+            return _inputActions.CameraMovements.LeftClick.ReadValue<float>() > 0;
+        }
     }
 }

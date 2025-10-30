@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Base;
 using ScriptableObjectsDefinition;
 using Unity.Mathematics;
@@ -12,6 +13,9 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
     [SerializeField] private int _chunkSize = 50;
     [SerializeField] private int _viewDistanceInChunks = 3;
+    [SerializeField] private GameInputs gameInputs;
+    [SerializeField] private GameObject spherePrefab;
+    private GameObject _sphere;
     
     private readonly Dictionary<int3, InstanciatedChunk> _loadedChunks = new();
     private readonly HashSet<int3> _chunksAwaitingGeneration = new();
@@ -31,6 +35,54 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
+        // Raycast and add a sphere at the hit point on left click
+        if (gameInputs.IsLeftClick())
+        {
+            // Center of the screen
+            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+            if (Physics.Raycast(ray, out RaycastHit hitInfo))
+            {
+                Debug.Log("Hit " + hitInfo.collider.gameObject.name);
+                Vector3 hitPoint = hitInfo.point;
+                if (_sphere == null)
+                {
+                    _sphere = Instantiate(spherePrefab, hitPoint, Quaternion.identity);
+                }
+                _sphere.transform.position = hitPoint;
+                
+                // Regenerate affected chunks
+                List<int3> affectedChunks = new List<int3>();
+                int3 centerChunkPos = new int3(
+                    Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
+                    0,
+                    Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
+                );
+
+                for (int x = -1; x <= 1; x++)
+                {
+                    for (int z = -1; z <= 1; z++)
+                    {
+                        affectedChunks.Add(new int3(
+                            centerChunkPos.x + x * _chunkSize,
+                            0,
+                            centerChunkPos.z + z * _chunkSize
+                        ));
+                    }
+                }
+
+                foreach (int3 chunkPos in affectedChunks)
+                {
+                    if (_loadedChunks.ContainsKey(chunkPos))
+                    {
+                        Destroy(_loadedChunks[chunkPos]);
+                        _loadedChunks.Remove(chunkPos);
+                    }
+                    QueueChunk(chunkPos);
+                }
+            }
+        }
+            
+        
         ProcessGeneratedChunks();
 
         List<int3> requiredChunks = GetChunksInViewDistance(PositionToInt());
@@ -107,6 +159,26 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
         return chunks;
     }
+    // Use raycasting to find the chunk at the camera's position
+    private (ExampleChunk chunk, int3 position) GetChunkAtCamera()
+    {
+        Ray ray = new Ray(transform.position + Vector3.up * 1000, Vector3.down);
+        if (!Physics.Raycast(ray, out RaycastHit hitInfo, Mathf.Infinity)) return (null, new int3(0, 0, 0));
+        Vector3 hitPoint = hitInfo.point;
+        int3 chunkPos = new int3(
+            Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
+            0,
+            Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
+        );
+
+        if (_loadedChunks.TryGetValue(chunkPos, out InstanciatedChunk chunkInstance))
+        {
+            return (chunkInstance.chunk, chunkPos);
+        }
+
+        return (null, new int3(0, 0, 0));
+    }
+    
     #endregion
     
     
@@ -150,7 +222,7 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
         while (_chunkGenerationThread.TryDequeueGeneratedMesh(out var result))
         {
-            (int3 position, ExampleMesh mesh) = result;
+            (int3 position, ExampleChunk chunk, ExampleMesh mesh) = result;
             _chunksAwaitingGeneration.Remove(position);
 
             if (!IsChunkWithinViewDistance(position))
@@ -165,6 +237,7 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
             InstanciatedChunk chunkInstance = Create(mesh, position);
             _loadedChunks[position] = chunkInstance;
+            _loadedChunks[position].chunk = chunk;
         }
     }
 
