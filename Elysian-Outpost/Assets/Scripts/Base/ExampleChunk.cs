@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Libs.VoxelMeshOptimizer;
+using Unity.Mathematics;
 using UnityEngine;
 using Vector3 = System.Numerics.Vector3;
 
@@ -382,6 +383,17 @@ namespace Base
             }
 
             writer.WriteLine(string.Join(',', ids));
+        }
+
+        public void RemoveVoxel(uint3 position)
+        {
+            if (position.x >= XDepth || position.y >= YDepth || position.z >= ZDepth)
+            {
+                throw new ArgumentOutOfRangeException("Requested voxel coordinates are out of bounds.");
+            }
+
+            _voxels[position.x, position.y, position.z] =
+                new ExampleVoxel(0); // TODO : Assuming ID 0 represents an empty voxel
         }
     }
 }

@@ -80,5 +80,6 @@ namespace Base
             _thread.Join();
             _signal.Dispose();
         }
+        
     }
 }

@@ -50,35 +50,8 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
                 }
                 _sphere.transform.position = hitPoint;
                 
-                // Regenerate affected chunks
-                List<int3> affectedChunks = new List<int3>();
-                int3 centerChunkPos = new int3(
-                    Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
-                    0,
-                    Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
-                );
-
-                for (int x = -1; x <= 1; x++)
-                {
-                    for (int z = -1; z <= 1; z++)
-                    {
-                        affectedChunks.Add(new int3(
-                            centerChunkPos.x + x * _chunkSize,
-                            0,
-                            centerChunkPos.z + z * _chunkSize
-                        ));
-                    }
-                }
-
-                foreach (int3 chunkPos in affectedChunks)
-                {
-                    if (_loadedChunks.ContainsKey(chunkPos))
-                    {
-                        Destroy(_loadedChunks[chunkPos]);
-                        _loadedChunks.Remove(chunkPos);
-                    }
-                    QueueChunk(chunkPos);
-                }
+                (ExampleChunk chunk, uint3 voxelPosition) = GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
+                chunk?.RemoveVoxel(voxelPosition);
             }
         }
             
@@ -97,6 +70,28 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
             _loadedChunks.Remove(pos);
             Destroy(obj);
         }
+    }
+    
+    private (ExampleChunk chunk, uint3 voxelPosition) GetHitChunkAndVoxelPositionAtRaycast(RaycastHit hitInfo)
+    {
+        Vector3 hitPoint = hitInfo.point;
+        int3 chunkPos = new int3(
+            Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
+            0,
+            Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
+        );
+
+        if (!_loadedChunks.TryGetValue(chunkPos, out InstanciatedChunk chunkInstance)) return (null, new uint3(0, 0, 0));
+        ExampleChunk chunk = chunkInstance.chunk;
+        if (chunk == null) return (null, new uint3(0, 0, 0));
+        
+        uint3 localVoxelPos = new uint3(
+            (uint)(Mathf.FloorToInt(hitPoint.x) - chunkPos.x),
+            (uint)(Mathf.FloorToInt(hitPoint.y ) - chunkPos.y),
+            (uint)(Mathf.FloorToInt(hitPoint.z) - chunkPos.z)
+        );
+        return (chunk, localVoxelPos);
+
     }
 
     private void OnDestroy()
