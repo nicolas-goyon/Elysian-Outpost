@@ -44,10 +44,11 @@ namespace Base
         
         public (ExampleChunk chunk, uint3 voxelPosition) GetHitChunkAndVoxelPositionAtRaycast(RaycastHit hitInfo)
         {
-            Vector3 hitPoint = hitInfo.point;
+            // Slightly increase the hit point inside the voxel
+            Vector3 hitPoint = hitInfo.point - hitInfo.normal * 0.01f;
             int3 chunkPos = new int3(
                 Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
-                0,
+                Mathf.FloorToInt(hitPoint.y / _chunkSize) * _chunkSize,
                 Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
             );
 
@@ -86,16 +87,19 @@ namespace Base
             _chunks.Add(chunk.WorldPosition, (chunk, null));
             _chunkGenerationThread.EnqueueChunk(chunk);
         }
+        
+        public void ReloadChunk(ExampleChunk chunk)
+        {
+            if (_chunkGenerationThread == null) throw new System.Exception("Chunk generation thread is not initialized.");
+            
+            _chunkGenerationThread.EnqueueChunk(chunk);
+        }
 
         public bool TryGetGeneratedChunk(out (ExampleChunk chunk, ExampleMesh mesh) result)
         {
             return _chunkGenerationThread.TryDequeueGeneratedMesh(out result);
         }
         
-        // Process a hot reload of a chunk at the given position
-        public void ReloadChunkAt(int3 chunkPos)
-        {
-        }
         
         public void UnLoadChunkAt(int3 chunkPos)
         {

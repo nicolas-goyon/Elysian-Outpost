@@ -26,30 +26,47 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
         _terrainHolder = new TerrainHolder(_templateObject, _textureAtlas);
     }
 
+    private bool isClicked = false;
+    
     // Update is called once per frame
     private void Update()
     {
         // Raycast and add a sphere at the hit point on left click
-        // if (gameInputs.IsLeftClick())
-        // {
-        //     // Center of the screen
-        //     Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-        //     if (Physics.Raycast(ray, out RaycastHit hitInfo))
-        //     {
-        //         // Debug.Log("Hit " + hitInfo.collider.gameObject.name);
-        //         Vector3 hitPoint = hitInfo.point;
-        //         if (_sphere == null)
-        //         {
-        //             _sphere = Instantiate(spherePrefab, hitPoint, Quaternion.identity);
-        //         }
-        //         _sphere.transform.position = hitPoint;
-        //         
-        //         (ExampleChunk chunk, uint3 voxelPosition) = _terrainHolder.GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
-        //         if (chunk == null) return;
-        //         chunk.RemoveVoxel(voxelPosition);
-        //         _terrainHolder.ReloadChunkAt(chunk.WorldPosition);
-        //     }
-        // }
+        if (gameInputs.IsLeftClick())
+        {
+            // Center of the screen
+            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+            if (Physics.Raycast(ray, out RaycastHit hitInfo))
+            {
+                // Debug.Log("Hit " + hitInfo.collider.gameObject.name);
+                Vector3 hitPoint = hitInfo.point;
+                if (_sphere == null)
+                {
+                    _sphere = Instantiate(spherePrefab, hitPoint, Quaternion.identity);
+                }
+                _sphere.transform.position = hitPoint - hitInfo.normal * 0.1f;
+
+                if (isClicked)
+                {
+                    return;
+                }
+                isClicked = true;
+                
+                (ExampleChunk chunk, uint3 voxelPosition) = _terrainHolder.GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
+                if (chunk == null)
+                {
+                    Debug.Log($"No chunk at {hitInfo}");
+                    return;
+                }
+                Debug.Log($"Removing voxel at {voxelPosition} in chunk at {chunk.WorldPosition}");
+                chunk.RemoveVoxel(voxelPosition);
+                _terrainHolder.ReloadChunk(chunk);
+            }
+        }
+        else
+        {
+            isClicked = false;
+        }
             
         
         ProcessGeneratedChunks();
