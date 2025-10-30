@@ -14,7 +14,6 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
     {
         private readonly DisjointSet _disjointSet;
         private readonly VisiblePlane _plane;
-        #nullable enable
         private readonly Voxel?[,] _voxels;
         private readonly int _width;
         private readonly int _height;
@@ -56,7 +55,7 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
             Guard.IsInRange(x, 0, _width, nameof(x));
             Guard.IsInRange(y, 0, _height, nameof(y));
 
-            Voxel? rootVoxel = _voxels[x, y];
+            Voxel rootVoxel = _voxels[x, y];
             if (rootVoxel == null) return;
 
             int currentWidth = 1;
@@ -76,11 +75,12 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
                 bool canExpand = true;
                 for (int dx = 0; dx < currentWidth; dx++)
                 {
-                    Voxel? v = _voxels[x + dx, y + currentHeight];
-                    if (v == null) continue;
-                    if (v.ID == rootVoxel.ID && !IsNotAlone(x + dx, y + currentHeight)) continue;
-                    canExpand = false;
-                    break;
+                    Voxel v = _voxels[x + dx, y + currentHeight];
+                    if (v?.ID != rootVoxel.ID || IsNotAlone(x + dx, y + currentHeight))
+                    {
+                        canExpand = false;
+                        break;
+                    }
                 }
 
                 if (!canExpand) break;
@@ -103,7 +103,7 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
             Guard.IsInRange(x, 0, _width, nameof(x));
             Guard.IsInRange(y, 0, _height, nameof(y));
 
-            Voxel? voxel = _voxels[x, y];
+            Voxel voxel = _voxels[x, y];
             if (voxel == null) return true;
 
             int root = _disjointSet.Find(ToIndex(x, y));
@@ -117,8 +117,8 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 
         private bool AreSame(int x1, int y1, int x2, int y2)
         {
-            Voxel? v1 = _voxels[x1, y1];
-            Voxel? v2 = _voxels[x2, y2];
+            Voxel v1 = _voxels[x1, y1];
+            Voxel v2 = _voxels[x2, y2];
             if (v1 == null || v2 == null) return false;
             return v1.ID == v2.ID &&
                    _disjointSet.Find(ToIndex(x2, y2)) == _disjointSet.Find(ToIndex(x1, y1));
@@ -152,6 +152,7 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 
 
             List<MeshQuad> quads = new List<MeshQuad>();
+            MeshQuad? quad;
             foreach (KeyValuePair<int, List<(int x, int y)>> group in groups)
             {
 
@@ -171,7 +172,6 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
                 uint voxelId = _voxels[minX, minY]!.ID;
 
 
-                MeshQuad quad;
                 switch (_plane.MajorAxis, _plane.MajorAxisOrder)
                 {
                     case (Axis.X, AxisOrder.DESCENDING):
@@ -196,14 +196,16 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
                     {
 
                         uint x = _plane.SliceIndex;
+                        int y1 = minX;
                         int y2 = maxX + 1;
+                        int z1 = minY;
                         int z2 = maxY + 1;
                         quad = new MeshQuad
                         {
-                            Vertex1 = new Vector3(x, minX, minY),
-                            Vertex0 = new Vector3(x, y2, minY),
+                            Vertex1 = new Vector3(x, y1, z1),
+                            Vertex0 = new Vector3(x, y2, z1),
                             Vertex3 = new Vector3(x, y2, z2),
-                            Vertex2 = new Vector3(x, minX, z2),
+                            Vertex2 = new Vector3(x, y1, z2),
                             Normal = new Vector3(1, 0, 0),
                             VoxelID = voxelId
                         };
@@ -229,15 +231,17 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
                     }
                     case (Axis.Y, AxisOrder.ASCENDING):
                     {
+                        int x1 = minY;
                         int x2 = maxY + 1;
                         uint y = _plane.SliceIndex;
+                        int z1 = minX;
                         int z2 = maxX + 1;
                         quad = new MeshQuad
                         {
-                            Vertex1 = new Vector3(minY, y, minX),
-                            Vertex0 = new Vector3(minY, y, z2),
+                            Vertex1 = new Vector3(x1, y, z1),
+                            Vertex0 = new Vector3(x1, y, z2),
                             Vertex3 = new Vector3(x2, y, z2),
-                            Vertex2 = new Vector3(x2, y, minX),
+                            Vertex2 = new Vector3(x2, y, z1),
                             Normal = new Vector3(1, 0, 0),
                             VoxelID = voxelId
                         };
@@ -263,15 +267,17 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
                     }
                     case (Axis.Z, AxisOrder.ASCENDING):
                     {
+                        int x1 = minY;
                         int x2 = maxY + 1;
+                        int y1 = minX;
                         int y2 = maxX + 1;
                         uint z = _plane.SliceIndex;
                         quad = new MeshQuad
                         {
-                            Vertex0 = new Vector3(minY, minX, z),
-                            Vertex1 = new Vector3(minY, y2, z),
+                            Vertex0 = new Vector3(x1, y1, z),
+                            Vertex1 = new Vector3(x1, y2, z),
                             Vertex2 = new Vector3(x2, y2, z),
-                            Vertex3 = new Vector3(x2, minX, z),
+                            Vertex3 = new Vector3(x2, y1, z),
                             Normal = new Vector3(1, 0, 0),
                             VoxelID = voxelId
                         };

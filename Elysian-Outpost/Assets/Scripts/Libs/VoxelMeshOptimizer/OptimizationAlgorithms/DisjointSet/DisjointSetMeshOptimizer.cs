@@ -37,11 +37,23 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
             VoxelOcclusionOptimizer occluder = new(chunk);
             VisibleFaces visibleFaces = occluder.ComputeVisibleFaces();
 
-            foreach (DisjointSetVisiblePlaneOptimizer optimizer in from visibleFace in visibleFaces.PlanesByAxis from face in visibleFace.Value select new DisjointSetVisiblePlaneOptimizer(face, chunk))
+            // TODO : Check diff
+            // foreach (DisjointSetVisiblePlaneOptimizer optimizer in from visibleFace in visibleFaces.PlanesByAxis from face in visibleFace.Value select new DisjointSetVisiblePlaneOptimizer(face, chunk))
+            // {
+            //     optimizer.Optimize();
+            //     List<MeshQuad> quads = optimizer.ToMeshQuads();
+            //     _mesh.Quads.AddRange(quads);
+            // }
+            
+            foreach (var visibleFace in visibleFaces.PlanesByAxis)
             {
-                optimizer.Optimize();
-                List<MeshQuad> quads = optimizer.ToMeshQuads();
-                _mesh.Quads.AddRange(quads);
+                foreach (var face in visibleFace.Value)
+                {
+                    var optimizer = new DisjointSetVisiblePlaneOptimizer(face, chunk);
+                    optimizer.Optimize();
+                    var quads = optimizer.ToMeshQuads();
+                    _mesh.Quads.AddRange(quads);
+                }
             }
 
             return _mesh;
