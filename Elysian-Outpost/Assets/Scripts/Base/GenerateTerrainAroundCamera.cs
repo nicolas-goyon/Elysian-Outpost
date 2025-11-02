@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Base;
 using ScriptableObjectsDefinition;
 using Unity.Mathematics;
@@ -14,6 +15,7 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
 
     [SerializeField] private int _viewDistanceLoadingInChunks = 3;
     [SerializeField] private int _viewDistanceUnloadingInChunks = 5;
+    [SerializeField] private int _amountOfChunksInHeight = 5;
     [SerializeField] private GameInputs gameInputs;
     [SerializeField] private GameObject spherePrefab;
     private GameObject _sphere;
@@ -45,7 +47,7 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
                     _sphere = Instantiate(spherePrefab, hitPoint, Quaternion.identity);
                 }
                 _sphere.transform.position = hitPoint - hitInfo.normal * 0.1f;
-
+        
                 if (isClicked)
                 {
                     return;
@@ -76,18 +78,19 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
             return;
         }
         _lastPosition = transform.position;
-
         int3[] requiredChunks = GetChunksInViewDistance(PositionToInt(), _viewDistanceLoadingInChunks);
         foreach (int3 chunkPos in requiredChunks)
         {
             _terrainHolder.GenerateNewChunkAt(chunkPos);
             // TODO : Second thread need to be less greedy
         }
-        // List<int3> chunksToUnload = GetChunksToUnload();
-        // foreach (int3 pos in chunksToUnload)
-        // {
-        //     _terrainHolder.UnLoadChunkAt(pos);
-        // }
+        
+        
+        List<int3> chunksToUnload = GetChunksToUnload();
+        foreach (int3 pos in chunksToUnload)
+        {
+            _terrainHolder.UnLoadChunkAt(pos);
+        }
     }
     
 
@@ -125,26 +128,27 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     /// <returns>List of chunk positions (in chunk coordinates)</returns>
     private int3[] GetChunksInViewDistance(int3 centerPosition, int viewDistance)
     {
-
-        int chunksInViewDistance = viewDistance * viewDistance * 4; 
+        int chunksInViewDistance = (2 * viewDistance) * (2 * viewDistance) * (_amountOfChunksInHeight);
         int3[] chunks = new int3[chunksInViewDistance];
-        int centerPositionChunkX = Mathf.FloorToInt((float)centerPosition.x / _terrainHolder._chunkSize);
-        int centerPositionChunkZ = Mathf.FloorToInt((float)centerPosition.z / _terrainHolder._chunkSize);
-        int xStart = (centerPositionChunkX - viewDistance) * _terrainHolder._chunkSize;
-        int zStart = (centerPositionChunkZ - viewDistance)* _terrainHolder._chunkSize;
-        int xEnd = (centerPositionChunkX + viewDistance)* _terrainHolder._chunkSize;
-        int zEnd = (centerPositionChunkZ + viewDistance)* _terrainHolder._chunkSize;
-        int padding = _terrainHolder._chunkSize;
+        int centerPositionChunkX = Mathf.FloorToInt((float)centerPosition.x / _terrainHolder._chunkSize.x);
+        int centerPositionChunkZ = Mathf.FloorToInt((float)centerPosition.z / _terrainHolder._chunkSize.z);
+        int xStart = (centerPositionChunkX - viewDistance) * _terrainHolder._chunkSize.x;
+        int zStart = (centerPositionChunkZ - viewDistance)* _terrainHolder._chunkSize.z;
+        int xEnd = (centerPositionChunkX + viewDistance)* _terrainHolder._chunkSize.x;
+        int zEnd = (centerPositionChunkZ + viewDistance)* _terrainHolder._chunkSize.z;
+        
         
         int index = 0;
-        
-        
-        for (int x = xStart; x < xEnd; x += padding)
+        for (int x = xStart; x < xEnd; x += _terrainHolder._chunkSize.x)
         {
-            for (int z = zStart; z < zEnd; z += padding)
+            for (int z = zStart; z < zEnd; z += _terrainHolder._chunkSize.z)
             {
-                chunks[index] = new int3(x, 0, z);
-                index++;
+                for (int y = 0; y < _amountOfChunksInHeight * _terrainHolder._chunkSize.y; y +=
+                         _terrainHolder._chunkSize.y)
+                {
+                    chunks[index] = new int3(x, y, z);
+                    index++;
+                }
             }
         }
         return chunks;

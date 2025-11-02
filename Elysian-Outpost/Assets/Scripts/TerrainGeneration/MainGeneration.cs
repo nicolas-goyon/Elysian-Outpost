@@ -7,23 +7,12 @@ using Random = System.Random;
 public class MainGeneration
 {
     private readonly int3 chunkSize;
-    private readonly int seed;
     private readonly PerlinNoise noise;
 
     public MainGeneration(int3 chunkSize, int seed = 0)
     {
         this.chunkSize = chunkSize;
-        this.seed = seed;
         noise = new PerlinNoise(seed);
-    }
-
-    /// <summary>
-    /// Generates a basic chunk using the default settings
-    /// </summary>
-    /// <returns>A 3D array representing the chunk voxels</returns>
-    public ushort[,,] GenerateChunk()
-    {
-        return GenerateChunkAt(0, 0);
     }
 
     /// <summary>
@@ -32,38 +21,44 @@ public class MainGeneration
     /// <param name="chunkX">X coordinate of the chunk in world space</param>
     /// <param name="chunkZ">Z coordinate of the chunk in world space</param>
     /// <returns>A 3D array representing the chunk voxels</returns>
-    public ushort[,,] GenerateChunkAt(int chunkX, int chunkZ)
+    public ushort[,,] GenerateChunkAt(int3 chunkPosition)
     {
+        int chunkX = chunkPosition.x;
+        int chunkY = chunkPosition.y;
+        int chunkZ = chunkPosition.z;
+
+        
+        
         ushort[,,] chunk = new ushort[chunkSize.x, chunkSize.y, chunkSize.z];
         
         for (int x = 0; x < chunkSize.x; x++)
         {
             for (int z = 0; z < chunkSize.z; z++)
             {
-                float nx = (chunkX + x) / 50f;
-                float nz = (chunkZ + z) / 50f;
-
-                float height =
-                    noise.Noise(nx * 1f, nz * 1f) * 20f +
-                    noise.Noise(nx * 2f, nz * 2f) * 10f +
-                    noise.Noise(nx * 4f, nz * 4f) * 5f;
-
-                int h = Math.Clamp((int)(height + 5f), 0, 50 - 1);
-
-                for (int y = 0; y <=  h ; y++)
+                for (int y = 0; y < chunkSize.y; y++)
                 {
-                    ushort blockType;
-                    
-                    if (y ==  h )
+                    float nx = (chunkX + x) / 50f;
+                    float ny = (chunkY + y) / 50f;
+                    float nz = (chunkZ + z) / 50f;
+
+                    float height =
+                        noise.Noise(nx * 1f, nz * 1f) * 10f +
+                        noise.Noise(nx * 2f, nz * 2f) * 5f +
+                        noise.Noise(nx * 4f, nz * 4f) * 2.5f;
+
+                    int h = Math.Clamp((int)(height + 5f), 0, 50 - 1);
+
+
+                    ushort blockType; 
+
+                    if (y + chunkY > h)
+                        continue; // Air block
+                    if (y + chunkY == h)
                         blockType = 1; // Top layer (grass)
-                    else if (y >  h  - 4)
-                        blockType = 2; // Dirt
-                    else if (y < 5)
-                        blockType = 6; // Bedrock
-                    else if (y <  h  - 15)
-                        blockType = 4; // Deep stone
+                    else if (y + chunkY >= h - 4)
+                        blockType = 2; // Dirt layer
                     else
-                        blockType = 3; // Stone
+                        blockType = 6;
 
                     chunk[x, y, z] = blockType;
                 }

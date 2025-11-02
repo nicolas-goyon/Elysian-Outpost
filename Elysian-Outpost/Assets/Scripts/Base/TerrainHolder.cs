@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ScriptableObjectsDefinition;
 using Unity.Mathematics;
 using Unity.VisualScripting;
@@ -11,11 +12,11 @@ namespace Base
     /**
      * A class to hold all the chunks in the world.
      */
-    public class TerrainHolder
+    public class TerrainHolder : System.IDisposable
     {
         private Dictionary<int3, (ExampleChunk chunk, InstanciatedChunk gameObject)> _chunks { get; }
         
-        public readonly int _chunkSize = 50;
+        public readonly int3 _chunkSize = new int3(16, 16, 16);
         private readonly MainGeneration _gen;
         private readonly ChunkGenerationThread _chunkGenerationThread;
         private readonly GameObject _templateObject;
@@ -47,9 +48,9 @@ namespace Base
             // Slightly increase the hit point inside the voxel
             Vector3 hitPoint = hitInfo.point - hitInfo.normal * 0.01f;
             int3 chunkPos = new int3(
-                Mathf.FloorToInt(hitPoint.x / _chunkSize) * _chunkSize,
-                Mathf.FloorToInt(hitPoint.y / _chunkSize) * _chunkSize,
-                Mathf.FloorToInt(hitPoint.z / _chunkSize) * _chunkSize
+                Mathf.FloorToInt(hitPoint.x / _chunkSize.x) * _chunkSize.x,
+                Mathf.FloorToInt(hitPoint.y / _chunkSize.y) * _chunkSize.y,
+                Mathf.FloorToInt(hitPoint.z / _chunkSize.z) * _chunkSize.z
             );
 
             if (!_chunks.TryGetValue(chunkPos, out (ExampleChunk chunk, InstanciatedChunk gameObject) chunkData))
@@ -72,9 +73,12 @@ namespace Base
             {
                 throw new System.Exception("Chunk generation thread is not initialized.");
             }
-
-            _chunks.Add(chunkPos, (new ExampleChunk(_gen.GenerateChunkAt(chunkPos.x, chunkPos.z),chunkPos), null));
+            
+            Debug.Log($"Generating new chunk at {chunkPos}");
+            
+            _chunks.Add(chunkPos, (new ExampleChunk(_gen.GenerateChunkAt(chunkPos),chunkPos), null));
             _chunkGenerationThread.EnqueueChunk(_chunks[chunkPos].chunk);
+
         }
         
         public void LoadChunk(ExampleChunk chunk)
@@ -119,7 +123,7 @@ namespace Base
 
             if (_chunks.TryGetValue(chunk.WorldPosition, out (ExampleChunk chunk, InstanciatedChunk instanciatedChunk) chunkData))
             {
-                if (chunkData.instanciatedChunk != null)
+                if (chunkData.instanciatedChunk is not null)
                 {
                     GameObject.Destroy(chunkData.instanciatedChunk.gameObject);
                 }

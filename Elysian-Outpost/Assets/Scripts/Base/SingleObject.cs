@@ -43,7 +43,7 @@ namespace Base
             Debug.Log($"Generating chunk at {position}");
         
             // Initialize a default mesh here.
-            ExampleChunk exampleChunk = new( gen.GenerateChunkAt(chunkPosition.x, chunkPosition.z), chunkPosition);
+            ExampleChunk exampleChunk = new( gen.GenerateChunkAt(chunkPosition), chunkPosition);
             
             DisjointSetMeshOptimizer<ExampleMesh> optimizer = new (new ExampleMesh(new List<MeshQuad>()));
             ExampleMesh baseMesh = optimizer.Optimize(exampleChunk);
