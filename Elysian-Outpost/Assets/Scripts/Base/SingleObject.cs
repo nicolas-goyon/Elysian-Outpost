@@ -7,6 +7,7 @@ using Libs.VoxelMeshOptimizer.OcclusionAlgorithms;
 using Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet;
 using Libs.VoxelMeshOptimizer.Toolkit;
 using ScriptableObjectsDefinition;
+using TerrainGeneration;
 using Unity.Mathematics;
 using UnityEngine;
 

@@ -1,148 +1,139 @@
 using System;
-using UnityEngine;
-using Libs.VoxelMeshOptimizer.Toolkit;
 using Unity.Mathematics;
+using UnityEngine;
 using Random = System.Random;
 
-public class MainGeneration
+namespace TerrainGeneration
 {
-    private readonly int3 chunkSize;
-    private readonly PerlinNoise noise;
-
-    public MainGeneration(int3 chunkSize, int seed = 0)
+    public class MainGeneration
     {
-        this.chunkSize = chunkSize;
-        noise = new PerlinNoise(seed);
-    }
+        private readonly int3 chunkSize;
+        private readonly PerlinNoise noise;
+        private readonly FrequencyLayer[] frequencyLayers;
 
-    /// <summary>
-    /// Generates a chunk at specific coordinates in the world
-    /// </summary>
-    /// <param name="chunkX">X coordinate of the chunk in world space</param>
-    /// <param name="chunkZ">Z coordinate of the chunk in world space</param>
-    /// <returns>A 3D array representing the chunk voxels</returns>
-    public ushort[,,] GenerateChunkAt(int3 chunkPosition)
-    {
-        int chunkX = chunkPosition.x;
-        int chunkY = chunkPosition.y;
-        int chunkZ = chunkPosition.z;
-
-        
-        
-        ushort[,,] chunk = new ushort[chunkSize.x, chunkSize.y, chunkSize.z];
-        
-        for (int x = 0; x < chunkSize.x; x++)
+        public MainGeneration(int3 chunkSize, int seed = 0)
         {
-            for (int z = 0; z < chunkSize.z; z++)
-            {
-                for (int y = 0; y < chunkSize.y; y++)
-                {
-                    float nx = (chunkX + x) / 50f;
-                    float ny = (chunkY + y) / 50f;
-                    float nz = (chunkZ + z) / 50f;
-
-                    float height =
-                        noise.Noise(nx * 1f, nz * 1f) * 10f +
-                        noise.Noise(nx * 2f, nz * 2f) * 5f +
-                        noise.Noise(nx * 4f, nz * 4f) * 2.5f;
-
-                    int h = Math.Clamp((int)(height + 5f), 0, 50 - 1);
-
-
-                    ushort blockType; 
-
-                    if (y + chunkY > h)
-                        continue; // Air block
-                    if (y + chunkY == h)
-                        blockType = 1; // Top layer (grass)
-                    else if (y + chunkY >= h - 4)
-                        blockType = 2; // Dirt layer
-                    else
-                        blockType = 6;
-
-                    chunk[x, y, z] = blockType;
-                }
-            }
+            this.chunkSize = chunkSize;
+            noise = new PerlinNoise(seed);
+            frequencyLayers = new FrequencyLayer[]{
+                new FrequencyLayer(frequency:.01f, amplitude:1.0f, noise:noise, useRoundPosition:true, roundPositionDigits:10),
+            };
         }
 
-        return chunk;
-    }
-
-
-        private class PerlinNoise
+        /// <summary>
+        /// Generates a chunk at specific coordinates in the world
+        /// </summary>
+        /// <param name="chunkX">X coordinate of the chunk in world space</param>
+        /// <param name="chunkZ">Z coordinate of the chunk in world space</param>
+        /// <returns>A 3D array representing the chunk voxels</returns>
+        public ushort[,,] GenerateChunkAt(int3 chunkPosition)
         {
-            private readonly int[] p;
-
-            private static readonly int[] permutation =
+            int chunkX = chunkPosition.x;
+            int chunkY = chunkPosition.y;
+            int chunkZ = chunkPosition.z;
+        
+            ushort[,,] chunk = new ushort[chunkSize.x, chunkSize.y, chunkSize.z];
+        
+            for (int x = 0; x < chunkSize.x; x++)
             {
-                151, 160, 137, 91, 90, 15,
-                131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23,
-                190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33,
-                88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166,
-                77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244,
-                102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135,
-                130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226, 250, 124, 123, 5,
-                202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182, 189, 28, 42,
-                223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
-                129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228,
-                251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107,
-                49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254,
-                138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
-            };
-
-            public PerlinNoise(int seed = 0)
-            {
-                p = new int[512];
-                int[] perm = (int[])permutation.Clone();
-                if (seed != 0)
+                for (int z = 0; z < chunkSize.z; z++)
                 {
-                    Random random = new Random(seed);
-                    for (int i = 0; i < 256; i++)
+                    for (int y = 0; y < chunkSize.y; y++)
                     {
-                        int swapIndex = random.Next(i, 256);
-                        (perm[i], perm[swapIndex]) = (perm[swapIndex], perm[i]);
+                        ushort? blockType = GetBlockTypeAt(chunkPosition, new int3(x, y, z));
+                        if (blockType.HasValue)
+                        {
+                            chunk[x, y, z] = blockType.Value;
+                        }
                     }
                 }
-
-                for (int i = 0; i < 256; i++)
-                {
-                    p[i] = perm[i];
-                    p[256 + i] = perm[i];
-                }
             }
 
-            public float Noise(float x, float y)
-            {
-                int X = (int)MathF.Floor(x) & 255;
-                int Y = (int)MathF.Floor(y) & 255;
-
-                x -= MathF.Floor(x);
-                y -= MathF.Floor(y);
-
-                float u = Fade(x);
-                float v = Fade(y);
-
-                int A = p[X] + Y;
-                int B = p[X + 1] + Y;
-
-                float res = Lerp(v,
-                    Lerp(u, Grad(p[A], x, y),
-                        Grad(p[B], x - 1, y)),
-                    Lerp(u, Grad(p[A + 1], x, y - 1),
-                        Grad(p[B + 1], x - 1, y - 1)));
-
-                return (res + 1f) / 2f;
-            }
-
-            private static float Fade(float t) => t * t * t * (t * (t * 6 - 15) + 10);
-            private static float Lerp(float t, float a, float b) => a + t * (b - a);
-
-            private static float Grad(int hash, float x, float y)
-            {
-                int h = hash & 3;
-                float u = h < 2 ? x : y;
-                float v = h < 2 ? y : x;
-                return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
-            }
+            return chunk;
         }
+
+        private enum BlockType : ushort
+        {
+            AIR = 0,
+            GRASS = 16,
+            DIRT = 11,
+            STONE = 22,
+            SAND = 13,
+            WATER = 8,
+            BEDROCK = 24
+        }
+    
+
+        private ushort? GetBlockTypeAt(int3 chunkPosition, int3 localPosition)
+        {
+            // Coordonnées monde
+            int worldX = chunkPosition.x  + localPosition.x;
+            int worldY = chunkPosition.y + localPosition.y;
+            int worldZ = chunkPosition.z + localPosition.z;
+    
+            // ----- 1. Bruit de base (heightmap continue) -----
+    
+            // Taille moyenne d’un plateau ~ 100 cases => fréquence ≈ 1/100
+            float height01 = GetHeight01At(worldX, worldZ);   // [0,1]
+    
+            // ----- 2. Terracing : transformation en niveaux discrets -----
+    
+            const int levels     = 6;  // nombre de niveaux verticaux (plateaux)
+            const int stepHeight = 4;  // hauteur d’un plateau en blocs
+            const int baseHeight = 8;  // décalage global vers le haut (par rapport au bedrock)
+    
+            int level = Mathf.RoundToInt(height01 * (levels - 1)); // 0..levels-1
+            int terrainHeight = baseHeight + level * stepHeight;   // hauteur absolue du sol
+    
+            // Niveau de la mer (quelques marches au-dessus du bas)
+            const int seaLevel = baseHeight + stepHeight * 2;
+    
+            // ----- 3. Choix du bloc selon la hauteur -----
+    
+            // Tout ce qui est sous ou au niveau 0 = bedrock
+            if (worldY <= 0)
+                return (ushort)BlockType.BEDROCK;
+    
+            // Au-dessus du terrain
+            if (worldY > terrainHeight)
+            {
+                // Remplir en eau jusqu’au niveau de la mer
+                if (worldY <= seaLevel)
+                    return (ushort)BlockType.WATER;
+    
+                // Sinon air
+                return null; // laisser la valeur par défaut (Air) dans le chunk
+            }
+    
+            // On est dans la masse du terrain (≤ terrainHeight)
+            int depthFromSurface = terrainHeight - worldY;
+
+            return depthFromSurface switch
+            {
+                // Bloc de surface
+                // Proche de l’eau => sable, sinon herbe
+                0 when terrainHeight <= seaLevel + 1 => (ushort)BlockType.SAND,
+                0 => (ushort)BlockType.GRASS,
+                <= 3 => (ushort)BlockType.DIRT,
+                _ => (ushort)BlockType.STONE
+            };
+        }
+        
+        // Calcule la hauteur normalisée [0,1] à partir de toutes les couches
+        private float GetHeight01At(int worldX, int worldZ)
+        {
+            float sum = 0f;
+            float totalAmp = 0f;
+
+            foreach (FrequencyLayer layer in frequencyLayers)
+            {
+                (float ampNoised, float amp) = layer.GetHeight01At(worldX, worldZ);
+
+                sum      += ampNoised;
+                totalAmp += amp;
+            }
+
+            return totalAmp <= 0f ? 0f : Mathf.Clamp01(sum / totalAmp); // height01 final
+        }
+    }
 }

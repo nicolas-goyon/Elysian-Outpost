@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ScriptableObjectsDefinition;
+using TerrainGeneration;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -73,8 +74,6 @@ namespace Base
             {
                 throw new System.Exception("Chunk generation thread is not initialized.");
             }
-            
-            Debug.Log($"Generating new chunk at {chunkPos}");
             
             _chunks.Add(chunkPos, (new ExampleChunk(_gen.GenerateChunkAt(chunkPos),chunkPos), null));
             _chunkGenerationThread.EnqueueChunk(_chunks[chunkPos].chunk);
