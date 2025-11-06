@@ -5,16 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Resources/ReferenceGeneration.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Resources/ReferenceGeneration.jpg.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/FrequencyLayer.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/FrequencyLayer.cs.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/PerlinNoise.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/PerlinNoise.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/TerrainHolder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/TerrainHolder.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/MainGeneration.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/MainGeneration.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/ReferenceGeneration.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/ReferenceGeneration.jpg.meta" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -140,7 +133,7 @@
       <workItem from="1761926232684" duration="1250000" />
       <workItem from="1762094605108" duration="2748000" />
       <workItem from="1762358611412" duration="1509000" />
-      <workItem from="1762421255830" duration="2711000" />
+      <workItem from="1762421255830" duration="3973000" />
     </task>
     <servers />
   </component>
