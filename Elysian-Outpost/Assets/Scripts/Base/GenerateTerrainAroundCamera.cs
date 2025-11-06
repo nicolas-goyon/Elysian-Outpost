@@ -21,11 +21,11 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
     private GameObject _sphere;
 
     private Vector3 _lastPosition;
-    private TerrainHolder _terrainHolder;
+    private TerrainHolder _terrainHolder; // TODO : Link to existing TerrainHolder
 
     private void Start()
     {
-        _terrainHolder = new TerrainHolder(_templateObject, _textureAtlas);
+        // _terrainHolder = new TerrainHolder(_templateObject, _textureAtlas);
     }
 
     private bool isClicked = false;
@@ -71,26 +71,6 @@ public class GenerateTerrainAroundCamera : MonoBehaviour
         }
         
         
-        ProcessGeneratedChunks();
-        
-        if (Vector3.Distance(_lastPosition, transform.position) < 10f)
-        {
-            return;
-        }
-        _lastPosition = transform.position;
-        int3[] requiredChunks = GetChunksInViewDistance(PositionToInt(), _viewDistanceLoadingInChunks);
-        foreach (int3 chunkPos in requiredChunks)
-        {
-            _terrainHolder.GenerateNewChunkAt(chunkPos);
-            // TODO : Second thread need to be less greedy
-        }
-        
-        
-        List<int3> chunksToUnload = GetChunksToUnload();
-        foreach (int3 pos in chunksToUnload)
-        {
-            _terrainHolder.UnLoadChunkAt(pos);
-        }
     }
     
 

@@ -80,16 +80,6 @@ namespace Base
 
         }
         
-        public void LoadChunk(ExampleChunk chunk)
-        {
-            if (_chunks.ContainsKey(chunk.WorldPosition)) return;
-            if (_chunkGenerationThread == null)
-            {
-                throw new System.Exception("Chunk generation thread is not initialized.");
-            }
-            _chunks.Add(chunk.WorldPosition, (chunk, null));
-            _chunkGenerationThread.EnqueueChunk(chunk);
-        }
         
         public void ReloadChunk(ExampleChunk chunk)
         {
@@ -104,14 +94,6 @@ namespace Base
         }
         
         
-        public void UnLoadChunkAt(int3 chunkPos)
-        {
-            if (!_chunks.ContainsKey(chunkPos)) return;
-            (ExampleChunk chunk, InstanciatedChunk instanciatedChunk) = _chunks[chunkPos];
-            GameObject.Destroy(instanciatedChunk.gameObject);
-            _chunks.Remove(chunkPos);
-        }
-
         /**
          * Dequeue one generated chunk and instanciate it.
          */

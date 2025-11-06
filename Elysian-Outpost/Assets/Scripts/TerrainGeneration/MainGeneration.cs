@@ -16,7 +16,7 @@ namespace TerrainGeneration
             this.chunkSize = chunkSize;
             noise = new PerlinNoise(seed);
             frequencyLayers = new FrequencyLayer[]{
-                new FrequencyLayer(frequency:.01f, amplitude:1.0f, noise:noise, useRoundPosition:true, roundPositionDigits:10),
+                new FrequencyLayer(frequency:.01f, amplitude:1.0f, noise:noise, roundPositionDigits:10),
             };
         }
 
