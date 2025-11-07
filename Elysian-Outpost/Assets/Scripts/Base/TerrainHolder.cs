@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using ScriptableObjectsDefinition;
@@ -15,21 +16,25 @@ namespace Base
      */
     public class TerrainHolder : System.IDisposable
     {
-        private Dictionary<int3, (ExampleChunk chunk, InstanciatedChunk gameObject)> _chunks { get; }
-        
-        public readonly int3 _chunkSize = new int3(16, 16, 16);
+        private Dictionary<int3, (ExampleChunk chunk, InstanciatedChunk gameObject)> Chunks { get; }
+
+        public readonly int3 ChunkSize;
         private readonly MainGeneration _gen;
         private readonly ChunkGenerationThread _chunkGenerationThread;
         private readonly GameObject _templateObject;
         private readonly TextureAtlas _textureAtlas;
 
-        public TerrainHolder(GameObject templateObject, TextureAtlas atlas)
+        private readonly GameObject _chunksHolder;
+
+        public TerrainHolder(GameObject templateObject, TextureAtlas atlas, GameObject chunksHolder, int3 chunkSize, int seed, int maxConcurrentWorkers)
         {
-            _gen = new MainGeneration(_chunkSize,123); // TODO : Input chunk size and seed from outside
-            _chunkGenerationThread = new ChunkGenerationThread();
-            _chunks = new Dictionary<int3, (ExampleChunk chunk, InstanciatedChunk gameObject)>();
+            ChunkSize = chunkSize;
+            _gen = new MainGeneration(ChunkSize,seed);
+            _chunkGenerationThread = new ChunkGenerationThread(maxConcurrentWorkers);
+            Chunks = new Dictionary<int3, (ExampleChunk chunk, InstanciatedChunk gameObject)>();
             _templateObject = templateObject;
             _textureAtlas = atlas;
+            _chunksHolder = chunksHolder;
         }
         
         ~TerrainHolder()
@@ -39,9 +44,10 @@ namespace Base
         
         public void Dispose()
         {
+            // Get a timer to "benchmark" how long the disposal takes
+            
             _chunkGenerationThread.Dispose();
-            // Cleanup chunks structure
-            _chunks.Clear();
+            Chunks.Clear();
         }
         
         public (ExampleChunk chunk, uint3 voxelPosition) GetHitChunkAndVoxelPositionAtRaycast(RaycastHit hitInfo)
@@ -49,12 +55,12 @@ namespace Base
             // Slightly increase the hit point inside the voxel
             Vector3 hitPoint = hitInfo.point - hitInfo.normal * 0.01f;
             int3 chunkPos = new int3(
-                Mathf.FloorToInt(hitPoint.x / _chunkSize.x) * _chunkSize.x,
-                Mathf.FloorToInt(hitPoint.y / _chunkSize.y) * _chunkSize.y,
-                Mathf.FloorToInt(hitPoint.z / _chunkSize.z) * _chunkSize.z
+                Mathf.FloorToInt(hitPoint.x / ChunkSize.x) * ChunkSize.x,
+                Mathf.FloorToInt(hitPoint.y / ChunkSize.y) * ChunkSize.y,
+                Mathf.FloorToInt(hitPoint.z / ChunkSize.z) * ChunkSize.z
             );
 
-            if (!_chunks.TryGetValue(chunkPos, out (ExampleChunk chunk, InstanciatedChunk gameObject) chunkData))
+            if (!Chunks.TryGetValue(chunkPos, out (ExampleChunk chunk, InstanciatedChunk gameObject) chunkData))
             {
                 return (null, new uint3(0,0,0)); // Chunk not loaded
             }
@@ -69,26 +75,24 @@ namespace Base
         
         public void GenerateNewChunkAt(int3 chunkPos)
         {
-            if (_chunks.ContainsKey(chunkPos)) return;
+            if (Chunks.ContainsKey(chunkPos)) return;
             if (_chunkGenerationThread == null)
             {
                 throw new System.Exception("Chunk generation thread is not initialized.");
             }
             
-            _chunks.Add(chunkPos, (new ExampleChunk(_gen.GenerateChunkAt(chunkPos),chunkPos), null));
-            _chunkGenerationThread.EnqueueChunk(_chunks[chunkPos].chunk);
-
+            _chunkGenerationThread.EnqueueChunk(chunkPos, int3 => new ExampleChunk(_gen.GenerateChunkAt(chunkPos),chunkPos));
         }
         
         
-        public void ReloadChunk(ExampleChunk chunk)
-        {
-            if (_chunkGenerationThread == null) throw new System.Exception("Chunk generation thread is not initialized.");
-            
-            _chunkGenerationThread.EnqueueChunk(chunk);
-        }
+        // public void ReloadChunk(ExampleChunk chunk)
+        // {
+        //     if (_chunkGenerationThread == null) throw new System.Exception("Chunk generation thread is not initialized.");
+        //     
+        //     _chunkGenerationThread.EnqueueChunk(chunk.WorldPosition , int3 => chunk);
+        // }
 
-        public bool TryGetGeneratedChunk(out (ExampleChunk chunk, ExampleMesh mesh) result)
+        private bool TryGetGeneratedChunk(out (ExampleChunk chunk, ExampleMesh mesh) result)
         {
             return _chunkGenerationThread.TryDequeueGeneratedMesh(out result);
         }
@@ -102,23 +106,33 @@ namespace Base
             if (!TryGetGeneratedChunk(out (ExampleChunk chunk, ExampleMesh mesh) result)) return;
             (ExampleChunk chunk, ExampleMesh mesh) = result;
 
-            if (_chunks.TryGetValue(chunk.WorldPosition, out (ExampleChunk chunk, InstanciatedChunk instanciatedChunk) chunkData))
+            if (Chunks.TryGetValue(chunk.WorldPosition, out (ExampleChunk chunk, InstanciatedChunk instanciatedChunk) chunkData))
             {
                 if (chunkData.instanciatedChunk is not null)
                 {
                     GameObject.Destroy(chunkData.instanciatedChunk.gameObject);
                 }
-                _chunks[chunk.WorldPosition] = (chunk, null);
+                Chunks[chunk.WorldPosition] = (chunk, null);
             }
                 
             InstanciatedChunk chunkInstance = Create(mesh, chunk.WorldPosition);
-            _chunks[chunk.WorldPosition] = (chunk, chunkInstance);
-
+            Chunks[chunk.WorldPosition] = (chunk, chunkInstance);
+        }
+        
+        /**
+         * Dequeue multiple generated chunks and instanciate them.
+         */
+        public void InstanciateMultipleChunks(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                InstanciateOneChunk();
+            }
         }
 
         private InstanciatedChunk Create(ExampleMesh mesh, int3 position) 
         {
-            GameObject obj = GameObject.Instantiate(_templateObject);
+            GameObject obj = GameObject.Instantiate(_templateObject, _chunksHolder.transform);
             InstanciatedChunk singleObject = obj.GetComponent<InstanciatedChunk>();
             obj.transform.position = new Vector3(position.x, position.y, position.z);
 
@@ -130,8 +144,20 @@ namespace Base
 
         public IEnumerable<(int3 position, ExampleChunk chunk)> GetAllLoadedChunks()
         {
-            return _chunks.Where(kvp => kvp.Value.gameObject is not null)
+            return Chunks.Where(kvp => kvp.Value.gameObject is not null)
                 .Select(kvp => (kvp.Key, kvp.Value.chunk));
+        }
+
+        public void ClearAllChunks()
+        {
+            foreach (var kvp in Chunks)
+            {
+                if (kvp.Value.gameObject is not null)
+                {
+                    GameObject.Destroy(kvp.Value.gameObject.gameObject);
+                }
+            }
+            Chunks.Clear();
         }
     }
 }

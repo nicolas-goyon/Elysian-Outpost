@@ -7,38 +7,47 @@ namespace TerrainGeneration
 {
     public class MainGeneration
     {
-        private readonly int3 chunkSize;
-        private readonly PerlinNoise noise;
-        private readonly FrequencyLayer[] frequencyLayers;
+        private readonly int3 _chunkSize;
+        private readonly PerlinNoise _noise;
+        private readonly FrequencyLayer[] _frequencyLayers;
+        private const uint StepHeight = 8;
+        private readonly int _seaLevel;
 
         public MainGeneration(int3 chunkSize, int seed = 0)
         {
-            this.chunkSize = chunkSize;
-            noise = new PerlinNoise(seed);
-            frequencyLayers = new FrequencyLayer[]{
-                new FrequencyLayer(frequency:.01f, amplitude:1.0f, noise:noise, roundPositionDigits:10),
+            this._chunkSize = chunkSize;
+            float amountOfSteps = ((float)chunkSize.y) / StepHeight;
+            _seaLevel = Mathf.RoundToInt(amountOfSteps * 2) - 1;
+            PerlinNoise noise1 = new(seed);
+            _frequencyLayers = new FrequencyLayer[]{
+                new (
+                    frequency:.005f, 
+                    amplitude:2.0f, 
+                    noise:noise1, 
+                    terraceSteps:amountOfSteps,
+                    roundPositionDigits:10
+                ),
             };
         }
 
-        /// <summary>
-        /// Generates a chunk at specific coordinates in the world
-        /// </summary>
-        /// <param name="chunkX">X coordinate of the chunk in world space</param>
-        /// <param name="chunkZ">Z coordinate of the chunk in world space</param>
-        /// <returns>A 3D array representing the chunk voxels</returns>
+        /**
+         * Génère un chunk à la position donnée (en coordonnées monde)
+         * @param chunkPosition Position du chunk en coordonnées monde (doit être un multiple de chunkSize)
+         * @return Tableau 3D de ushort représentant les types de blocs dans le chunk
+         */
         public ushort[,,] GenerateChunkAt(int3 chunkPosition)
         {
             int chunkX = chunkPosition.x;
             int chunkY = chunkPosition.y;
             int chunkZ = chunkPosition.z;
         
-            ushort[,,] chunk = new ushort[chunkSize.x, chunkSize.y, chunkSize.z];
+            ushort[,,] chunk = new ushort[_chunkSize.x, _chunkSize.y, _chunkSize.z];
         
-            for (int x = 0; x < chunkSize.x; x++)
+            for (int x = 0; x < _chunkSize.x; x++)
             {
-                for (int z = 0; z < chunkSize.z; z++)
+                for (int z = 0; z < _chunkSize.z; z++)
                 {
-                    for (int y = 0; y < chunkSize.y; y++)
+                    for (int y = 0; y < _chunkSize.y; y++)
                     {
                         ushort? blockType = GetBlockTypeAt(chunkPosition, new int3(x, y, z));
                         if (blockType.HasValue)
@@ -60,7 +69,8 @@ namespace TerrainGeneration
             STONE = 22,
             SAND = 13,
             WATER = 8,
-            BEDROCK = 24
+            BEDROCK = 24,
+            ERROR = 26
         }
     
 
@@ -78,27 +88,24 @@ namespace TerrainGeneration
     
             // ----- 2. Terracing : transformation en niveaux discrets -----
     
-            const int levels     = 6;  // nombre de niveaux verticaux (plateaux)
-            const int stepHeight = 4;  // hauteur d’un plateau en blocs
-            const int baseHeight = 8;  // décalage global vers le haut (par rapport au bedrock)
-    
-            int level = Mathf.RoundToInt(height01 * (levels - 1)); // 0..levels-1
-            int terrainHeight = baseHeight + level * stepHeight;   // hauteur absolue du sol
+            int terrainHeight = Mathf.FloorToInt(height01 * _chunkSize.y); // hauteur du terrain (0 à max)
     
             // Niveau de la mer (quelques marches au-dessus du bas)
-            const int seaLevel = baseHeight + stepHeight * 2;
     
             // ----- 3. Choix du bloc selon la hauteur -----
     
             // Tout ce qui est sous ou au niveau 0 = bedrock
             if (worldY <= 0)
                 return (ushort)BlockType.BEDROCK;
+            
+            if (worldY is 160 or 159 && terrainHeight > 158)
+                return (ushort)BlockType.ERROR;
     
             // Au-dessus du terrain
             if (worldY > terrainHeight)
             {
                 // Remplir en eau jusqu’au niveau de la mer
-                if (worldY <= seaLevel)
+                if (worldY <= _seaLevel)
                     return (ushort)BlockType.WATER;
     
                 // Sinon air
@@ -112,7 +119,7 @@ namespace TerrainGeneration
             {
                 // Bloc de surface
                 // Proche de l’eau => sable, sinon herbe
-                0 when terrainHeight <= seaLevel + 1 => (ushort)BlockType.SAND,
+                0 when terrainHeight <= _seaLevel + 1 => (ushort)BlockType.SAND,
                 0 => (ushort)BlockType.GRASS,
                 <= 3 => (ushort)BlockType.DIRT,
                 _ => (ushort)BlockType.STONE
@@ -125,7 +132,7 @@ namespace TerrainGeneration
             float sum = 0f;
             float totalAmp = 0f;
 
-            foreach (FrequencyLayer layer in frequencyLayers)
+            foreach (FrequencyLayer layer in _frequencyLayers)
             {
                 (float ampNoised, float amp) = layer.GetHeight01At(worldX, worldZ);
 

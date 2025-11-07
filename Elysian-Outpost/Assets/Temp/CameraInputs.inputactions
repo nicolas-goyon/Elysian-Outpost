@@ -155,6 +155,34 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+            "name": "PlayerMenuControls",
+            "id": "6a3a1ab4-92ba-49fc-89aa-12ce4426985e",
+            "actions": [
+                {
+                    "name": "OpenCloseMenu",
+                    "type": "Button",
+                    "id": "ab5d9d73-b9fe-4696-bc09-389302a1d9d6",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "4af93e44-2db1-4513-8b17-b7bc23752e93",
+                    "path": "<Keyboard>/#(M)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "OpenCloseMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": []

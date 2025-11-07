@@ -6,7 +6,7 @@ namespace TerrainGeneration
     {
         private readonly float _frequency;     // fréquence du bruit (ex: 0.01)
         private readonly float _amplitude;     // poids de cette couche dans la heightmap
-        private readonly int _terraceSteps;    // nombre de marches pour le pallier de cette couche
+        private readonly float _terraceSteps;    // nombre de marches pour le pallier de cette couche
         private readonly PerlinNoise _noise;
         private readonly int _roundPositionDigits; 
 
@@ -18,11 +18,11 @@ namespace TerrainGeneration
          * @param terraceSteps Nombre de marches pour le pallier (1 = pas de pallier)
          * @param roundPositionDigits Nombre de chiffres pour arrondir les positions (1 = pas d'arrondi) (créer des motifs carrés)
          */
-        public FrequencyLayer(float frequency, float amplitude, PerlinNoise noise ,int terraceSteps = 1, int roundPositionDigits = 1)
+        public FrequencyLayer(float frequency, float amplitude, PerlinNoise noise ,float terraceSteps = 0, int roundPositionDigits = 1)
         {
             this._frequency   = frequency;
             this._amplitude   = amplitude;
-            this._terraceSteps = Mathf.Max(terraceSteps, 1);
+            this._terraceSteps = terraceSteps;
             this._noise       = noise;
             this._roundPositionDigits = roundPositionDigits;
         }
@@ -30,7 +30,7 @@ namespace TerrainGeneration
         /**
          * Applique un “pallier” simple sur une valeur [0,1] en N marches
          */
-        private static float ApplyTerrace01(float v, int steps)
+        private static float ApplyTerrace01(float v, float steps)
         {
             v = Mathf.Clamp01(v);
             if (steps <= 1) return v;
@@ -48,7 +48,7 @@ namespace TerrainGeneration
             
             float n = _noise.Noise(x * _frequency, z * _frequency); // [0,1]
 
-            n = _terraceSteps > 1 ? ApplyTerrace01(n, _terraceSteps) : n;
+            n = _terraceSteps > 0 ? ApplyTerrace01(n, _terraceSteps) : n;
 
             return (n* _amplitude, _amplitude);
         }

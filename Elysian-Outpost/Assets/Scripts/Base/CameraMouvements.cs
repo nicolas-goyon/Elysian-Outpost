@@ -12,11 +12,20 @@ namespace Base
 
         [SerializeField] private float maxYAngle = 80f;
         [SerializeField] private float minYAngle = -80f;
+        
+        public bool ToogleCameraControl { get; set; } = true;
 
+        void Start()
+        {
+            // Lock and hide the cursor
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
 
         // Update is called once per frame
         void Update()
         {
+            if (!ToogleCameraControl) return;
 
             Vector2 viewDelta = gameInputs.GetViewDelta() * sensitivity;
             transform.Rotate(Vector3.up, viewDelta.x);
@@ -29,15 +38,7 @@ namespace Base
             angles.x = Mathf.Clamp(angles.x, minYAngle, maxYAngle);
             
             transform.eulerAngles = angles;
-            
 
-
-            // Reset the mouse position to the center of the screen
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-            //gameInputs.ResetMousePosition();
-
-        
             Vector3 vector3 = gameInputs.GetCameraMovementVector();
 
             if (gameInputs.IsSpeeding()) {

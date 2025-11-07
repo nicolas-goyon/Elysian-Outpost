@@ -241,6 +241,34 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""PlayerMenuControls"",
+            ""id"": ""6a3a1ab4-92ba-49fc-89aa-12ce4426985e"",
+            ""actions"": [
+                {
+                    ""name"": ""OpenCloseMenu"",
+                    ""type"": ""Button"",
+                    ""id"": ""ab5d9d73-b9fe-4696-bc09-389302a1d9d6"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""4af93e44-2db1-4513-8b17-b7bc23752e93"",
+                    ""path"": ""<Keyboard>/#(M)"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OpenCloseMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -251,11 +279,15 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         m_CameraMovements_Speeding = m_CameraMovements.FindAction("Speeding", throwIfNotFound: true);
         m_CameraMovements_View = m_CameraMovements.FindAction("View", throwIfNotFound: true);
         m_CameraMovements_LeftClick = m_CameraMovements.FindAction("LeftClick", throwIfNotFound: true);
+        // PlayerMenuControls
+        m_PlayerMenuControls = asset.FindActionMap("PlayerMenuControls", throwIfNotFound: true);
+        m_PlayerMenuControls_OpenCloseMenu = m_PlayerMenuControls.FindAction("OpenCloseMenu", throwIfNotFound: true);
     }
 
     ~@CameraInputs()
     {
         UnityEngine.Debug.Assert(!m_CameraMovements.enabled, "This will cause a leak and performance issues, CameraInputs.CameraMovements.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_PlayerMenuControls.enabled, "This will cause a leak and performance issues, CameraInputs.PlayerMenuControls.Disable() has not been called.");
     }
 
     /// <summary>
@@ -456,6 +488,102 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="CameraMovementsActions" /> instance referencing this action map.
     /// </summary>
     public CameraMovementsActions @CameraMovements => new CameraMovementsActions(this);
+
+    // PlayerMenuControls
+    private readonly InputActionMap m_PlayerMenuControls;
+    private List<IPlayerMenuControlsActions> m_PlayerMenuControlsActionsCallbackInterfaces = new List<IPlayerMenuControlsActions>();
+    private readonly InputAction m_PlayerMenuControls_OpenCloseMenu;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "PlayerMenuControls".
+    /// </summary>
+    public struct PlayerMenuControlsActions
+    {
+        private @CameraInputs m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public PlayerMenuControlsActions(@CameraInputs wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "PlayerMenuControls/OpenCloseMenu".
+        /// </summary>
+        public InputAction @OpenCloseMenu => m_Wrapper.m_PlayerMenuControls_OpenCloseMenu;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_PlayerMenuControls; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="PlayerMenuControlsActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(PlayerMenuControlsActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="PlayerMenuControlsActions" />
+        public void AddCallbacks(IPlayerMenuControlsActions instance)
+        {
+            if (instance == null || m_Wrapper.m_PlayerMenuControlsActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_PlayerMenuControlsActionsCallbackInterfaces.Add(instance);
+            @OpenCloseMenu.started += instance.OnOpenCloseMenu;
+            @OpenCloseMenu.performed += instance.OnOpenCloseMenu;
+            @OpenCloseMenu.canceled += instance.OnOpenCloseMenu;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="PlayerMenuControlsActions" />
+        private void UnregisterCallbacks(IPlayerMenuControlsActions instance)
+        {
+            @OpenCloseMenu.started -= instance.OnOpenCloseMenu;
+            @OpenCloseMenu.performed -= instance.OnOpenCloseMenu;
+            @OpenCloseMenu.canceled -= instance.OnOpenCloseMenu;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="PlayerMenuControlsActions.UnregisterCallbacks(IPlayerMenuControlsActions)" />.
+        /// </summary>
+        /// <seealso cref="PlayerMenuControlsActions.UnregisterCallbacks(IPlayerMenuControlsActions)" />
+        public void RemoveCallbacks(IPlayerMenuControlsActions instance)
+        {
+            if (m_Wrapper.m_PlayerMenuControlsActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="PlayerMenuControlsActions.AddCallbacks(IPlayerMenuControlsActions)" />
+        /// <seealso cref="PlayerMenuControlsActions.RemoveCallbacks(IPlayerMenuControlsActions)" />
+        /// <seealso cref="PlayerMenuControlsActions.UnregisterCallbacks(IPlayerMenuControlsActions)" />
+        public void SetCallbacks(IPlayerMenuControlsActions instance)
+        {
+            foreach (var item in m_Wrapper.m_PlayerMenuControlsActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_PlayerMenuControlsActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="PlayerMenuControlsActions" /> instance referencing this action map.
+    /// </summary>
+    public PlayerMenuControlsActions @PlayerMenuControls => new PlayerMenuControlsActions(this);
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "CameraMovements" which allows adding and removing callbacks.
     /// </summary>
@@ -491,5 +619,20 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnLeftClick(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "PlayerMenuControls" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="PlayerMenuControlsActions.AddCallbacks(IPlayerMenuControlsActions)" />
+    /// <seealso cref="PlayerMenuControlsActions.RemoveCallbacks(IPlayerMenuControlsActions)" />
+    public interface IPlayerMenuControlsActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "OpenCloseMenu" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnOpenCloseMenu(InputAction.CallbackContext context);
     }
 }
