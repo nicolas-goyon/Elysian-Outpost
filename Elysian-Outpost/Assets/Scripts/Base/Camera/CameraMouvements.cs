@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Base
 {
@@ -13,19 +14,17 @@ namespace Base
         [SerializeField] private float maxYAngle = 80f;
         [SerializeField] private float minYAngle = -80f;
         
-        public bool ToogleCameraControl { get; set; } = true;
+        public CameraControl ToogleCameraControl { get; set; } = CameraControl.FLYMODE;
 
         void Start()
         {
-            // Lock and hide the cursor
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            Set(ToogleCameraControl);
         }
 
         // Update is called once per frame
         void Update()
         {
-            if (!ToogleCameraControl) return;
+            if (ToogleCameraControl != CameraControl.FLYMODE) return;
 
             Vector2 viewDelta = gameInputs.GetViewDelta() * sensitivity;
             transform.Rotate(Vector3.up, viewDelta.x);
@@ -46,6 +45,30 @@ namespace Base
             }
 
             transform.Translate(vector3 * (speed * Time.deltaTime));
+        }
+        
+        public enum CameraControl{
+            FLYMODE,
+            MENU
+        }
+        
+        public void Set(CameraControl control)
+        {
+            switch (control)
+            {
+                case CameraControl.FLYMODE:
+                    ToogleCameraControl = CameraControl.FLYMODE;
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                    break;
+                case CameraControl.MENU:
+                    ToogleCameraControl = CameraControl.MENU;
+                    Cursor.lockState = CursorLockMode.Confined;
+                    Cursor.visible = true;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(control), control, null);
+            }
         }
     }
 }
