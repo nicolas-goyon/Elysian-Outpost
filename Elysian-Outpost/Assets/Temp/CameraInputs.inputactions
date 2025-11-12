@@ -168,15 +168,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
-                },
-                {
-                    "name": "DebugInput",
-                    "type": "Button",
-                    "id": "8a86059a-cc5e-48b4-9554-b54745849e24",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -188,17 +179,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "OpenCloseMenu",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "514dbef1-3791-4548-b887-ffa884cb2cf0",
-                    "path": "<Keyboard>/#(F)",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "DebugInput",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

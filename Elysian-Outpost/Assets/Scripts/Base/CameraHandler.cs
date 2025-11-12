@@ -7,12 +7,11 @@ using Base;
 using ScriptableObjectsDefinition;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class CameraHandler : MonoBehaviour
 {
-    [SerializeField] private GameInputs _gameInputs;
-    [SerializeField] private GameObject _spherePrefab;
+    [SerializeField] private GameInputs gameInputs;
+    [SerializeField] private GameObject spherePrefab;
     private GameObject _sphere;
 
     private TerrainHolder _terrainHolder; // TODO : Link to existing TerrainHolder
@@ -21,13 +20,13 @@ public class CameraHandler : MonoBehaviour
     [SerializeField] private Canvas _canvas;
     [SerializeField] private CameraMovements _camera;
 
-    private bool _isClicked = false;
+    private bool isClicked = false;
     
     
     // Update is called once per frame
     private void Start()
     {
-        _gameInputs._menuOpenEvent += OnOpenMenu;
+        gameInputs.OnOpenMenuEvent += OnOpenMenu;
     }
 
     private void OnOpenMenu()
@@ -36,13 +35,24 @@ public class CameraHandler : MonoBehaviour
         _canvas.enabled = !_canvas.enabled;
         
         // If the canvas is enabled, unlock the cursor, else lock it
-        _camera.Set(!_canvas.enabled ? CameraMovements.CameraControl.FLYMODE : CameraMovements.CameraControl.MENU);
+        if (_canvas.enabled)
+        {
+            Cursor.lockState = CursorLockMode.Confined;
+            Cursor.visible = true;
+            _camera.ToogleCameraControl = false;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            _camera.ToogleCameraControl = true;
+        }
     }
 
     private void OnLeftClick()
     {
         // Raycast and add a sphere at the hit point on left click
-        if (_gameInputs.IsLeftClick())
+        if (gameInputs.IsLeftClick())
         {
             // Center of the screen
             Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
@@ -52,15 +62,15 @@ public class CameraHandler : MonoBehaviour
                 Vector3 hitPoint = hitInfo.point;
                 if (_sphere == null)
                 {
-                    _sphere = Instantiate(_spherePrefab, hitPoint, Quaternion.identity);
+                    _sphere = Instantiate(spherePrefab, hitPoint, Quaternion.identity);
                 }
                 _sphere.transform.position = hitPoint - hitInfo.normal * 0.1f;
         
-                if (_isClicked)
+                if (isClicked)
                 {
                     return;
                 }
-                _isClicked = true;
+                isClicked = true;
                 
                 // (ExampleChunk chunk, uint3 voxelPosition) = _terrainHolder.GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
                 // if (chunk == null)
@@ -75,7 +85,7 @@ public class CameraHandler : MonoBehaviour
         }
         else
         {
-            _isClicked = false;
+            isClicked = false;
         }
     }
 }
