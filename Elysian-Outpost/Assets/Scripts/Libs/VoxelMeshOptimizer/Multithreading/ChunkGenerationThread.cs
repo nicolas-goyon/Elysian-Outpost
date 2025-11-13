@@ -9,9 +9,9 @@ namespace Base
 {
     public sealed class ChunkGenerationThread : IDisposable
     {
-        private readonly Queue<(int3 chunkPosition, Func<int3, ExampleChunk> chunkDataGenerationCallback)> _tasks = new();
+        private readonly Queue<(int3 chunkPosition, Func<int3, Chunk> chunkDataGenerationCallback)> _tasks = new();
         private readonly ConcurrentQueue<ChunkMeshGenerationWorker> _pendingWorkers = new();
-        private readonly ConcurrentQueue<(ExampleChunk chunk, ExampleMesh mesh)> _completedMeshes = new();
+        private readonly ConcurrentQueue<(Chunk chunk, Mesh mesh)> _completedMeshes = new();
         private readonly AutoResetEvent _signal = new(false);
         private readonly Thread _thread;
         private volatile bool _running = true;
@@ -30,7 +30,7 @@ namespace Base
 
         public string PendingMeshesCount => _completedMeshes.Count.ToString();
 
-        public void EnqueueChunk(int3 chunkPosition, Func<int3, ExampleChunk> chunkDataGenerationCallback)
+        public void EnqueueChunk(int3 chunkPosition, Func<int3, Chunk> chunkDataGenerationCallback)
         {
             if (!_running)
             {
@@ -42,7 +42,7 @@ namespace Base
         }
 
 
-        public bool TryDequeueGeneratedMesh(out (ExampleChunk chunk, ExampleMesh mesh) result)
+        public bool TryDequeueGeneratedMesh(out (Chunk chunk, Mesh mesh) result)
         {
             return _completedMeshes.TryDequeue(out result);
         }
@@ -54,9 +54,9 @@ namespace Base
                 // Start new workers if we have capacity
                 while (_pendingWorkers.Count < _maxConcurrentWorkers && _tasks.Count > 0)
                 {
-                    (int3 chunkPosition, Func<int3, ExampleChunk> chunkDataGenerationCallback) = _tasks.Dequeue();
+                    (int3 chunkPosition, Func<int3, Chunk> chunkDataGenerationCallback) = _tasks.Dequeue();
                     if (chunkDataGenerationCallback == null) throw new ArgumentNullException(nameof(chunkDataGenerationCallback));
-                    ExampleChunk chunk = chunkDataGenerationCallback(chunkPosition);
+                    Chunk chunk = chunkDataGenerationCallback(chunkPosition);
                     ChunkMeshGenerationWorker worker = new ChunkMeshGenerationWorker(chunk);
                     _pendingWorkers.Enqueue(worker);
                 }
@@ -69,7 +69,7 @@ namespace Base
                     {
                         try
                         {
-                            (ExampleChunk chunk, ExampleMesh mesh) = worker.Execute();
+                            (Chunk chunk, Mesh mesh) = worker.Execute();
                             _completedMeshes.Enqueue((chunk, mesh));
                         }
                         catch (Exception ex)

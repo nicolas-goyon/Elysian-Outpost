@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using Base;
 using Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
         /// <summary>
         /// The voxel chunk to be processed.
         /// </summary>
-        private readonly Chunk<Voxel> chunk;
+        private readonly Chunk chunk;
 
         /// <summary>
         /// The visibility map generated from the voxel chunk.
@@ -27,7 +28,7 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
         /// Initializes a new instance of the <see cref="VoxelOcclusionOptimizer"/> class.
         /// </summary>
         /// <param name="chunk">The voxel chunk to optimize.</param>
-        public VoxelOcclusionOptimizer(Chunk<Voxel> chunk)
+        public VoxelOcclusionOptimizer(Chunk chunk)
         {
             if (chunk == null) throw new NoNullAllowedException();
 
@@ -89,9 +90,9 @@ namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
             VisiblePlane[] planesBySlice = new VisiblePlane[sliceCount];
 
             chunk.ForEachCoordinate(
-                major: majorA, majorAsc: majorAO,
-                middle: middleA, middleAsc: middleAO,
-                minor: minorA, minorAsc: minorAO,
+                majorA: majorA, majorAsc: majorAO,
+                middleA: middleA, middleAsc: middleAO,
+                minorA: minorA, minorAsc: minorAO,
                 (uint x, uint y, uint z) =>
                 {
                     VoxelFace faces = visibilityMap.GetVisibleFaces(x, y, z);

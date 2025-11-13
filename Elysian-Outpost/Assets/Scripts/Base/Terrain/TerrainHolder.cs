@@ -16,7 +16,7 @@ namespace Base
      */
     public class TerrainHolder : System.IDisposable
     {
-        private Dictionary<int3, (ExampleChunk chunk, InstanciatedChunk gameObject)> Chunks { get; }
+        private Dictionary<int3, (Chunk chunk, InstanciatedChunk gameObject)> Chunks { get; }
 
         public readonly int3 ChunkSize;
         private readonly MainGeneration _gen;
@@ -31,7 +31,7 @@ namespace Base
             ChunkSize = chunkSize;
             _gen = new MainGeneration(ChunkSize,seed);
             _chunkGenerationThread = new ChunkGenerationThread(maxConcurrentWorkers);
-            Chunks = new Dictionary<int3, (ExampleChunk chunk, InstanciatedChunk gameObject)>();
+            Chunks = new Dictionary<int3, (Chunk chunk, InstanciatedChunk gameObject)>();
             _templateObject = templateObject;
             _textureAtlas = atlas;
             _chunksHolder = chunksHolder;
@@ -50,7 +50,7 @@ namespace Base
             Chunks.Clear();
         }
         
-        public (ExampleChunk chunk, uint3 voxelPosition) GetHitChunkAndVoxelPositionAtRaycast(RaycastHit hitInfo)
+        public (Chunk chunk, uint3 voxelPosition) GetHitChunkAndVoxelPositionAtRaycast(RaycastHit hitInfo)
         {
             // Slightly increase the hit point inside the voxel
             Vector3 hitPoint = hitInfo.point - hitInfo.normal * 0.01f;
@@ -60,7 +60,7 @@ namespace Base
                 Mathf.FloorToInt(hitPoint.z / ChunkSize.z) * ChunkSize.z
             );
 
-            if (!Chunks.TryGetValue(chunkPos, out (ExampleChunk chunk, InstanciatedChunk gameObject) chunkData))
+            if (!Chunks.TryGetValue(chunkPos, out (Chunk chunk, InstanciatedChunk gameObject) chunkData))
             {
                 return (null, new uint3(0,0,0)); // Chunk not loaded
             }
@@ -81,7 +81,7 @@ namespace Base
                 throw new System.Exception("Chunk generation thread is not initialized.");
             }
             
-            _chunkGenerationThread.EnqueueChunk(chunkPos, int3 => new ExampleChunk(_gen.GenerateChunkAt(chunkPos),chunkPos));
+            _chunkGenerationThread.EnqueueChunk(chunkPos, int3 => new Chunk(_gen.GenerateChunkAt(chunkPos),chunkPos));
         }
         
         
@@ -92,7 +92,7 @@ namespace Base
         //     _chunkGenerationThread.EnqueueChunk(chunk.WorldPosition , int3 => chunk);
         // }
 
-        private bool TryGetGeneratedChunk(out (ExampleChunk chunk, ExampleMesh mesh) result)
+        private bool TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result)
         {
             return _chunkGenerationThread.TryDequeueGeneratedMesh(out result);
         }
@@ -103,10 +103,10 @@ namespace Base
          */
         public void InstanciateOneChunk()
         {
-            if (!TryGetGeneratedChunk(out (ExampleChunk chunk, ExampleMesh mesh) result)) return;
-            (ExampleChunk chunk, ExampleMesh mesh) = result;
+            if (!TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result)) return;
+            (Chunk chunk, Mesh mesh) = result;
 
-            if (Chunks.TryGetValue(chunk.WorldPosition, out (ExampleChunk chunk, InstanciatedChunk instanciatedChunk) chunkData))
+            if (Chunks.TryGetValue(chunk.WorldPosition, out (Chunk chunk, InstanciatedChunk instanciatedChunk) chunkData))
             {
                 if (chunkData.instanciatedChunk is not null)
                 {
@@ -130,7 +130,7 @@ namespace Base
             }
         }
 
-        private InstanciatedChunk Create(ExampleMesh mesh, int3 position) 
+        private InstanciatedChunk Create(Mesh mesh, int3 position) 
         {
             GameObject obj = GameObject.Instantiate(_templateObject, _chunksHolder.transform);
             InstanciatedChunk singleObject = obj.GetComponent<InstanciatedChunk>();
@@ -142,7 +142,7 @@ namespace Base
         }
 
 
-        public IEnumerable<(int3 position, ExampleChunk chunk)> GetAllLoadedChunks()
+        public IEnumerable<(int3 position, Chunk chunk)> GetAllLoadedChunks()
         {
             return Chunks.Where(kvp => kvp.Value.gameObject is not null)
                 .Select(kvp => (kvp.Key, kvp.Value.chunk));

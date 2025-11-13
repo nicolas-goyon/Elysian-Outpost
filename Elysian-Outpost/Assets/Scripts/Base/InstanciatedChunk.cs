@@ -16,9 +16,9 @@ namespace Base
             }
         
 
-            public void SetMesh(ExampleMesh exampleMesh, TextureAtlas atlas)
+            public void SetMesh(Mesh mesh, TextureAtlas atlas)
             {
-                meshFilter.mesh = ObjExporter.ToUnityMesh(exampleMesh, atlas);
+                meshFilter.mesh = ObjExporter.ToUnityMesh(mesh, atlas);
                 meshCollider.sharedMesh = meshFilter.mesh;
             }
 

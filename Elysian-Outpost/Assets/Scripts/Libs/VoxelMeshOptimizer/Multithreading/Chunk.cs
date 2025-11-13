@@ -8,9 +8,9 @@ using Vector3 = System.Numerics.Vector3;
 
 namespace Base
 {
-    public class ExampleChunk : Chunk<ExampleVoxel>
+    public class Chunk
     {
-        private readonly ExampleVoxel[,,] _voxels;
+        private readonly Voxel[,,] _voxels;
         
 
         public uint XDepth { get; }
@@ -19,14 +19,14 @@ namespace Base
         
         public int3 WorldPosition { get; }
 
-        public ExampleChunk(ushort[,,] voxelArray, int3 position)
+        public Chunk(ushort[,,] voxelArray, int3 position)
         {
             XDepth = (uint)voxelArray.GetLength(0);
             YDepth = (uint)voxelArray.GetLength(1);
             ZDepth = (uint)voxelArray.GetLength(2);
             WorldPosition = position;
 
-            _voxels = new ExampleVoxel[XDepth, YDepth, ZDepth];
+            _voxels = new Voxel[XDepth, YDepth, ZDepth];
 
             // Initialize from the ushort array
             for (uint x = 0; x < XDepth; x++)
@@ -36,7 +36,7 @@ namespace Base
                     for (uint z = 0; z < ZDepth; z++)
                     {
                         ushort value = voxelArray[x, y, z];
-                        _voxels[x, y, z] = new ExampleVoxel(value);
+                        _voxels[x, y, z] = new Voxel(value);
                     }
                 }
             }
@@ -48,7 +48,7 @@ namespace Base
         /// and the second line contains all voxel IDs in X-Y-Z order, separated by commas.
         /// TODO : Need to hold the world position of the chunk as well.
         /// </summary>
-        public ExampleChunk(string fileName)
+        public Chunk(string fileName)
         {
             string[] lines = File.ReadAllLines(fileName);
             if (lines.Length < 2)
@@ -66,7 +66,7 @@ namespace Base
             YDepth = uint.Parse(sizes[1]);
             ZDepth = uint.Parse(sizes[2]);
 
-            _voxels = new ExampleVoxel[XDepth, YDepth, ZDepth];
+            _voxels = new Voxel[XDepth, YDepth, ZDepth];
 
             string[] voxelIds = lines[1].Split(',', StringSplitOptions.RemoveEmptyEntries);
             if (voxelIds.Length != XDepth * YDepth * ZDepth)
@@ -82,7 +82,7 @@ namespace Base
                     for (uint z = 0; z < ZDepth; z++)
                     {
                         ushort id = ushort.Parse(voxelIds[index++]);
-                        _voxels[x, y, z] = new ExampleVoxel(id);
+                        _voxels[x, y, z] = new Voxel(id);
                     }
                 }
             }
@@ -92,7 +92,7 @@ namespace Base
         /// <summary>
         /// Returns all voxels in this chunk in no guaranteed order.
         /// </summary>
-        public IEnumerable<ExampleVoxel> GetVoxels()
+        public IEnumerable<Voxel> GetVoxels()
         {
             for (uint x = 0; x < XDepth; x++)
             {
@@ -110,7 +110,7 @@ namespace Base
         /// Retrieves the voxel at the given position (X,Y,Z), ignoring the axis fields for now.
         /// Throws if out of range, or you could choose to return null.
         /// </summary>
-        public ExampleVoxel Get(uint x, uint y, uint z)
+        public Voxel Get(uint x, uint y, uint z)
         {
             if (x >= XDepth || y >= YDepth || z >= ZDepth)
             {
@@ -123,7 +123,7 @@ namespace Base
         /// <summary>
         /// Sets a voxel at the given position (X,Y,Z). 
         /// </summary>
-        public void Set(uint x, uint y, uint z, ExampleVoxel voxel)
+        public void Set(uint x, uint y, uint z, Voxel voxel)
         {
             if (x >= XDepth || y >= YDepth || z >= ZDepth)
             {
@@ -277,7 +277,7 @@ namespace Base
         /// Builds a mesh that contains every face for each solid voxel in the chunk.
         /// This is a naïve implementation without any form of optimization.
         /// </summary>
-        public ExampleMesh ToMesh()
+        public Mesh ToMesh()
         {
             List<MeshQuad> list = new();
 
@@ -287,7 +287,7 @@ namespace Base
                 {
                     for (uint z = 0; z < ZDepth; z++)
                     {
-                        ExampleVoxel voxel = _voxels[x, y, z];
+                        Voxel voxel = _voxels[x, y, z];
                         if (!voxel.IsSolid)
                             continue;
 
@@ -295,7 +295,7 @@ namespace Base
                     }
                 }
             }
-            ExampleMesh mesh = new(list);
+            Mesh mesh = new(list);
 
             return mesh;
         }
@@ -399,7 +399,7 @@ namespace Base
             }
 
             _voxels[position.x, position.y, position.z] =
-                new ExampleVoxel(0); // TODO : Assuming ID 0 represents an empty voxel
+                new Voxel(0); // TODO : Assuming ID 0 represents an empty voxel
         }
     }
 }

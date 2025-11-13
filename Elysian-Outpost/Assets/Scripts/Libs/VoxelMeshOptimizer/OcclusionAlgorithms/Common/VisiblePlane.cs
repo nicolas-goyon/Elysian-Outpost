@@ -1,5 +1,7 @@
 
 using System.Text;
+using Base;
+
 namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common
 {
 

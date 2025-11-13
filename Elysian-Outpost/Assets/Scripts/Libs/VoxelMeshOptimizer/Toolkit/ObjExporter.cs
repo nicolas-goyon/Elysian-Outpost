@@ -4,9 +4,9 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using ScriptableObjectsDefinition;
-using UnityEngine;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = System.Numerics.Vector3;
+using Mesh = Base.Mesh;
 
 namespace Libs.VoxelMeshOptimizer.Toolkit{
 

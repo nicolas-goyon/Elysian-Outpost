@@ -2,22 +2,21 @@
 using System.Collections.Generic;
 using Libs.VoxelMeshOptimizer;
 using Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet;
-using Unity.Mathematics;
 
 namespace Base
 {
     public readonly struct ChunkMeshGenerationWorker
     {
-        private readonly ExampleChunk _chunk;
+        private readonly Chunk _chunk;
 
-        public ChunkMeshGenerationWorker(ExampleChunk chunk)
+        public ChunkMeshGenerationWorker(Chunk chunk)
         {
             _chunk = chunk;
         }
 
-        public (ExampleChunk chunk, ExampleMesh) Execute()
+        public (Chunk chunk, Mesh) Execute()
         {
-            DisjointSetMeshOptimizer<ExampleMesh> optimizer = new(new ExampleMesh(new List<MeshQuad>()));
+            DisjointSetMeshOptimizer optimizer = new(new Mesh(new List<MeshQuad>()));
             return (_chunk, optimizer.Optimize(_chunk));
         }
     }

@@ -1,22 +1,21 @@
 using System.Collections.Generic;
 using Libs.VoxelMeshOptimizer;
 using UnityEngine;
-using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 
 namespace Base
 {
-    public class ExampleMesh : Mesh
+    public class Mesh
     {
         public List<MeshQuad> Quads { get; set; } 
 
-        public ExampleMesh(List<MeshQuad> quads)
+        public Mesh(List<MeshQuad> quads)
         {
             Quads = quads;
         }
         
         
 
-        public ExampleMesh()
+        public Mesh()
         {
             Quads = new List<MeshQuad>();
         }
