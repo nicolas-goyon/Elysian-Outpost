@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Libs.VoxelMeshOptimizer;
+﻿using System.Collections.Generic;
 using Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet;
 
-namespace Base
+namespace Libs.VoxelMeshOptimizer.Multithreading
 {
     public readonly struct ChunkMeshGenerationWorker
     {

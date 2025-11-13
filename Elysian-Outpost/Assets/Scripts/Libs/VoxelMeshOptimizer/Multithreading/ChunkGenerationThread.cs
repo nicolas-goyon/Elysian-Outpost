@@ -2,10 +2,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using Base;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace Base
+namespace Libs.VoxelMeshOptimizer.Multithreading
 {
     public sealed class ChunkGenerationThread : IDisposable
     {
@@ -15,7 +16,7 @@ namespace Base
         private readonly AutoResetEvent _signal = new(false);
         private readonly Thread _thread;
         private volatile bool _running = true;
-        private int _maxConcurrentWorkers;
+        private readonly int _maxConcurrentWorkers;
 
         public ChunkGenerationThread(int maxConcurrentWorkers = 2)
         {

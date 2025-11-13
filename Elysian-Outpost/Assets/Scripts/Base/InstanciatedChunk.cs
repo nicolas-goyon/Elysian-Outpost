@@ -1,6 +1,7 @@
 ﻿using Libs.VoxelMeshOptimizer.Toolkit;
 using ScriptableObjectsDefinition;
 using UnityEngine;
+using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 
 namespace Base
 {

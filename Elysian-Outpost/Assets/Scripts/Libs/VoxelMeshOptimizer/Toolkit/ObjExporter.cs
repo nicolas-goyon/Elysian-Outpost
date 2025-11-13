@@ -6,7 +6,7 @@ using System.Text;
 using ScriptableObjectsDefinition;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = System.Numerics.Vector3;
-using Mesh = Base.Mesh;
+using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 
 namespace Libs.VoxelMeshOptimizer.Toolkit{
 

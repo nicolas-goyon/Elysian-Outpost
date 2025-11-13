@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Libs.VoxelMeshOptimizer;
+using Libs.VoxelMeshOptimizer.Multithreading;
 using ScriptableObjectsDefinition;
 using TerrainGeneration;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
+using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 
 namespace Base
 {

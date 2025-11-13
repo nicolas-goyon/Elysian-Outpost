@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using Libs.VoxelMeshOptimizer;
-using UnityEngine;
 
-namespace Base
+namespace Libs.VoxelMeshOptimizer
 {
     public class Mesh
     {

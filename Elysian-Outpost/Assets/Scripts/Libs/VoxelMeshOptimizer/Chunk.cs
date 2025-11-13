@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Libs.VoxelMeshOptimizer;
+using Base;
 using Unity.Mathematics;
-using UnityEngine;
+using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 using Vector3 = System.Numerics.Vector3;
 
-namespace Base
+namespace Libs.VoxelMeshOptimizer
 {
     public class Chunk
     {

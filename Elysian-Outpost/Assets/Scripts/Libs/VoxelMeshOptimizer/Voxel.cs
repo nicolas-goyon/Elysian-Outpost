@@ -1,7 +1,6 @@
 using System;
-using Libs.VoxelMeshOptimizer;
 
-namespace Base
+namespace Libs.VoxelMeshOptimizer
 {
 
     public class Voxel
