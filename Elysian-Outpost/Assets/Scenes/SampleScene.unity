@@ -438,10 +438,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e67c2974b8639743a7aac3a41386c7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GenerateTerrainAroundCamera
-  gameInputs: {fileID: 330585548}
-  spherePrefab: {fileID: 1106587680}
+  _gameInputs: {fileID: 330585548}
   _canvas: {fileID: 387635443}
   _camera: {fileID: 330585549}
+  _wanderingEntityPrefab: {fileID: 6067554355899390938, guid: 547a4bfe6c50cd74fb02baf3d2cb22d0, type: 3}
 --- !u!114 &330585551
 MonoBehaviour:
   m_ObjectHideFlags: 0
