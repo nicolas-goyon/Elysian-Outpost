@@ -3,7 +3,7 @@ using ScriptableObjectsDefinition;
 using UnityEngine;
 using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 
-namespace Base
+namespace Base.Terrain
 {
     public class InstanciatedChunk : MonoBehaviour
     {
