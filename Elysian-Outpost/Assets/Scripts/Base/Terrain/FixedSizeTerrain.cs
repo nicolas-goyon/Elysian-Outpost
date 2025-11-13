@@ -39,7 +39,7 @@ namespace Base.Terrain
 
         public void Pause()
         {
-            _running = false;
+            _running = !_running;
         }
     
         public void ClearAllChunks()

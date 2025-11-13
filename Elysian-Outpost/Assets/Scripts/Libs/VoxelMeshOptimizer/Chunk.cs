@@ -119,6 +119,21 @@ namespace Libs.VoxelMeshOptimizer
 
             return _voxels[x, y, z];
         }
+        
+        public Voxel GetAtWorldPosition(int3 worldPosition)
+        {
+            int localX = worldPosition.x - WorldPosition.x;
+            int localY = worldPosition.y - WorldPosition.y;
+            int localZ = worldPosition.z - WorldPosition.z;
+
+            if (localX < 0 || localY < 0 || localZ < 0 ||
+                localX >= XDepth || localY >= YDepth || localZ >= ZDepth)
+            {
+                throw new ArgumentOutOfRangeException("Requested world position is out of chunk bounds.");
+            }
+
+            return _voxels[localX, localY, localZ];
+        }
 
         /// <summary>
         /// Sets a voxel at the given position (X,Y,Z). 
@@ -131,6 +146,21 @@ namespace Libs.VoxelMeshOptimizer
             }
 
             _voxels[x, y, z] = voxel;
+        }
+        
+        public void SetAtWorldPosition(int3 worldPosition, Voxel voxel)
+        {
+            int localX = worldPosition.x - WorldPosition.x;
+            int localY = worldPosition.y - WorldPosition.y;
+            int localZ = worldPosition.z - WorldPosition.z;
+
+            if (localX < 0 || localY < 0 || localZ < 0 ||
+                localX >= XDepth || localY >= YDepth || localZ >= ZDepth)
+            {
+                throw new ArgumentOutOfRangeException("Requested world position is out of chunk bounds.");
+            }
+
+            _voxels[localX, localY, localZ] = voxel;
         }
 
         /// <summary>

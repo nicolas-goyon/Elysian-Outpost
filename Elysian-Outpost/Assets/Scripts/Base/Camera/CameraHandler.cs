@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using Base.Terrain;
 using Libs.VoxelMeshOptimizer;
 using Unity.Mathematics;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Base.Camera
 {
@@ -27,12 +29,11 @@ namespace Base.Camera
 
         private void OnLeftClick()
         {
-            // SpawnEntityAtCursor();
-            OnPickUpDropVoxel();
+            SpawnEntityAtCursor();
+            // OnPickUpDropVoxel();
         }
 
         #region WanderingEntitySpawn
-
 
         [SerializeField] private WanderingEntity _wanderingEntityPrefab;
 
@@ -59,46 +60,125 @@ namespace Base.Camera
             if (_canvas.enabled) return;
             Ray ray = UnityEngine.Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
             if (!Physics.Raycast(ray, out RaycastHit hitInfo)) return;
-            
-            
-            
+
+
+            (List<int3> solidVoxels, List<int3> nonSolidVoxels) = PossibleNearbyVoxelPositions(hitInfo.point, 3);
+            if (solidVoxels.Count == 0)
+            {
+                Debug.Log($"Solid voxel list is empty, cannot pick up or drop voxel.");
+                return;
+            }
+
+            if (nonSolidVoxels.Count == 0)
+            {
+                Debug.Log($"Non-solid voxel list is empty, cannot pick up or drop voxel.");
+                return;
+            }
+
+
             if (_voxelInventory >= 0)
             {
-                (Chunk chunk, uint3 voxelPosition) = _terrain.TerrainHolder.GetChunkAndVoxelPositionBeforeHitRaycast(hitInfo);
-                Voxel voxelData = chunk.Get(voxelPosition.x, voxelPosition.y, voxelPosition.z);
+                // Try to pick up a block
+                int randomIndex = Random.Range(0, nonSolidVoxels.Count);
+                int3 selectedVoxelPosition = nonSolidVoxels[randomIndex];
+
+                Chunk chunk = _terrain.TerrainHolder.GetChunkAtWorldPosition(new int3(
+                    (int)selectedVoxelPosition.x,
+                    (int)selectedVoxelPosition.y,
+                    (int)selectedVoxelPosition.z
+                ));
+                if (chunk == null)
+                {
+                    Debug.LogError(
+                        $"Should not happen: no chunk found at {selectedVoxelPosition} for {gameObject.name}");
+                    return;
+                }
+
+                Voxel voxelData = chunk.GetAtWorldPosition(selectedVoxelPosition);
                 if (voxelData == null || voxelData.IsSolid)
                 {
                     Debug.LogError(
-                        $"Should not happen: hit a solid voxel at {voxelPosition} in chunk at {chunk.WorldPosition}");
+                        $"Should not happen: hit a solid voxel at {selectedVoxelPosition} in chunk at {chunk.WorldPosition}");
                     return;
                 }
 
                 // Place the voxel
-                Debug.Log($"Placed voxel ID {_voxelInventory} at {voxelPosition} in chunk at {chunk.WorldPosition}");
-                chunk.Set(voxelPosition.x, voxelPosition.y, voxelPosition.z,
+                chunk.SetAtWorldPosition(selectedVoxelPosition,
                     new Voxel((ushort)_voxelInventory));
                 _terrain.TerrainHolder.ReloadChunk(chunk);
                 _voxelInventory = -1;
             }
             else
             {
-                (Chunk chunk, uint3 voxelPosition) =
-                    _terrain.TerrainHolder.GetHitChunkAndVoxelPositionAtRaycast(hitInfo);
-                Voxel voxelData = chunk.Get(voxelPosition.x, voxelPosition.y, voxelPosition.z);
+                // Try to pick up a block
+                int randomIndex = Random.Range(0, solidVoxels.Count);
+                int3 selectedVoxelPosition = solidVoxels[randomIndex];
+
+                Chunk chunk = _terrain.TerrainHolder.GetChunkAtWorldPosition(new int3(
+                    (int)selectedVoxelPosition.x,
+                    (int)selectedVoxelPosition.y,
+                    (int)selectedVoxelPosition.z
+                ));
+                if (chunk == null)
+                {
+                    Debug.LogError(
+                        $"Should not happen: no chunk found at {selectedVoxelPosition} for {gameObject.name}");
+                    return;
+                }
+
+                Voxel voxelData = chunk.GetAtWorldPosition(selectedVoxelPosition);
                 if (voxelData == null || !voxelData.IsSolid)
                 {
                     Debug.LogError(
-                        $"Should not happen: hit a non-solid voxel at {voxelPosition} in chunk at {chunk.WorldPosition}");
+                        $"Should not happen: hit a non-solid voxel at {selectedVoxelPosition} in chunk at {chunk.WorldPosition}");
                     return;
                 }
 
                 // Pick up the voxel
-                Debug.Log($"Picked up voxel ID {voxelData.ID} at {voxelPosition} in chunk at {chunk.WorldPosition}");
                 _voxelInventory = (short)voxelData.ID;
-                chunk.Set(voxelPosition.x, voxelPosition.y, voxelPosition.z, null);
+                chunk.SetAtWorldPosition(selectedVoxelPosition, null);
                 _terrain.TerrainHolder.ReloadChunk(chunk);
                 
             }
+        }
+
+        private (List<int3> solid, List<int3> nonSolid) PossibleNearbyVoxelPositions(Vector3 transform, int radius)
+        {
+            List<int3> solidPositions = new();
+            List<int3> nonSolidPositions = new();
+            int3 centerPos = new int3(
+                Mathf.FloorToInt(transform.x),
+                Mathf.FloorToInt(transform.y),
+                Mathf.FloorToInt(transform.z)
+            );
+
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    for (int z = -radius; z <= radius; z++)
+                    {
+                        int3 worldPos = new int3(
+                            centerPos.x + x,
+                            centerPos.y + y,
+                            centerPos.z + z
+                        );
+                        Voxel voxel = _terrain.TerrainHolder.GetVoxelAtWorldPosition(worldPos);
+                        if (voxel == null) continue; // Out of bounds
+
+                        if (voxel.IsSolid)
+                        {
+                            solidPositions.Add(worldPos);
+                        }
+                        else
+                        {
+                            nonSolidPositions.Add(worldPos);
+                        }
+                    }
+                }
+            }
+
+            return (solidPositions, nonSolidPositions);
         }
 
         #endregion
