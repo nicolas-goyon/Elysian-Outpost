@@ -1,18 +1,14 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Libs.VoxelMeshOptimizer;
 using Libs.VoxelMeshOptimizer.Multithreading;
 using ScriptableObjectsDefinition;
 using TerrainGeneration;
 using Unity.Mathematics;
-using Unity.VisualScripting;
 using UnityEngine;
 using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 
-namespace Base
+namespace Base.Terrain
 {
     /**
      * A class to hold all the chunks in the world.
