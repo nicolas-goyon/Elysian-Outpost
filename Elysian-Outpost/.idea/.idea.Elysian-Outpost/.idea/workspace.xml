@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="" />
+    <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/SingleObject.cs.meta" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -127,7 +130,7 @@
       <workItem from="1762421255830" duration="16454000" />
       <workItem from="1762509362984" duration="3278000" />
       <workItem from="1762959187027" duration="4031000" />
-      <workItem from="1763026137364" duration="1501000" />
+      <workItem from="1763026137364" duration="1815000" />
     </task>
     <servers />
   </component>
