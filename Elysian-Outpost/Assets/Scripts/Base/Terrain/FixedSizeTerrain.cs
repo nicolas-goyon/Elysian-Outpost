@@ -56,8 +56,6 @@ public class FixedSizeTerrain : MonoBehaviour
         _running = false;
     }
 
-    private bool isClicked = false;
-    
     // Update is called once per frame
     private void Update()
     {
