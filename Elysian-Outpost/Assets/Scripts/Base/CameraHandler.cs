@@ -26,27 +26,14 @@ public class CameraHandler : MonoBehaviour
     // Update is called once per frame
     private void Start()
     {
-        gameInputs.OnOpenMenuEvent += OnOpenMenu;
+        gameInputs.OnMenuEvent += OnOpenMenu;
     }
 
     private void OnOpenMenu()
     {
         // If open menu input is detected, toggle the canvas visibility
         _canvas.enabled = !_canvas.enabled;
-        
-        // If the canvas is enabled, unlock the cursor, else lock it
-        if (_canvas.enabled)
-        {
-            Cursor.lockState = CursorLockMode.Confined;
-            Cursor.visible = true;
-            _camera.ToogleCameraControl = false;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-            _camera.ToogleCameraControl = true;
-        }
+        _camera.Set(_canvas.enabled ? CameraMovements.CameraState.OnMenu : CameraMovements.CameraState.FreeFly);
     }
 
     private void OnLeftClick()

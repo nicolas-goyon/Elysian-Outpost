@@ -254,6 +254,15 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Debug"",
+                    ""type"": ""Button"",
+                    ""id"": ""85f22323-8c37-4894-870b-a31e5d39a1bc"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -265,6 +274,17 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""OpenCloseMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d9447277-5477-4520-8438-adac77ee4230"",
+                    ""path"": ""<Keyboard>/g"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Debug"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -282,6 +302,7 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         // PlayerMenuControls
         m_PlayerMenuControls = asset.FindActionMap("PlayerMenuControls", throwIfNotFound: true);
         m_PlayerMenuControls_OpenCloseMenu = m_PlayerMenuControls.FindAction("OpenCloseMenu", throwIfNotFound: true);
+        m_PlayerMenuControls_Debug = m_PlayerMenuControls.FindAction("Debug", throwIfNotFound: true);
     }
 
     ~@CameraInputs()
@@ -493,6 +514,7 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_PlayerMenuControls;
     private List<IPlayerMenuControlsActions> m_PlayerMenuControlsActionsCallbackInterfaces = new List<IPlayerMenuControlsActions>();
     private readonly InputAction m_PlayerMenuControls_OpenCloseMenu;
+    private readonly InputAction m_PlayerMenuControls_Debug;
     /// <summary>
     /// Provides access to input actions defined in input action map "PlayerMenuControls".
     /// </summary>
@@ -508,6 +530,10 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "PlayerMenuControls/OpenCloseMenu".
         /// </summary>
         public InputAction @OpenCloseMenu => m_Wrapper.m_PlayerMenuControls_OpenCloseMenu;
+        /// <summary>
+        /// Provides access to the underlying input action "PlayerMenuControls/Debug".
+        /// </summary>
+        public InputAction @Debug => m_Wrapper.m_PlayerMenuControls_Debug;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -537,6 +563,9 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
             @OpenCloseMenu.started += instance.OnOpenCloseMenu;
             @OpenCloseMenu.performed += instance.OnOpenCloseMenu;
             @OpenCloseMenu.canceled += instance.OnOpenCloseMenu;
+            @Debug.started += instance.OnDebug;
+            @Debug.performed += instance.OnDebug;
+            @Debug.canceled += instance.OnDebug;
         }
 
         /// <summary>
@@ -551,6 +580,9 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
             @OpenCloseMenu.started -= instance.OnOpenCloseMenu;
             @OpenCloseMenu.performed -= instance.OnOpenCloseMenu;
             @OpenCloseMenu.canceled -= instance.OnOpenCloseMenu;
+            @Debug.started -= instance.OnDebug;
+            @Debug.performed -= instance.OnDebug;
+            @Debug.canceled -= instance.OnDebug;
         }
 
         /// <summary>
@@ -634,5 +666,12 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnOpenCloseMenu(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Debug" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDebug(InputAction.CallbackContext context);
     }
 }

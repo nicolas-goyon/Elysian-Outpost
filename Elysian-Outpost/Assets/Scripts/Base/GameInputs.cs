@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Base
 {
@@ -8,9 +9,9 @@ namespace Base
         private CameraInputs _inputActions;
         
         // Event handlers
-        public delegate void OnOpenMenuEventHandler();
-        public event OnOpenMenuEventHandler OnOpenMenuEvent;
-        private bool _menuOpenKeyWasPressed = false;
+        public KeyPressedEvent OnMenuEvent;
+        public KeyPressedEvent OnClickEvent;
+        public KeyPressedEvent OnDebugEvent;
         
         
         // Start is called before the first frame update
@@ -19,21 +20,18 @@ namespace Base
             _inputActions = new CameraInputs();
             _inputActions.CameraMovements.Enable();
             _inputActions.PlayerMenuControls.Enable();
-            // _inputActions.PlayerMenuControls.Disable();
+            
+            OnMenuEvent = new KeyPressedEvent("Menu", _inputActions.PlayerMenuControls.OpenCloseMenu);
+            OnClickEvent = new KeyPressedEvent("Click", _inputActions.CameraMovements.LeftClick);
+            OnDebugEvent = new KeyPressedEvent("Debug", _inputActions.PlayerMenuControls.Debug);
         
         }
 
         private void Update()
         {
-            if (IsOpenMenu() && !_menuOpenKeyWasPressed)
-            {
-                OnOpenMenuEvent?.Invoke();
-                _menuOpenKeyWasPressed = true;
-            }
-            else if (!IsOpenMenu())
-            {
-                _menuOpenKeyWasPressed = false;
-            }
+            OnMenuEvent.Update();
+            OnClickEvent.Update();
+            OnDebugEvent.Update();
         }
         
 
@@ -58,7 +56,41 @@ namespace Base
         }
         
         
-        
+        public class KeyPressedEvent
+        {
+            public readonly string Name;
+            public delegate void KeyPressedAction();
+            public event KeyPressedAction OnKeyPressed;
+            
+            private bool _keyWasPressed = false;
+            private readonly InputAction _inputAction;
+            
+            public KeyPressedEvent(string name, InputAction inputAction)
+            {
+                Name = name;
+                _inputAction = inputAction;
+            }
+            
+            public void Update()
+            {
+                if (_inputAction.ReadValue<float>() > 0 && !_keyWasPressed)
+                {
+                    OnKeyPressed?.Invoke();
+                    _keyWasPressed = true;
+                }
+                else if (_inputAction.ReadValue<float>() == 0)
+                {
+                    _keyWasPressed = false;
+                }
+            }
+            
+            public static KeyPressedEvent operator +(KeyPressedEvent e, KeyPressedAction action)
+            {
+                e.OnKeyPressed += action;
+                return e;
+            }
+            
+        }
         
         
         
