@@ -6,10 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/BasicMovingEntity.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/BasicMovingEntity.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/WanderingEntity.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/WanderingEntity.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Camera/CameraHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Camera/CameraHandler.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/NavMeshHotReload.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/NavMeshHotReload.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/FixedSizeTerrain.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/FixedSizeTerrain.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/TerrainHolder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/TerrainHolder.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -134,7 +135,7 @@
       <workItem from="1762421255830" duration="16454000" />
       <workItem from="1762509362984" duration="3278000" />
       <workItem from="1762959187027" duration="4031000" />
-      <workItem from="1763026137364" duration="3306000" />
+      <workItem from="1763026137364" duration="5737000" />
     </task>
     <servers />
   </component>

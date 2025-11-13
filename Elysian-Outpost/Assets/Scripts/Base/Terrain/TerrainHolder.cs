@@ -48,7 +48,13 @@ namespace Base.Terrain
             _chunkGenerationThread.Dispose();
             Chunks.Clear();
         }
+
+        #region GetChunkAndVoxelPosition
+
         
+        /**
+         * Given a raycast hit, return the chunk and voxel position the ray hit inside that chunk.
+         */
         public (Chunk chunk, uint3 voxelPosition) GetHitChunkAndVoxelPositionAtRaycast(RaycastHit hitInfo)
         {
             // Slightly increase the hit point inside the voxel
@@ -71,6 +77,37 @@ namespace Base.Terrain
             );
             return (chunkData.chunk, localVoxelPos);
         }
+
+        /**
+         * Given a raycast hit, return the chunk and voxel position just before the hit inside that chunk.
+         *
+         * In other words, the voxel that the ray was in before hitting the target voxel. (e.g. for placing a block against another block)
+         */
+        public (Chunk chunk, uint3 voxelPosition) GetChunkAndVoxelPositionBeforeHitRaycast(RaycastHit hitInfo)
+        {
+            // Slightly decrease the hit point inside the voxel
+            Vector3 hitPoint = hitInfo.point + hitInfo.normal * 0.01f;
+            int3 chunkPos = new int3(
+                Mathf.FloorToInt(hitPoint.x / ChunkSize.x) * ChunkSize.x,
+                Mathf.FloorToInt(hitPoint.y / ChunkSize.y) * ChunkSize.y,
+                Mathf.FloorToInt(hitPoint.z / ChunkSize.z) * ChunkSize.z
+            );
+
+            if (!Chunks.TryGetValue(chunkPos, out (Chunk chunk, InstanciatedChunk gameObject) chunkData))
+            {
+                return (null, new uint3(0,0,0)); // Chunk not loaded
+            }
+
+            uint3 localVoxelPos = new uint3(
+                (uint)(Mathf.FloorToInt(hitPoint.x) - chunkPos.x),
+                (uint)(Mathf.FloorToInt(hitPoint.y ) - chunkPos.y),
+                (uint)(Mathf.FloorToInt(hitPoint.z) - chunkPos.z)
+            );
+            return (chunkData.chunk, localVoxelPos);
+        }
+
+        #endregion
+        
         
         public void GenerateNewChunkAt(int3 chunkPos)
         {
@@ -84,12 +121,12 @@ namespace Base.Terrain
         }
         
         
-        // public void ReloadChunk(ExampleChunk chunk)
-        // {
-        //     if (_chunkGenerationThread == null) throw new System.Exception("Chunk generation thread is not initialized.");
-        //     
-        //     _chunkGenerationThread.EnqueueChunk(chunk.WorldPosition , int3 => chunk);
-        // }
+        public void ReloadChunk(Chunk chunk)
+        {
+            if (_chunkGenerationThread == null) throw new System.Exception("Chunk generation thread is not initialized.");
+            
+            _chunkGenerationThread.EnqueueChunk(chunk.WorldPosition , int3 => chunk);
+        }
 
         private bool TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result)
         {

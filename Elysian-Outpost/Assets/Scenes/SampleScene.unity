@@ -442,6 +442,7 @@ MonoBehaviour:
   _canvas: {fileID: 387635443}
   _camera: {fileID: 330585549}
   _wanderingEntityPrefab: {fileID: 6067554355899390938, guid: 547a4bfe6c50cd74fb02baf3d2cb22d0, type: 3}
+  _terrain: {fileID: 330585551}
 --- !u!114 &330585551
 MonoBehaviour:
   m_ObjectHideFlags: 0

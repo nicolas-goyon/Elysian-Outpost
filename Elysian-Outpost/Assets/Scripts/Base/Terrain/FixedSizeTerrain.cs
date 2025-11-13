@@ -16,14 +16,14 @@ namespace Base.Terrain
         [SerializeField] private int _maxConcurrentWorkers = 10;
         [SerializeField] private int _meshPerFrame = 50;
 
-        private TerrainHolder _terrainHolder;
+        public TerrainHolder TerrainHolder { get; private set; }
 
         private bool _running = false;
 
         private void Start()
         {
             GameObject holder = new GameObject("ChunksHolder");
-            _terrainHolder = new TerrainHolder(_templateObject, _textureAtlas, holder, _chunkSize, _seed, _maxConcurrentWorkers);
+            TerrainHolder = new TerrainHolder(_templateObject, _textureAtlas, holder, _chunkSize, _seed, _maxConcurrentWorkers);
         }
     
         public void BegginGeneration()
@@ -31,7 +31,7 @@ namespace Base.Terrain
             int3[] requiredChunks = GetChunksInViewDistance(PositionToInt(), _terrainSize);
             foreach (int3 chunkPos in requiredChunks)
             {
-                _terrainHolder.GenerateNewChunkAt(chunkPos);
+                TerrainHolder.GenerateNewChunkAt(chunkPos);
             }
 
             _running = true;
@@ -44,14 +44,14 @@ namespace Base.Terrain
     
         public void ClearAllChunks()
         {
-            _terrainHolder.ClearAllChunks();
+            TerrainHolder.ClearAllChunks();
             _running = false;
         }
     
         public void Cleanup(){
         
-            _terrainHolder.ClearAllChunks();
-            _terrainHolder.Dispose();
+            TerrainHolder.ClearAllChunks();
+            TerrainHolder.Dispose();
             _running = false;
         }
 
@@ -64,7 +64,7 @@ namespace Base.Terrain
 
         private void OnDestroy()
         {
-            _terrainHolder.Dispose();
+            TerrainHolder.Dispose();
         }
 
         #region Get Chunks to Load/Unload
@@ -79,21 +79,21 @@ namespace Base.Terrain
         {
             int chunksInViewDistance = (2 * viewDistance) * (2 * viewDistance) * (_terrainHeight);
             int3[] chunks = new int3[chunksInViewDistance];
-            int centerPositionChunkX = Mathf.FloorToInt((float)centerPosition.x / _terrainHolder.ChunkSize.x);
-            int centerPositionChunkZ = Mathf.FloorToInt((float)centerPosition.z / _terrainHolder.ChunkSize.z);
-            int xStart = (centerPositionChunkX - viewDistance) * _terrainHolder.ChunkSize.x;
-            int zStart = (centerPositionChunkZ - viewDistance)* _terrainHolder.ChunkSize.z;
-            int xEnd = (centerPositionChunkX + viewDistance)* _terrainHolder.ChunkSize.x;
-            int zEnd = (centerPositionChunkZ + viewDistance)* _terrainHolder.ChunkSize.z;
+            int centerPositionChunkX = Mathf.FloorToInt((float)centerPosition.x / TerrainHolder.ChunkSize.x);
+            int centerPositionChunkZ = Mathf.FloorToInt((float)centerPosition.z / TerrainHolder.ChunkSize.z);
+            int xStart = (centerPositionChunkX - viewDistance) * TerrainHolder.ChunkSize.x;
+            int zStart = (centerPositionChunkZ - viewDistance)* TerrainHolder.ChunkSize.z;
+            int xEnd = (centerPositionChunkX + viewDistance)* TerrainHolder.ChunkSize.x;
+            int zEnd = (centerPositionChunkZ + viewDistance)* TerrainHolder.ChunkSize.z;
         
         
             int index = 0;
-            for (int x = xStart; x < xEnd; x += _terrainHolder.ChunkSize.x)
+            for (int x = xStart; x < xEnd; x += TerrainHolder.ChunkSize.x)
             {
-                for (int z = zStart; z < zEnd; z += _terrainHolder.ChunkSize.z)
+                for (int z = zStart; z < zEnd; z += TerrainHolder.ChunkSize.z)
                 {
-                    for (int y = 0; y < _terrainHeight * _terrainHolder.ChunkSize.y; y +=
-                             _terrainHolder.ChunkSize.y)
+                    for (int y = 0; y < _terrainHeight * TerrainHolder.ChunkSize.y; y +=
+                             TerrainHolder.ChunkSize.y)
                     {
                         chunks[index] = new int3(x, y, z);
                         index++;
@@ -117,7 +117,7 @@ namespace Base.Terrain
         private void ProcessGeneratedChunks()
         {
             // _terrainHolder.InstanciateOneChunk();
-            _terrainHolder.InstanciateMultipleChunks(_meshPerFrame);
+            TerrainHolder.InstanciateMultipleChunks(_meshPerFrame);
         }
     }
 }
