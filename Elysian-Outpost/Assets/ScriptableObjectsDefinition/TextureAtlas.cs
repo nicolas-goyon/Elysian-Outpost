@@ -1,4 +1,5 @@
 using System;
+using Base.InGameConsole;
 using UnityEngine;
 
 namespace ScriptableObjectsDefinition
@@ -46,7 +47,7 @@ namespace ScriptableObjectsDefinition
             {
                 if (!_wasWarned) return;
                 _wasWarned = false;
-                Debug.Log("Atlas sizes are valid.");
+                DebuggerConsole.Log("Atlas sizes are valid.");
             }
         }
         

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using Base.InGameConsole;
 using Unity.AI.Navigation;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -27,7 +28,7 @@ namespace Base.AI
             // Get the elapsed time as a TimeSpan value.
             TimeSpan ts = _stopWatch.Elapsed;
 
-            Debug.Log($"NavMesh hot reload completed in: { ts.TotalMilliseconds }ms");
+            DebuggerConsole.Log($"NavMesh hot reload completed in: { ts.TotalMilliseconds }ms");
         }
 
     }

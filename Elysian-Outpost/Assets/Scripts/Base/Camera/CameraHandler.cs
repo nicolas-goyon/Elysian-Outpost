@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Base.InGameConsole;
 using Base.Terrain;
 using Libs.VoxelMeshOptimizer;
 using Unity.Mathematics;
@@ -23,6 +24,7 @@ namespace Base.Camera
         private void OnOpenMenu()
         {
             // If open menu input is detected, toggle the canvas visibility
+            DebuggerConsole.LogDeconstruct(this, maxDepth:3);
             _canvas.SetActive(!_canvas.activeSelf);
             _camera.Set(_canvas.activeSelf ? CameraMovements.CameraState.OnMenu : CameraMovements.CameraState.FreeFly);
         }
@@ -65,13 +67,13 @@ namespace Base.Camera
             (List<int3> solidVoxels, List<int3> nonSolidVoxels) = PossibleNearbyVoxelPositions(hitInfo.point, 3);
             if (solidVoxels.Count == 0)
             {
-                Debug.Log($"Solid voxel list is empty, cannot pick up or drop voxel.");
+                DebuggerConsole.Log($"Solid voxel list is empty, cannot pick up or drop voxel.");
                 return;
             }
 
             if (nonSolidVoxels.Count == 0)
             {
-                Debug.Log($"Non-solid voxel list is empty, cannot pick up or drop voxel.");
+                DebuggerConsole.Log($"Non-solid voxel list is empty, cannot pick up or drop voxel.");
                 return;
             }
 
@@ -89,7 +91,7 @@ namespace Base.Camera
                 ));
                 if (chunk == null)
                 {
-                    Debug.LogError(
+                    DebuggerConsole.LogError(
                         $"Should not happen: no chunk found at {selectedVoxelPosition} for {gameObject.name}");
                     return;
                 }
@@ -97,7 +99,7 @@ namespace Base.Camera
                 Voxel voxelData = chunk.GetAtWorldPosition(selectedVoxelPosition);
                 if (voxelData == null || voxelData.IsSolid)
                 {
-                    Debug.LogError(
+                    DebuggerConsole.LogError(
                         $"Should not happen: hit a solid voxel at {selectedVoxelPosition} in chunk at {chunk.WorldPosition}");
                     return;
                 }
@@ -121,7 +123,7 @@ namespace Base.Camera
                 ));
                 if (chunk == null)
                 {
-                    Debug.LogError(
+                    DebuggerConsole.LogError(
                         $"Should not happen: no chunk found at {selectedVoxelPosition} for {gameObject.name}");
                     return;
                 }
@@ -129,7 +131,7 @@ namespace Base.Camera
                 Voxel voxelData = chunk.GetAtWorldPosition(selectedVoxelPosition);
                 if (voxelData == null || !voxelData.IsSolid)
                 {
-                    Debug.LogError(
+                    DebuggerConsole.LogError(
                         $"Should not happen: hit a non-solid voxel at {selectedVoxelPosition} in chunk at {chunk.WorldPosition}");
                     return;
                 }

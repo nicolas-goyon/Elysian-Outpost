@@ -12,6 +12,7 @@ namespace Base
         public KeyPressedEvent OnMenuEvent;
         public KeyPressedEvent OnClickEvent;
         public KeyPressedEvent OnDebugEvent;
+        public KeyPressedEvent OnConsoleEvent;
         
         
         // Start is called before the first frame update
@@ -24,6 +25,8 @@ namespace Base
             OnMenuEvent = new KeyPressedEvent("Menu", _inputActions.PlayerMenuControls.OpenCloseMenu);
             OnClickEvent = new KeyPressedEvent("Click", _inputActions.CameraMovements.LeftClick);
             OnDebugEvent = new KeyPressedEvent("Debug", _inputActions.PlayerMenuControls.Debug);
+            OnConsoleEvent = new KeyPressedEvent("Console", _inputActions.PlayerMenuControls.ConsoleOpen);
+            
         
         }
 
@@ -32,6 +35,7 @@ namespace Base
             OnMenuEvent.Update();
             OnClickEvent.Update();
             OnDebugEvent.Update();
+            OnConsoleEvent.Update();
         }
         
 

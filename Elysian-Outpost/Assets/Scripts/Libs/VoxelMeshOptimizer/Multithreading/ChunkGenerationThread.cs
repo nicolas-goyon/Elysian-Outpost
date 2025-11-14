@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Base;
+using Base.InGameConsole;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -75,7 +76,7 @@ namespace Libs.VoxelMeshOptimizer.Multithreading
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogError($"Chunk generation failed: {ex}");
+                            DebuggerConsole .LogError($"Chunk generation failed: {ex}");
                         }
                     }
                 }
