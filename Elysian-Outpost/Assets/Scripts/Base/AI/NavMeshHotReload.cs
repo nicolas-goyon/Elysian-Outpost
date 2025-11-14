@@ -1,28 +1,33 @@
+using System;
+using System.Diagnostics;
 using Unity.AI.Navigation;
 using UnityEngine;
-using UnityEngine.Serialization;
+using Debug = UnityEngine.Debug;
 
-namespace Base
+namespace Base.AI
 {
     [RequireComponent(typeof(NavMeshSurface))]
     public class NavMeshHotReload : MonoBehaviour
     {
-        [SerializeField] private GameInputs _gameInputs;
         private NavMeshSurface _navMeshSurface;
+        private Stopwatch _stopWatch;
     
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Start()
         {
-            _gameInputs.OnDebugEvent += HotReload;
             _navMeshSurface = GetComponent<NavMeshSurface>();
+            _stopWatch = new Stopwatch();
         }
     
-        private void HotReload()
+        public void HotReload()
         {
-            // If debug input is detected, reload the NavMesh
-            Debug.Log("Hot Reloading NavMesh...");
+            _stopWatch.Restart();
             _navMeshSurface.BuildNavMesh();
-            Debug.Log("NavMesh Hot Reloaded.");
+            _stopWatch.Stop();
+            // Get the elapsed time as a TimeSpan value.
+            TimeSpan ts = _stopWatch.Elapsed;
+
+            Debug.Log($"NavMesh hot reload completed in: { ts.TotalMilliseconds }ms");
         }
 
     }

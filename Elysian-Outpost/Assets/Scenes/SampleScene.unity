@@ -270,7 +270,6 @@ GameObject:
   - component: {fileID: 330585549}
   - component: {fileID: 330585548}
   - component: {fileID: 330585550}
-  - component: {fileID: 330585551}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -439,33 +438,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GenerateTerrainAroundCamera
   _gameInputs: {fileID: 330585548}
-  _canvas: {fileID: 387635443}
+  _canvas: {fileID: 661978237}
   _camera: {fileID: 330585549}
   _wanderingEntityPrefab: {fileID: 6067554355899390938, guid: 547a4bfe6c50cd74fb02baf3d2cb22d0, type: 3}
-  _terrain: {fileID: 330585551}
---- !u!114 &330585551
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b1f43cce01649e48bbe3f9b065a65af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FixedSizeTerrain
-  _templateObject: {fileID: 916580289}
-  _textureAtlas: {fileID: 11400000, guid: 78a71dbd94021d34d935f20a2e0086e0, type: 2}
-  _terrainSize: 16
-  _terrainHeight: 1
-  _seed: 123
-  _chunkSize:
-    x: 16
-    y: 64
-    z: 16
-  _maxConcurrentWorkers: 20
-  _meshPerFrame: 50
+  _terrain: {fileID: 1652408738}
 --- !u!1 &387635440
 GameObject:
   m_ObjectHideFlags: 0
@@ -560,11 +536,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1710553601}
-  - {fileID: 2142546859}
-  - {fileID: 993329040}
-  - {fileID: 1759599925}
-  - {fileID: 1677740245}
+  - {fileID: 661978238}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -699,6 +671,46 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &661978237
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 661978238}
+  m_Layer: 5
+  m_Name: Menu
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &661978238
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 661978237}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1710553601}
+  - {fileID: 2142546859}
+  - {fileID: 993329040}
+  - {fileID: 1759599925}
+  - {fileID: 1677740245}
+  m_Father: {fileID: 387635444}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -753,6 +765,38 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8870143165198125435, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
   m_PrefabInstance: {fileID: 5931836057402712794}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &916580295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 916580289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
+  m_SerializedVersion: 0
+  m_AgentTypeID: 0
+  m_CollectObjects: 2
+  m_Size: {x: 10, y: 10, z: 10}
+  m_Center: {x: 0, y: 2, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_UseGeometry: 0
+  m_DefaultArea: 0
+  m_GenerateLinks: 0
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0.16666667
+  m_MinRegionArea: 2
+  m_NavMeshData: {fileID: 0}
+  m_BuildHeightMesh: 0
 --- !u!1 &993329039
 GameObject:
   m_ObjectHideFlags: 0
@@ -779,13 +823,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 993329039}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 149599641}
-  m_Father: {fileID: 387635444}
+  m_Father: {fileID: 661978238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -836,8 +880,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 330585551}
-        m_TargetAssemblyTypeName: FixedSizeTerrain, Assembly-CSharp
+      - m_Target: {fileID: 1652408738}
+        m_TargetAssemblyTypeName: Base.Terrain.FixedSizeTerrain, Assembly-CSharp
         m_MethodName: Pause
         m_Mode: 1
         m_Arguments:
@@ -1212,6 +1256,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1652408737
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1652408739}
+  - component: {fileID: 1652408738}
+  m_Layer: 0
+  m_Name: terrain
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1652408738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1652408737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b1f43cce01649e48bbe3f9b065a65af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FixedSizeTerrain
+  _templateObject: {fileID: 916580289}
+  _textureAtlas: {fileID: 11400000, guid: 78a71dbd94021d34d935f20a2e0086e0, type: 2}
+  _terrainSize: 16
+  _terrainHeight: 1
+  _seed: 123
+  _chunkSize:
+    x: 16
+    y: 64
+    z: 16
+  _maxConcurrentWorkers: 20
+  _meshPerFrame: 50
+  _navMeshHotReload: {fileID: 1906805309}
+--- !u!4 &1652408739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1652408737}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 19.97179, y: 0.00003, z: 278.55444}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1906805308}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1677740244
 GameObject:
   m_ObjectHideFlags: 0
@@ -1238,13 +1339,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1677740244}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2050050889}
-  m_Father: {fileID: 387635444}
+  m_Father: {fileID: 661978238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1295,8 +1396,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 330585551}
-        m_TargetAssemblyTypeName: FixedSizeTerrain, Assembly-CSharp
+      - m_Target: {fileID: 1652408738}
+        m_TargetAssemblyTypeName: Base.Terrain.FixedSizeTerrain, Assembly-CSharp
         m_MethodName: Cleanup
         m_Mode: 1
         m_Arguments:
@@ -1370,17 +1471,17 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1710553600}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 387635444}
+  m_Father: {fileID: 661978238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 1285, y: 421}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1710553602
 MonoBehaviour:
@@ -1446,13 +1547,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1759599924}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1479406505}
-  m_Father: {fileID: 387635444}
+  m_Father: {fileID: 661978238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1503,8 +1604,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 330585551}
-        m_TargetAssemblyTypeName: FixedSizeTerrain, Assembly-CSharp
+      - m_Target: {fileID: 1652408738}
+        m_TargetAssemblyTypeName: Base.Terrain.FixedSizeTerrain, Assembly-CSharp
         m_MethodName: ClearAllChunks
         m_Mode: 1
         m_Arguments:
@@ -1570,7 +1671,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1906805307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1611,12 +1712,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1906805306}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -76.82055, y: 0, z: -8.43097}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -96.79234, y: -0.00003, z: -286.9854}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1652408739}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1906805309
 MonoBehaviour:
@@ -1630,7 +1731,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1944b91788051343ab3c82df28782f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NavMeshHotReload
-  _gameInputs: {fileID: 330585548}
 --- !u!1 &1951363181
 GameObject:
   m_ObjectHideFlags: 0
@@ -1929,13 +2029,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2142546858}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1951363182}
-  m_Father: {fileID: 387635444}
+  m_Father: {fileID: 661978238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1986,8 +2086,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 330585551}
-        m_TargetAssemblyTypeName: FixedSizeTerrain, Assembly-CSharp
+      - m_Target: {fileID: 1652408738}
+        m_TargetAssemblyTypeName: Base.Terrain.FixedSizeTerrain, Assembly-CSharp
         m_MethodName: BegginGeneration
         m_Mode: 1
         m_Arguments:
@@ -2096,7 +2196,10 @@ PrefabInstance:
     - {fileID: 0}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8870143165198125435, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 916580295}
   m_SourcePrefab: {fileID: 100100000, guid: 194493fe59020ca41a55e398e13c325a, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -2109,4 +2212,4 @@ SceneRoots:
   - {fileID: 1106587684}
   - {fileID: 387635444}
   - {fileID: 1492669515}
-  - {fileID: 1906805308}
+  - {fileID: 1652408739}

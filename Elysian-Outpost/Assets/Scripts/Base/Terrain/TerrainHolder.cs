@@ -25,21 +25,21 @@ namespace Base.Terrain
 
         private readonly GameObject _chunksHolder;
 
-        public TerrainHolder(GameObject templateObject, TextureAtlas atlas, GameObject chunksHolder, int3 chunkSize, int seed, int maxConcurrentWorkers)
+        public TerrainHolder(GameObject templateObject, TextureAtlas atlas, GameObject chunksHolder, int3 chunkSize,
+            int seed, int maxConcurrentWorkers)
         {
             ChunkSize = chunkSize;
-            _gen = new MainGeneration(ChunkSize,seed);
+            _gen = new MainGeneration(ChunkSize, seed);
             _chunkGenerationThread = new ChunkGenerationThread(maxConcurrentWorkers);
             Chunks = new Dictionary<int3, (Chunk chunk, InstanciatedChunk gameObject)>();
             _templateObject = templateObject;
             _textureAtlas = atlas;
             _chunksHolder = chunksHolder;
         }
-        
+
 
         #region GetChunkAndVoxelPosition
 
-        
         /**
          * Given a raycast hit, return the chunk and voxel position the ray hit inside that chunk.
          */
@@ -55,12 +55,12 @@ namespace Base.Terrain
 
             if (!Chunks.TryGetValue(chunkPos, out (Chunk chunk, InstanciatedChunk gameObject) chunkData))
             {
-                return (null, new uint3(0,0,0)); // Chunk not loaded
+                return (null, new uint3(0, 0, 0)); // Chunk not loaded
             }
 
             uint3 localVoxelPos = new uint3(
                 (uint)(Mathf.FloorToInt(hitPoint.x) - chunkPos.x),
-                (uint)(Mathf.FloorToInt(hitPoint.y ) - chunkPos.y),
+                (uint)(Mathf.FloorToInt(hitPoint.y) - chunkPos.y),
                 (uint)(Mathf.FloorToInt(hitPoint.z) - chunkPos.z)
             );
             return (chunkData.chunk, localVoxelPos);
@@ -83,12 +83,12 @@ namespace Base.Terrain
 
             if (!Chunks.TryGetValue(chunkPos, out (Chunk chunk, InstanciatedChunk gameObject) chunkData))
             {
-                return (null, new uint3(0,0,0)); // Chunk not loaded
+                return (null, new uint3(0, 0, 0)); // Chunk not loaded
             }
 
             uint3 localVoxelPos = new uint3(
                 (uint)(Mathf.FloorToInt(hitPoint.x) - chunkPos.x),
-                (uint)(Mathf.FloorToInt(hitPoint.y ) - chunkPos.y),
+                (uint)(Mathf.FloorToInt(hitPoint.y) - chunkPos.y),
                 (uint)(Mathf.FloorToInt(hitPoint.z) - chunkPos.z)
             );
             return (chunkData.chunk, localVoxelPos);
@@ -98,32 +98,30 @@ namespace Base.Terrain
 
         #region GenerateChunk
 
-            public void GenerateNewChunkAt(int3 chunkPos)
+        public void GenerateNewChunkAt(int3 chunkPos)
+        {
+            if (Chunks.ContainsKey(chunkPos)) return;
+            if (_chunkGenerationThread == null)
             {
-                if (Chunks.ContainsKey(chunkPos)) return;
-                if (_chunkGenerationThread == null)
-                {
-                    throw new System.Exception("Chunk generation thread is not initialized.");
-                }
-                
-                _chunkGenerationThread.EnqueueChunk(chunkPos, int3 => new Chunk(_gen.GenerateChunkAt(chunkPos),chunkPos));
-            }
-            
-            
-            public void ReloadChunk(Chunk chunk)
-            {
-                if (_chunkGenerationThread == null) throw new System.Exception("Chunk generation thread is not initialized.");
-                
-                _chunkGenerationThread.EnqueueChunk(chunk.WorldPosition , int3 => chunk);
+                throw new System.Exception("Chunk generation thread is not initialized.");
             }
 
-        
+            _chunkGenerationThread.EnqueueChunk(chunkPos, int3 => new Chunk(_gen.GenerateChunkAt(chunkPos), chunkPos));
+        }
+
+
+        public void ReloadChunk(Chunk chunk)
+        {
+            if (_chunkGenerationThread == null)
+                throw new System.Exception("Chunk generation thread is not initialized.");
+
+            _chunkGenerationThread.EnqueueChunk(chunk.WorldPosition, int3 => chunk);
+        }
 
         #endregion
 
         #region ProcessGeneratedChunks
 
-        
         /**
          * Dequeue one generated chunk and instanciate it.
          */
@@ -132,19 +130,21 @@ namespace Base.Terrain
             if (!TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result)) return;
             (Chunk chunk, Mesh mesh) = result;
 
-            if (Chunks.TryGetValue(chunk.WorldPosition, out (Chunk chunk, InstanciatedChunk instanciatedChunk) chunkData))
+            if (Chunks.TryGetValue(chunk.WorldPosition,
+                    out (Chunk chunk, InstanciatedChunk instanciatedChunk) chunkData))
             {
                 if (chunkData.instanciatedChunk is not null)
                 {
                     GameObject.Destroy(chunkData.instanciatedChunk.gameObject);
                 }
+
                 Chunks[chunk.WorldPosition] = (chunk, null);
             }
-                
+
             InstanciatedChunk chunkInstance = Create(mesh, chunk.WorldPosition);
             Chunks[chunk.WorldPosition] = (chunk, chunkInstance);
         }
-        
+
         /**
          * Dequeue multiple generated chunks and instanciate them.
          */
@@ -155,15 +155,15 @@ namespace Base.Terrain
                 InstanciateOneChunk();
             }
         }
-        
-        
+
+
         private bool TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result)
         {
             return _chunkGenerationThread.TryDequeueGeneratedMesh(out result);
         }
 
 
-        private InstanciatedChunk Create(Mesh mesh, int3 position) 
+        private InstanciatedChunk Create(Mesh mesh, int3 position)
         {
             GameObject obj = GameObject.Instantiate(_templateObject, _chunksHolder.transform);
             InstanciatedChunk singleObject = obj.GetComponent<InstanciatedChunk>();
@@ -174,13 +174,10 @@ namespace Base.Terrain
             return singleObject;
         }
 
-
-
         #endregion
 
         #region Cleanup
 
-        
         public void ClearAllChunks()
         {
             foreach (var kvp in Chunks)
@@ -190,6 +187,7 @@ namespace Base.Terrain
                     GameObject.Destroy(kvp.Value.gameObject.gameObject);
                 }
             }
+
             Chunks.Clear();
         }
 
@@ -197,19 +195,19 @@ namespace Base.Terrain
         {
             Dispose();
         }
-        
+
         public void Dispose()
         {
             // Get a timer to "benchmark" how long the disposal takes
-            
+
             _chunkGenerationThread.Dispose();
             Chunks.Clear();
         }
+
         #endregion
 
         #region Interract With Chunks
 
-        
         public Voxel GetVoxelAtWorldPosition(int3 worldPosition)
         {
             int3 chunkPos = new int3(
@@ -248,6 +246,5 @@ namespace Base.Terrain
         }
 
         #endregion
-        
     }
 }

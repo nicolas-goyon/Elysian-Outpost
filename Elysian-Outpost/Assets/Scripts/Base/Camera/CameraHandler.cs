@@ -10,7 +10,7 @@ namespace Base.Camera
     public class CameraHandler : MonoBehaviour
     {
         [SerializeField] private GameInputs _gameInputs;
-        [SerializeField] private Canvas _canvas;
+        [SerializeField] private GameObject _canvas;
         [SerializeField] private CameraMovements _camera;
 
         // Update is called once per frame
@@ -23,8 +23,8 @@ namespace Base.Camera
         private void OnOpenMenu()
         {
             // If open menu input is detected, toggle the canvas visibility
-            _canvas.enabled = !_canvas.enabled;
-            _camera.Set(_canvas.enabled ? CameraMovements.CameraState.OnMenu : CameraMovements.CameraState.FreeFly);
+            _canvas.SetActive(!_canvas.activeSelf);
+            _camera.Set(_canvas.activeSelf ? CameraMovements.CameraState.OnMenu : CameraMovements.CameraState.FreeFly);
         }
 
         private void OnLeftClick()
@@ -39,7 +39,7 @@ namespace Base.Camera
 
         private void SpawnEntityAtCursor()
         {
-            if (_canvas.enabled) return;
+            if (_canvas.activeSelf) return;
             Ray ray = UnityEngine.Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
             if (Physics.Raycast(ray, out RaycastHit hitInfo))
             {
@@ -57,7 +57,7 @@ namespace Base.Camera
 
         private void OnPickUpDropVoxel()
         {
-            if (_canvas.enabled) return;
+            if (_canvas.activeSelf) return;
             Ray ray = UnityEngine.Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
             if (!Physics.Raycast(ray, out RaycastHit hitInfo)) return;
 
