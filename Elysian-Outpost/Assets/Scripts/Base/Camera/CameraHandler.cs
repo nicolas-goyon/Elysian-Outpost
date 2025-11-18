@@ -24,7 +24,6 @@ namespace Base.Camera
         private void OnOpenMenu()
         {
             // If open menu input is detected, toggle the canvas visibility
-            DebuggerConsole.LogDeconstruct(this, maxDepth:3);
             _canvas.SetActive(!_canvas.activeSelf);
             _camera.Set(_canvas.activeSelf ? CameraMovements.CameraState.OnMenu : CameraMovements.CameraState.FreeFly);
         }

@@ -17,21 +17,13 @@ public class DebuggerConsoleUI : MonoBehaviour
     {
         _gameInputs.OnConsoleEvent += OpenConsole;
         _inputField.onSubmit.AddListener(OnCommandSubmitted);
-        // _debuggerConsole = new DebuggerConsole();
         DebuggerConsole.OnLogEmitted += DisplayLogEvent;
-        // DebuggerConsole.Enable();
-        
-        DebuggerConsole.ConsoleCommand logCmd = new DebuggerConsole.ConsoleCommand("log", "Logs a message to the console.", args =>
-        {
-            if (args.Length == 0)
-            {
-                DebuggerConsole.Log("Usage: log <message>");
-                return;
-            }
-            string message = string.Join(" ", args);
-            DebuggerConsole.Log(message);
-        });
-        DebuggerConsole.AddCommand(logCmd);
+
+        DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("log", "Logs a message to the console.", LogMessageCmd));
+        DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("clear", "Clears the console output.", args => Clear()));
+        DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("close", "Closes the console UI.", args => CloseConsole()));
+        DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("copy", "Copies the console output to clipboard.", args => CopyToClipboard()));
+        DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("help", "Displays a list of available commands.", args => DebuggerConsole.HelpCommand()));
     }
 
     public void CloseConsole()
@@ -58,5 +50,27 @@ public class DebuggerConsoleUI : MonoBehaviour
     private void DisplayLogEvent(string log)
     {
         _outputText.text += $"\n{log}";
+    }
+    
+    public void CopyToClipboard()
+    {
+        string text = _outputText.text;
+        Base.SystemPlugin.UniClipboard.SetText(text);
+    }
+
+    private void Clear()
+    {
+        _outputText.text = string.Empty;
+    }
+    
+    private void LogMessageCmd(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            DebuggerConsole.Log("Usage: log <message>");
+            return;
+        }
+        string message = string.Join(" ", args);
+        DebuggerConsole.Log(message);
     }
 }

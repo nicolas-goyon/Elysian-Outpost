@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Base.InGameConsole
 {
     public static class DebuggerConsole
     {
-        private static Dictionary<string, ConsoleCommand> _commands = new Dictionary<string, ConsoleCommand>();
+        private static Dictionary<string, ConsoleCommand> _commands = new();
 
-        public static event System.Action<string> OnLogEmitted;
+        public static event Action<string> OnLogEmitted;
 
         // private const bool _enabled = false;
 
@@ -20,7 +22,7 @@ namespace Base.InGameConsole
         {
             if (!_commands.TryAdd(command.CommandName, command))
             {
-                throw new System.Exception($"Command {command.CommandName} already exists");
+                throw new Exception($"Command {command.CommandName} already exists");
             }
         }
 
@@ -69,7 +71,7 @@ namespace Base.InGameConsole
             string[] parts = input.Split(' ');
             string commandName = parts[0];
             string[] args = new string[parts.Length - 1];
-            System.Array.Copy(parts, 1, args, 0, args.Length);
+            Array.Copy(parts, 1, args, 0, args.Length);
 
             if (_commands.TryGetValue(commandName, out ConsoleCommand command))
             {
@@ -88,7 +90,7 @@ namespace Base.InGameConsole
             string stackTrace = string.Empty;
             if (withStackTrace)
             {
-                System.Diagnostics.StackTrace stackTraceRaw = new System.Diagnostics.StackTrace(true);
+                StackTrace stackTraceRaw = new StackTrace(true);
                 stackTrace = stackTraceRaw.ToString();
             }
 
@@ -100,7 +102,7 @@ namespace Base.InGameConsole
             string stackTrace = string.Empty;
             if (withStackTrace)
             {
-                System.Diagnostics.StackTrace stackTraceRaw = new System.Diagnostics.StackTrace(true);
+                StackTrace stackTraceRaw = new StackTrace(true);
                 stackTrace = stackTraceRaw.ToString();
             }
 
@@ -112,14 +114,14 @@ namespace Base.InGameConsole
             string stackTrace = string.Empty;
             if (withStackTrace)
             {
-                System.Diagnostics.StackTrace stackTraceRaw = new System.Diagnostics.StackTrace(true);
+                StackTrace stackTraceRaw = new StackTrace(true);
                 stackTrace = stackTraceRaw.ToString();
             }
 
             HandleLog(message, stackTrace, LogType.Error);
         }
 
-        public static void LogException(System.Exception exception)
+        public static void LogException(Exception exception)
         {
             string stackTrace = exception.StackTrace;
             HandleLog(exception.Message, stackTrace, LogType.Exception);
@@ -187,14 +189,29 @@ namespace Base.InGameConsole
 
         #endregion
 
+        #region UtilityCommands
+
+        public static void HelpCommand()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Available Commands:");
+            foreach (ConsoleCommand command in _commands.Values)
+            {
+                sb.AppendLine($"{command.CommandName}: {command.Description}");
+            }
+
+            HandleLog(sb.ToString(), string.Empty, LogType.Log);
+        }
+
+        #endregion
 
         public class ConsoleCommand
         {
-            public string CommandName;
-            public string Description;
-            public System.Action<string[]> Execute;
+            public readonly string CommandName;
+            public readonly string Description;
+            public readonly Action<string[]> Execute;
 
-            public ConsoleCommand(string commandName, string description, System.Action<string[]> execute)
+            public ConsoleCommand(string commandName, string description, Action<string[]> execute)
             {
                 CommandName = commandName;
                 Description = description;
