@@ -2,6 +2,7 @@
 using ScriptableObjectsDefinition;
 using Unity.AI.Navigation;
 using UnityEngine;
+using UnityEngine.AI;
 using Mesh = Libs.VoxelMeshOptimizer.Mesh;
 
 namespace Base.Terrain
@@ -10,7 +11,7 @@ namespace Base.Terrain
     {
         private MeshFilter _meshFilter;
         private MeshCollider _meshCollider;
-        private NavMeshSurface _navMeshSurface;
+        public NavMeshSurface _navMeshSurface { get; private set; }
 
         private void Awake()
         {
@@ -25,6 +26,17 @@ namespace Base.Terrain
             _meshFilter.mesh = ObjExporter.ToUnityMesh(mesh, atlas);
             _meshCollider.sharedMesh = _meshFilter.mesh;
             _navMeshSurface.BuildNavMesh();
+        }
+        
+        public NavMeshBuildSource GetNavMeshBuildSource()
+        {
+            return new NavMeshBuildSource
+            {
+                shape = NavMeshBuildSourceShape.Mesh,
+                sourceObject = _meshFilter.mesh,
+                transform = transform.localToWorldMatrix,
+                area = 0
+            };
         }
     }
 }

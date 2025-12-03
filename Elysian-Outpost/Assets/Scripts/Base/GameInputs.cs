@@ -10,9 +10,10 @@ namespace Base
         
         // Event handlers
         public KeyPressedEvent OnMenuEvent;
-        public KeyPressedEvent OnClickEvent;
+        public KeyPressedEvent OnLeftClickEvent;
         public KeyPressedEvent OnDebugEvent;
         public KeyPressedEvent OnConsoleEvent;
+        public KeyPressedEvent OnRightClickEvent;
         
         
         // Start is called before the first frame update
@@ -23,19 +24,22 @@ namespace Base
             _inputActions.PlayerMenuControls.Enable();
             
             OnMenuEvent = new KeyPressedEvent("Menu", _inputActions.PlayerMenuControls.OpenCloseMenu);
-            OnClickEvent = new KeyPressedEvent("Click", _inputActions.CameraMovements.LeftClick);
+            OnLeftClickEvent = new KeyPressedEvent("Click", _inputActions.CameraMovements.LeftClick);
             OnDebugEvent = new KeyPressedEvent("Debug", _inputActions.PlayerMenuControls.Debug);
             OnConsoleEvent = new KeyPressedEvent("Console", _inputActions.PlayerMenuControls.ConsoleOpen);
+            OnRightClickEvent = new KeyPressedEvent("RightClick", _inputActions.CameraMovements.RightClick);
             
         
         }
 
         private void Update()
         {
+            // TODO : Optimize, maybe using InputAction callbacks instead of polling
             OnMenuEvent.Update();
-            OnClickEvent.Update();
+            OnLeftClickEvent.Update();
             OnDebugEvent.Update();
             OnConsoleEvent.Update();
+            OnRightClickEvent.Update();
         }
         
 

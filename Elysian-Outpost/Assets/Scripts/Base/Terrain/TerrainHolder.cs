@@ -125,9 +125,13 @@ namespace Base.Terrain
         /**
          * Dequeue one generated chunk and instanciate it.
          */
-        public void InstanciateOneChunk()
+        public bool InstanciateOneChunk(out InstanciatedChunk instanciatedChunk)
         {
-            if (!TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result)) return;
+            if (!TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result))
+            {
+                instanciatedChunk = null;
+                return false;
+            }
             (Chunk chunk, Mesh mesh) = result;
 
             if (Chunks.TryGetValue(chunk.WorldPosition,
@@ -143,19 +147,9 @@ namespace Base.Terrain
 
             InstanciatedChunk chunkInstance = Create(mesh, chunk.WorldPosition);
             Chunks[chunk.WorldPosition] = (chunk, chunkInstance);
+            instanciatedChunk = chunkInstance;
+            return true;
         }
-
-        /**
-         * Dequeue multiple generated chunks and instanciate them.
-         */
-        public void InstanciateMultipleChunks(int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                InstanciateOneChunk();
-            }
-        }
-
 
         private bool TryGetGeneratedChunk(out (Chunk chunk, Mesh mesh) result)
         {
@@ -246,5 +240,11 @@ namespace Base.Terrain
         }
 
         #endregion
+
+        public List<InstanciatedChunk> GetAllInstanciatedChunks()
+        {
+            return Chunks.Values.Where(v => v.gameObject != null).Select(v => v.gameObject).ToList();
+        }
+        
     }
 }

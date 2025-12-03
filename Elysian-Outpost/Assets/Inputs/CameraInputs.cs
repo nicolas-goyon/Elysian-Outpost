@@ -59,13 +59,13 @@ using UnityEngine.InputSystem.Utilities;
 ///     // Invoked when "Move" action is either started, performed or canceled.
 ///     public void OnMove(InputAction.CallbackContext context)
 ///     {
-///         DebuggerConsole.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
+///         Debug.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
 ///     }
 ///
 ///     // Invoked when "Attack" action is either started, performed or canceled.
 ///     public void OnAttack(InputAction.CallbackContext context)
 ///     {
-///         DebuggerConsole.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
+///         Debug.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
 ///     }
 ///
 ///     #endregion
@@ -123,6 +123,15 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
                     ""name"": ""LeftClick"",
                     ""type"": ""Button"",
                     ""id"": ""7119e3ca-096c-4b61-b883-5e88ab3bb7e8"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RightClick"",
+                    ""type"": ""Button"",
+                    ""id"": ""6ec8ee95-7891-4afe-9c9d-c93f7326754d"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -239,6 +248,17 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
                     ""action"": ""LeftClick"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""feba831b-c8ae-4f01-b782-60ec93fd1af9"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RightClick"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -319,6 +339,7 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         m_CameraMovements_Speeding = m_CameraMovements.FindAction("Speeding", throwIfNotFound: true);
         m_CameraMovements_View = m_CameraMovements.FindAction("View", throwIfNotFound: true);
         m_CameraMovements_LeftClick = m_CameraMovements.FindAction("LeftClick", throwIfNotFound: true);
+        m_CameraMovements_RightClick = m_CameraMovements.FindAction("RightClick", throwIfNotFound: true);
         // PlayerMenuControls
         m_PlayerMenuControls = asset.FindActionMap("PlayerMenuControls", throwIfNotFound: true);
         m_PlayerMenuControls_OpenCloseMenu = m_PlayerMenuControls.FindAction("OpenCloseMenu", throwIfNotFound: true);
@@ -409,6 +430,7 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
     private readonly InputAction m_CameraMovements_Speeding;
     private readonly InputAction m_CameraMovements_View;
     private readonly InputAction m_CameraMovements_LeftClick;
+    private readonly InputAction m_CameraMovements_RightClick;
     /// <summary>
     /// Provides access to input actions defined in input action map "CameraMovements".
     /// </summary>
@@ -436,6 +458,10 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "CameraMovements/LeftClick".
         /// </summary>
         public InputAction @LeftClick => m_Wrapper.m_CameraMovements_LeftClick;
+        /// <summary>
+        /// Provides access to the underlying input action "CameraMovements/RightClick".
+        /// </summary>
+        public InputAction @RightClick => m_Wrapper.m_CameraMovements_RightClick;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -474,6 +500,9 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
             @LeftClick.started += instance.OnLeftClick;
             @LeftClick.performed += instance.OnLeftClick;
             @LeftClick.canceled += instance.OnLeftClick;
+            @RightClick.started += instance.OnRightClick;
+            @RightClick.performed += instance.OnRightClick;
+            @RightClick.canceled += instance.OnRightClick;
         }
 
         /// <summary>
@@ -497,6 +526,9 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
             @LeftClick.started -= instance.OnLeftClick;
             @LeftClick.performed -= instance.OnLeftClick;
             @LeftClick.canceled -= instance.OnLeftClick;
+            @RightClick.started -= instance.OnRightClick;
+            @RightClick.performed -= instance.OnRightClick;
+            @RightClick.canceled -= instance.OnRightClick;
         }
 
         /// <summary>
@@ -683,6 +715,13 @@ public partial class @CameraInputs: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnLeftClick(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RightClick" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRightClick(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "PlayerMenuControls" which allows adding and removing callbacks.

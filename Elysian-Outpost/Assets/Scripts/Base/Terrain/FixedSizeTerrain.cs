@@ -1,4 +1,5 @@
 using Base.AI;
+using Base.InGameConsole;
 using ScriptableObjectsDefinition;
 using Unity.Mathematics;
 using UnityEngine;
@@ -17,6 +18,8 @@ namespace Base.Terrain
         [SerializeField] private int _maxConcurrentWorkers = 10;
         [SerializeField] private int _meshPerFrame = 50;
         [SerializeField] private NavMeshHotReload _navMeshHotReload;
+        [SerializeField] private int _voxelScale = 1;
+        [SerializeField] private float3 TerrainCenterOffset = new float3(0,0,0);
 
         public TerrainHolder TerrainHolder { get; private set; }
 
@@ -33,6 +36,9 @@ namespace Base.Terrain
             };
             TerrainHolder = new TerrainHolder(_templateObject, _textureAtlas, holder, _chunkSize, _seed,
                 _maxConcurrentWorkers);
+            
+            _navMeshHotReload.Init(this);
+                
         }
 
         public void BegginGeneration()
@@ -127,9 +133,33 @@ namespace Base.Terrain
 
         private void ProcessGeneratedChunks()
         {
-            // _terrainHolder.InstanciateOneChunk();
-            TerrainHolder.InstanciateMultipleChunks(_meshPerFrame);
-            // _navMeshHotReload.HotReload();
+            bool anyMeshProcessed = false;
+            while (TerrainHolder.InstanciateOneChunk(out InstanciatedChunk instanciatedChunk))
+            {
+                anyMeshProcessed = true;
+            }
+            if (anyMeshProcessed)
+                _navMeshHotReload.HotReload(TerrainHolder);
+        }
+
+
+        public Vector3 GetWorldCenterPosition()
+        {
+            int3 centerPosition = PositionToInt();
+            return new Vector3(
+                centerPosition.x + TerrainCenterOffset.x,
+                centerPosition.y + TerrainCenterOffset.y,
+                centerPosition.z + TerrainCenterOffset.z
+            );
+        }
+
+        public Vector3 GetWorldSize()
+        {
+            return new Vector3(
+                _terrainSize * _chunkSize.x * _voxelScale,
+                _terrainHeight * _chunkSize.y * _voxelScale,
+                _terrainSize * _chunkSize.z * _voxelScale
+            );
         }
     }
 }

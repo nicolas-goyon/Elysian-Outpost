@@ -18,7 +18,9 @@ namespace Base.Camera
         private void Start()
         {
             _gameInputs.OnMenuEvent += OnOpenMenu;
-            _gameInputs.OnClickEvent += OnLeftClick;
+            _gameInputs.OnLeftClickEvent += OnPickUpDropVoxel;
+            // _gameInputs.OnLeftClickEvent += SpawnEntityAtCursor;
+            // _gameInputs.OnRightClickEvent += MoveEntityAtCursor;
         }
 
         private void OnOpenMenu()
@@ -28,25 +30,39 @@ namespace Base.Camera
             _camera.Set(_canvas.activeSelf ? CameraMovements.CameraState.OnMenu : CameraMovements.CameraState.FreeFly);
         }
 
-        private void OnLeftClick()
-        {
-            SpawnEntityAtCursor();
-            // OnPickUpDropVoxel();
-        }
-
         #region WanderingEntitySpawn
 
         [SerializeField] private WanderingEntity _wanderingEntityPrefab;
+        private WanderingEntity _spawnedEntity;
 
         private void SpawnEntityAtCursor()
         {
             if (_canvas.activeSelf) return;
+            
             Ray ray = UnityEngine.Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-            if (Physics.Raycast(ray, out RaycastHit hitInfo))
+
+            if (!Physics.Raycast(ray, out RaycastHit hitInfo)) return;
+            
+            if (_spawnedEntity != null)
             {
-                Vector3 spawnPosition = hitInfo.point + hitInfo.normal * 1.5f;
-                Instantiate(_wanderingEntityPrefab, spawnPosition, Quaternion.identity);
+                _spawnedEntity.transform.position = hitInfo.point;
+                return;
             }
+
+            Vector3 spawnPosition = hitInfo.point + hitInfo.normal * 1.5f;
+            Instantiate(_wanderingEntityPrefab, spawnPosition, Quaternion.identity);
+        }
+
+        private void MoveEntityAtCursor()
+        {
+            if (_canvas.activeSelf) return; // TODO : Change to a more stable way to check if in menu
+            if (_spawnedEntity == null) return;
+            
+            Ray ray = UnityEngine.Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+
+            if (!Physics.Raycast(ray, out RaycastHit hitInfo)) return;
+
+            _spawnedEntity.transform.position = hitInfo.point;
         }
 
         #endregion
@@ -139,7 +155,6 @@ namespace Base.Camera
                 _voxelInventory = (short)voxelData.ID;
                 chunk.SetAtWorldPosition(selectedVoxelPosition, null);
                 _terrain.TerrainHolder.ReloadChunk(chunk);
-                
             }
         }
 

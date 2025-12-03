@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Base.InGameConsole;
+using Base.Terrain;
 using Unity.AI.Navigation;
 using UnityEngine;
+using UnityEngine.AI;
 using Debug = UnityEngine.Debug;
 
 namespace Base.AI
@@ -12,6 +15,7 @@ namespace Base.AI
     {
         private NavMeshSurface _navMeshSurface;
         private Stopwatch _stopWatch;
+        private Bounds _bounds;
     
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Start()
@@ -19,16 +23,26 @@ namespace Base.AI
             _navMeshSurface = GetComponent<NavMeshSurface>();
             _stopWatch = new Stopwatch();
         }
-    
-        public void HotReload()
-        {
-            _stopWatch.Restart();
-            _navMeshSurface.BuildNavMesh();
-            _stopWatch.Stop();
-            // Get the elapsed time as a TimeSpan value.
-            TimeSpan ts = _stopWatch.Elapsed;
 
-            DebuggerConsole.Log($"NavMesh hot reload completed in: { ts.TotalMilliseconds }ms");
+        public void Init(FixedSizeTerrain fixedSizeTerrain)
+        {
+            _bounds = new Bounds(
+                center: fixedSizeTerrain.GetWorldCenterPosition(),
+                size: fixedSizeTerrain.GetWorldSize()
+            );
+            
+        }
+    
+        public void HotReload(TerrainHolder terrainHolder)
+        {
+            NavMeshBuilder.UpdateNavMeshData(
+                data: _navMeshSurface.navMeshData,
+                buildSettings: _navMeshSurface.GetBuildSettings(),
+                sources: terrainHolder.GetAllInstanciatedChunks()
+                    .ConvertAll(chunk => chunk.GetNavMeshBuildSource()
+                    ),
+                localBounds: _bounds
+            );
         }
 
     }
