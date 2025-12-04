@@ -5,22 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/CitizenEntity.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs/MineAndDropJob.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs/MineAndDropJob.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.inputactions" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.inputactions" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/NavMeshHotReload.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/NavMeshHotReload.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/WanderingEntity.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/WanderingEntity.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/CitizenEntity.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Camera/CameraHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Camera/CameraHandler.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/FixedSizeTerrain.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/FixedSizeTerrain.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/InstanciatedChunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/InstanciatedChunk.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/InGameConsole/DebuggerConsoleUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/InGameConsole/DebuggerConsoleUI.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/TerrainHolder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/TerrainHolder.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Settings/PC_RPAsset.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Settings/PC_RPAsset.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Settings/UniversalRenderPipelineGlobalSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Settings/UniversalRenderPipelineGlobalSettings.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/GraphicsSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/GraphicsSettings.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectVersion.txt" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectVersion.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Chunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Chunk.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,14 +31,12 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/d44b17e136d09081da1e8fd0e8c83fde60e11818b9f2442d7ed8cb733fae895e/System.Collections.Generic.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/ef30cc3c72d65e29b42fe01b45f6f2941d01970f3f7d4ffe69f2ea4f69672e3/System.Collections.Concurrent.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/ScriptableObjectsDefinition/TextureAtlas.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs/MineAndDropJob.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Base/AI/Systems/NPCWorkSystem.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Libs/Security/Guard.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Multithreading/Voxel.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/FrequencyLayer.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/TerrainGeneration/PerlinNoise.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.inputsystem@be6c4fd0abf5/InputSystem/Editor/ProjectWideActions/ProjectWideActionsAsset.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
@@ -53,24 +51,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "feature/interactWithChunks",
-    "ignore.virus.scanning.warn.message": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/interactWithChunks&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.3.0b10\Editor\Unity.exe" />
@@ -148,6 +146,9 @@
       <workItem from="1763137548685" duration="2207000" />
       <workItem from="1763639300083" duration="3170000" />
       <workItem from="1764763816780" duration="277000" />
+      <workItem from="1764764670364" duration="2233000" />
+      <workItem from="1764767555769" duration="3435000" />
+      <workItem from="1764840743865" duration="1863000" />
     </task>
     <servers />
   </component>

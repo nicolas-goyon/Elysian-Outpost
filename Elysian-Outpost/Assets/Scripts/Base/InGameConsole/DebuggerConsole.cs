@@ -10,40 +10,40 @@ namespace Base.InGameConsole
 {
     public static class DebuggerConsole
     {
-        private static Dictionary<string, ConsoleCommand> _commands = new();
+        private static readonly Dictionary<string, ConsoleCommand> Commands = new();
 
         public static event Action<string> OnLogEmitted;
 
-        // private const bool _enabled = false;
+        private static bool _interceptExceptionsEnabled = false;
 
-        private static bool _usingUnityLog = true;
+        private const bool UsingUnityLog = false;
 
         public static void AddCommand(ConsoleCommand command)
         {
-            if (!_commands.TryAdd(command.CommandName, command))
+            if (!Commands.TryAdd(command.CommandName, command))
             {
                 throw new Exception($"Command {command.CommandName} already exists");
             }
         }
 
-        // public static void Enable()
-        // {
-        //     if (_enabled) return;
-        //     _enabled = true;
-        //     Application.logMessageReceived += HandleLog;
-        // }
-        //
-        // public static void Disable()
-        // {
-        //     if (!_enabled) return;
-        //     _enabled = false;
-        //     Application.logMessageReceived -= HandleLog;
-        // }
+        public static void Enable()
+        {
+            if (_interceptExceptionsEnabled) return;
+            _interceptExceptionsEnabled = true;
+            Application.logMessageReceived += HandleLog;
+        }
+
+        public static void Disable()
+        {
+            if (!_interceptExceptionsEnabled) return;
+            _interceptExceptionsEnabled = false;
+            Application.logMessageReceived -= HandleLog;
+        }
 
         private static void HandleLog(string logString, string stackTrace, LogType type)
         {
-            OnLogEmitted?.Invoke(logString);
-            if (!_usingUnityLog) return;
+            OnLogEmitted?.Invoke(logString + (string.IsNullOrEmpty(stackTrace) ? "" : $"\n{stackTrace}"));
+            if (!UsingUnityLog) return;
             switch (type)
             {
                 case LogType.Error:
@@ -73,7 +73,7 @@ namespace Base.InGameConsole
             string[] args = new string[parts.Length - 1];
             Array.Copy(parts, 1, args, 0, args.Length);
 
-            if (_commands.TryGetValue(commandName, out ConsoleCommand command))
+            if (Commands.TryGetValue(commandName, out ConsoleCommand command))
             {
                 command.Execute(args);
             }
@@ -195,7 +195,7 @@ namespace Base.InGameConsole
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Available Commands:");
-            foreach (ConsoleCommand command in _commands.Values)
+            foreach (ConsoleCommand command in Commands.Values)
             {
                 sb.AppendLine($"{command.CommandName}: {command.Description}");
             }

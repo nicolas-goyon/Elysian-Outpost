@@ -238,7 +238,52 @@ namespace Base.Terrain
 
             return chunkData.chunk;
         }
+        
+        public void PlaceVoxel(int3 worldPosition, Voxel voxel)
+        {
+            int3 chunkPos = new int3(
+                Mathf.FloorToInt((float)worldPosition.x / ChunkSize.x) * ChunkSize.x,
+                Mathf.FloorToInt((float)worldPosition.y / ChunkSize.y) * ChunkSize.y,
+                Mathf.FloorToInt((float)worldPosition.z / ChunkSize.z) * ChunkSize.z
+            );
 
+            if (!Chunks.TryGetValue(chunkPos, out (Chunk chunk, InstanciatedChunk gameObject) chunkData))
+            {
+                return; // Chunk not loaded
+            }
+
+            uint3 localVoxelPos = new uint3(
+                (uint)(worldPosition.x - chunkPos.x),
+                (uint)(worldPosition.y - chunkPos.y),
+                (uint)(worldPosition.z - chunkPos.z)
+            );
+            chunkData.chunk.PlaceVoxel(localVoxelPos, voxel);
+            ReloadChunk(chunkData.chunk);
+        }
+        
+        public Voxel PickupVoxel(int3 worldPosition)
+        {
+            int3 chunkPos = new int3(
+                Mathf.FloorToInt((float)worldPosition.x / ChunkSize.x) * ChunkSize.x,
+                Mathf.FloorToInt((float)worldPosition.y / ChunkSize.y) * ChunkSize.y,
+                Mathf.FloorToInt((float)worldPosition.z / ChunkSize.z) * ChunkSize.z
+            );
+
+            if (!Chunks.TryGetValue(chunkPos, out (Chunk chunk, InstanciatedChunk gameObject) chunkData))
+            {
+                return null; // Chunk not loaded
+            }
+
+            uint3 localVoxelPos = new uint3(
+                (uint)(worldPosition.x - chunkPos.x),
+                (uint)(worldPosition.y - chunkPos.y),
+                (uint)(worldPosition.z - chunkPos.z)
+            );
+            Voxel voxel = chunkData.chunk.RemoveVoxel(localVoxelPos);
+            ReloadChunk(chunkData.chunk);
+            return voxel;
+        }
+        
         #endregion
 
         public List<InstanciatedChunk> GetAllInstanciatedChunks()

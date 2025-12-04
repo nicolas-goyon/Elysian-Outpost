@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Base.AI;
 using Base.InGameConsole;
 using Base.Terrain;
 using Libs.VoxelMeshOptimizer;
@@ -17,13 +18,13 @@ namespace Base.Camera
         // Update is called once per frame
         private void Start()
         {
-            _gameInputs.OnMenuEvent += OnOpenMenu;
-            _gameInputs.OnLeftClickEvent += OnPickUpDropVoxel;
-            // _gameInputs.OnLeftClickEvent += SpawnEntityAtCursor;
+            _gameInputs._inputActions.PlayerMenuControls.OpenCloseMenu.performed += OnOpenMenu;
+            // _gameInputs.OnLeftClickEvent += OnPickUpDropVoxel;
+            _gameInputs._inputActions.CameraMovements.LeftClick.performed += SpawnEntityAtCursor;
             // _gameInputs.OnRightClickEvent += MoveEntityAtCursor;
         }
 
-        private void OnOpenMenu()
+        private void OnOpenMenu(UnityEngine.InputSystem.InputAction.CallbackContext context)
         {
             // If open menu input is detected, toggle the canvas visibility
             _canvas.SetActive(!_canvas.activeSelf);
@@ -32,10 +33,10 @@ namespace Base.Camera
 
         #region WanderingEntitySpawn
 
-        [SerializeField] private WanderingEntity _wanderingEntityPrefab;
-        private WanderingEntity _spawnedEntity;
+        [SerializeField] private CitizenEntity _citizenEntityPrefab;
+        [SerializeField] private NPCWorkSystem _npcWorkSystem;
 
-        private void SpawnEntityAtCursor()
+        private void SpawnEntityAtCursor(UnityEngine.InputSystem.InputAction.CallbackContext context)
         {
             if (_canvas.activeSelf) return;
             
@@ -43,27 +44,12 @@ namespace Base.Camera
 
             if (!Physics.Raycast(ray, out RaycastHit hitInfo)) return;
             
-            if (_spawnedEntity != null)
-            {
-                _spawnedEntity.transform.position = hitInfo.point;
-                return;
-            }
 
             Vector3 spawnPosition = hitInfo.point + hitInfo.normal * 1.5f;
-            Instantiate(_wanderingEntityPrefab, spawnPosition, Quaternion.identity);
+            Instantiate(_citizenEntityPrefab, spawnPosition, Quaternion.identity);
+            _npcWorkSystem.RegisterNPC(_citizenEntityPrefab);
         }
 
-        private void MoveEntityAtCursor()
-        {
-            if (_canvas.activeSelf) return; // TODO : Change to a more stable way to check if in menu
-            if (_spawnedEntity == null) return;
-            
-            Ray ray = UnityEngine.Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-
-            if (!Physics.Raycast(ray, out RaycastHit hitInfo)) return;
-
-            _spawnedEntity.transform.position = hitInfo.point;
-        }
 
         #endregion
 

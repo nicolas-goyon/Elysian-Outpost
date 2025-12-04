@@ -14,14 +14,12 @@ namespace Base.AI
     public class NavMeshHotReload : MonoBehaviour
     {
         private NavMeshSurface _navMeshSurface;
-        private Stopwatch _stopWatch;
         private Bounds _bounds;
     
         // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
+        private void Start()
         {
             _navMeshSurface = GetComponent<NavMeshSurface>();
-            _stopWatch = new Stopwatch();
         }
 
         public void Init(FixedSizeTerrain fixedSizeTerrain)
@@ -30,7 +28,13 @@ namespace Base.AI
                 center: fixedSizeTerrain.GetWorldCenterPosition(),
                 size: fixedSizeTerrain.GetWorldSize()
             );
-            
+            DebuggerConsole.ConsoleCommand cmd = new("navmesh_bake", "Rebuild the navmesh", (args) =>
+            {
+                _navMeshSurface.BuildNavMesh();
+                DebuggerConsole.Log("NavMesh rebuilt.");
+            });
+
+            DebuggerConsole.AddCommand(cmd);
         }
     
         public void HotReload(TerrainHolder terrainHolder)

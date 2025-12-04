@@ -6,14 +6,8 @@ namespace Base
 {
     public class GameInputs : MonoBehaviour
     {
-        private CameraInputs _inputActions;
+        public CameraInputs _inputActions { get; private set; }
         
-        // Event handlers
-        public KeyPressedEvent OnMenuEvent;
-        public KeyPressedEvent OnLeftClickEvent;
-        public KeyPressedEvent OnDebugEvent;
-        public KeyPressedEvent OnConsoleEvent;
-        public KeyPressedEvent OnRightClickEvent;
         
         
         // Start is called before the first frame update
@@ -22,26 +16,7 @@ namespace Base
             _inputActions = new CameraInputs();
             _inputActions.CameraMovements.Enable();
             _inputActions.PlayerMenuControls.Enable();
-            
-            OnMenuEvent = new KeyPressedEvent("Menu", _inputActions.PlayerMenuControls.OpenCloseMenu);
-            OnLeftClickEvent = new KeyPressedEvent("Click", _inputActions.CameraMovements.LeftClick);
-            OnDebugEvent = new KeyPressedEvent("Debug", _inputActions.PlayerMenuControls.Debug);
-            OnConsoleEvent = new KeyPressedEvent("Console", _inputActions.PlayerMenuControls.ConsoleOpen);
-            OnRightClickEvent = new KeyPressedEvent("RightClick", _inputActions.CameraMovements.RightClick);
-            
-        
         }
-
-        private void Update()
-        {
-            // TODO : Optimize, maybe using InputAction callbacks instead of polling
-            OnMenuEvent.Update();
-            OnLeftClickEvent.Update();
-            OnDebugEvent.Update();
-            OnConsoleEvent.Update();
-            OnRightClickEvent.Update();
-        }
-        
 
         public Vector3 GetCameraMovementVector() {
             return _inputActions.CameraMovements.Movements.ReadValue<Vector3>();
@@ -61,43 +36,6 @@ namespace Base
         
         public bool IsOpenMenu() {
             return _inputActions.PlayerMenuControls.OpenCloseMenu.ReadValue<float>() > 0;
-        }
-        
-        
-        public class KeyPressedEvent
-        {
-            public readonly string Name;
-            public delegate void KeyPressedAction();
-            public event KeyPressedAction OnKeyPressed;
-            
-            private bool _keyWasPressed = false;
-            private readonly InputAction _inputAction;
-            
-            public KeyPressedEvent(string name, InputAction inputAction)
-            {
-                Name = name;
-                _inputAction = inputAction;
-            }
-            
-            public void Update()
-            {
-                if (_inputAction.ReadValue<float>() > 0 && !_keyWasPressed)
-                {
-                    OnKeyPressed?.Invoke();
-                    _keyWasPressed = true;
-                }
-                else if (_inputAction.ReadValue<float>() == 0)
-                {
-                    _keyWasPressed = false;
-                }
-            }
-            
-            public static KeyPressedEvent operator +(KeyPressedEvent e, KeyPressedAction action)
-            {
-                e.OnKeyPressed += action;
-                return e;
-            }
-            
         }
         
         

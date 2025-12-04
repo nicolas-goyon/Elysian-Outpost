@@ -11,13 +11,18 @@ namespace Libs.VoxelMeshOptimizer
     public class Chunk
     {
         private readonly Voxel[,,] _voxels;
-        
+
 
         public uint XDepth { get; }
         public uint YDepth { get; }
         public uint ZDepth { get; }
-        
+
         public int3 WorldPosition { get; }
+        
+        private Voxel EmptyVoxel => new Voxel(0);
+
+
+        #region Constructors
 
         public Chunk(ushort[,,] voxelArray, int3 position)
         {
@@ -41,7 +46,7 @@ namespace Libs.VoxelMeshOptimizer
                 }
             }
         }
-        
+
         /// <summary>
         /// Initializes a new chunk from a file on disk.
         /// The first line contains the comma separated dimensions (X,Y,Z)
@@ -87,7 +92,10 @@ namespace Libs.VoxelMeshOptimizer
                 }
             }
         }
-        
+
+        #endregion
+
+        #region Getters and Setters
 
         /// <summary>
         /// Returns all voxels in this chunk in no guaranteed order.
@@ -119,7 +127,7 @@ namespace Libs.VoxelMeshOptimizer
 
             return _voxels[x, y, z];
         }
-        
+
         public Voxel GetAtWorldPosition(int3 worldPosition)
         {
             int localX = worldPosition.x - WorldPosition.x;
@@ -147,7 +155,7 @@ namespace Libs.VoxelMeshOptimizer
 
             _voxels[x, y, z] = voxel;
         }
-        
+
         public void SetAtWorldPosition(int3 worldPosition, Voxel voxel)
         {
             int localX = worldPosition.x - WorldPosition.x;
@@ -162,6 +170,24 @@ namespace Libs.VoxelMeshOptimizer
 
             _voxels[localX, localY, localZ] = voxel;
         }
+
+        /// <summary>
+        /// Simple helper to pick the chunk’s dimension (depth) by axis.
+        /// </summary>
+        public uint GetDepth(Axis axis)
+        {
+            return axis switch
+            {
+                Axis.X => XDepth,
+                Axis.Y => YDepth,
+                Axis.Z => ZDepth,
+                _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Unknown axis.")
+            };
+        }
+
+        #endregion
+
+        #region Iteration Over Coordinates
 
         /// <summary>
         /// Iterates over every (X,Y,Z) in the chunk in the order of three distinct axes 
@@ -258,25 +284,11 @@ namespace Libs.VoxelMeshOptimizer
         }
 
 
-        /// <summary>
-        /// Simple helper to pick the chunk’s dimension (depth) by axis.
-        /// </summary>
-        public uint GetDepth(Axis axis)
-        {
-            return axis switch
-            {
-                Axis.X => XDepth,
-                Axis.Y => YDepth,
-                Axis.Z => ZDepth,
-                _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Unknown axis.")
-            };
-        }
-
         public bool IsOutOfBound(uint x, uint y, uint z)
         {
             return x >= GetDepth(Axis.X)
-                || y >= GetDepth(Axis.Y)
-                || z >= GetDepth(Axis.Z);
+                   || y >= GetDepth(Axis.Y)
+                   || z >= GetDepth(Axis.Z);
         }
 
         public bool AreDifferentAxis(
@@ -301,8 +313,11 @@ namespace Libs.VoxelMeshOptimizer
 
             return (planeWidth, planeHeight);
         }
-        
-        
+
+        #endregion
+
+        #region Mesh Generation
+
         /// <summary>
         /// Builds a mesh that contains every face for each solid voxel in the chunk.
         /// This is a naïve implementation without any form of optimization.
@@ -325,6 +340,7 @@ namespace Libs.VoxelMeshOptimizer
                     }
                 }
             }
+
             Mesh mesh = new(list);
 
             return mesh;
@@ -332,7 +348,6 @@ namespace Libs.VoxelMeshOptimizer
 
         private static IEnumerable<MeshQuad> CreateVoxelQuads(uint x, uint y, uint z, ushort voxelId)
         {
-
             yield return new MeshQuad
             {
                 Vertex0 = new Vector3(x, y, z),
@@ -394,6 +409,9 @@ namespace Libs.VoxelMeshOptimizer
             };
         }
 
+        #endregion
+
+        #region Saving and Loading
 
         /// <summary>
         /// Saves this chunk to a file. The first line contains the dimensions
@@ -421,15 +439,32 @@ namespace Libs.VoxelMeshOptimizer
             writer.WriteLine(string.Join(',', ids));
         }
 
-        public void RemoveVoxel(uint3 position)
+        #endregion
+
+        #region Chunk interactions
+
+        public Voxel RemoveVoxel(uint3 position)
         {
-            if (position.x >= XDepth || position.y >= YDepth || position.z >= ZDepth)
+            if (IsOutOfBound(position.x, position.y, position.z))
             {
                 throw new ArgumentOutOfRangeException("Requested voxel coordinates are out of bounds.");
             }
 
-            _voxels[position.x, position.y, position.z] =
-                new Voxel(0); // TODO : Assuming ID 0 represents an empty voxel
+            Voxel removedVoxel = _voxels[position.x, position.y, position.z];
+            _voxels[position.x, position.y, position.z] = EmptyVoxel;
+            return removedVoxel;
         }
+
+        public void PlaceVoxel(uint3 position, Voxel voxel)
+        {
+            if (IsOutOfBound(position.x, position.y, position.z))
+            {
+                throw new ArgumentOutOfRangeException("Requested voxel coordinates are out of bounds.");
+            }
+
+            _voxels[position.x, position.y, position.z] = voxel;
+        }
+
+        #endregion
     }
 }

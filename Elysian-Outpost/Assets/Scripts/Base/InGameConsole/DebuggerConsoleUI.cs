@@ -15,7 +15,7 @@ public class DebuggerConsoleUI : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        _gameInputs.OnConsoleEvent += OpenConsole;
+        _gameInputs._inputActions.PlayerMenuControls.ConsoleOpen.performed += OpenConsole;
         _inputField.onSubmit.AddListener(OnCommandSubmitted);
         DebuggerConsole.OnLogEmitted += DisplayLogEvent;
 
@@ -24,20 +24,27 @@ public class DebuggerConsoleUI : MonoBehaviour
         DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("close", "Closes the console UI.", args => CloseConsole()));
         DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("copy", "Copies the console output to clipboard.", args => CopyToClipboard()));
         DebuggerConsole.AddCommand(new DebuggerConsole.ConsoleCommand("help", "Displays a list of available commands.", args => DebuggerConsole.HelpCommand()));
+        
+        DebuggerConsole.Enable();
+        
+        
+        CloseConsole();
     }
-
+    
     public void CloseConsole()
     {
         _consoleUI.SetActive(false);
         _cameraMovements.Set(CameraMovements.CameraState.FreeFly);
         _inputField.DeactivateInputField();
+        _gameInputs._inputActions.PlayerMenuControls.OpenCloseMenu.Enable();
     }
     
-    private void OpenConsole()
+    private void OpenConsole(UnityEngine.InputSystem.InputAction.CallbackContext context)
     {
         _consoleUI.SetActive(true);
         _cameraMovements.Set(CameraMovements.CameraState.OnMenu);
         _inputField.ActivateInputField();
+        _gameInputs._inputActions.PlayerMenuControls.OpenCloseMenu.Disable();
     }
     
     private void OnCommandSubmitted(string command)

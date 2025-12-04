@@ -630,7 +630,8 @@ MonoBehaviour:
   _gameInputs: {fileID: 330585548}
   _canvas: {fileID: 661978237}
   _camera: {fileID: 330585549}
-  _wanderingEntityPrefab: {fileID: 6067554355899390938, guid: 547a4bfe6c50cd74fb02baf3d2cb22d0, type: 3}
+  _citizenEntityPrefab: {fileID: 6067554355899390938, guid: 547a4bfe6c50cd74fb02baf3d2cb22d0, type: 3}
+  _npcWorkSystem: {fileID: 1652408740}
   _terrain: {fileID: 1652408738}
 --- !u!1 &387635440
 GameObject:
@@ -761,14 +762,14 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 2
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
     m_Type: 2
     m_Resolution: -1
@@ -1985,6 +1986,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!33 &1106587683
 MeshFilter:
@@ -2885,6 +2887,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1652408739}
   - component: {fileID: 1652408738}
+  - component: {fileID: 1652408740}
   m_Layer: 0
   m_Name: terrain
   m_TagString: Untagged
@@ -2937,6 +2940,18 @@ Transform:
   - {fileID: 1906805308}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1652408740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1652408737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d80a1a023ca42cd40a74726b70ae0039, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCWorkSystem
 --- !u!1 &1677740244
 GameObject:
   m_ObjectHideFlags: 0
