@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using Base.AI;
+using Base.AI.Jobs;
 using Base.InGameConsole;
 using Base.Terrain;
 using Libs.VoxelMeshOptimizer;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -34,7 +36,6 @@ namespace Base.Camera
         #region WanderingEntitySpawn
 
         [SerializeField] private CitizenEntity _citizenEntityPrefab;
-        [SerializeField] private NPCWorkSystem _npcWorkSystem;
 
         private void SpawnEntityAtCursor(UnityEngine.InputSystem.InputAction.CallbackContext context)
         {
@@ -45,9 +46,12 @@ namespace Base.Camera
             if (!Physics.Raycast(ray, out RaycastHit hitInfo)) return;
             
 
+            Debug.Log($"Spawning entity at {hitInfo.point} with normal {hitInfo.normal}");
             Vector3 spawnPosition = hitInfo.point + hitInfo.normal * 1.5f;
-            Instantiate(_citizenEntityPrefab, spawnPosition, Quaternion.identity);
-            _npcWorkSystem.RegisterNPC(_citizenEntityPrefab);
+            spawnPosition.y += 5f; // Slightly above the ground to avoid clipping
+            Debug.Log($"Final spawn position: {spawnPosition}");
+            CitizenEntity citizenEntity = Instantiate(_citizenEntityPrefab, spawnPosition, Quaternion.identity);
+            // _npcWorkSystem.RegisterNPC(_citizenEntityPrefab);
         }
 
 

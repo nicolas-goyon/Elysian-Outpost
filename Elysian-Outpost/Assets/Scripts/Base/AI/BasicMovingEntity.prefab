@@ -90,6 +90,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &6586425455707833074
 CapsuleCollider:
@@ -182,8 +183,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ffbb3f936e21bc4fa53a916b2592913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WanderingEntity
-  _wanderRadius: 25
-  _changeDestinationInterval: 15
 --- !u!1 &8529337474249428484
 GameObject:
   m_ObjectHideFlags: 0
@@ -273,6 +272,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &629510153609423607
 BoxCollider:

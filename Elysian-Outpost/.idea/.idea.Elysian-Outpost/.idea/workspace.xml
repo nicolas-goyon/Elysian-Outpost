@@ -5,22 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81dd7e31-660d-4629-9d39-68fcca6d9563" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/CitizenEntity.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs/MineAndDropJob.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs/MineAndDropJob.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Elysian-Outpost/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.inputactions" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Inputs/CameraInputs.inputactions" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/NavMeshHotReload.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/NavMeshHotReload.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/WanderingEntity.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/WanderingEntity.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/CitizenEntity.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/BasicMovingEntity.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/BasicMovingEntity.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs/MineAndDropJob.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Jobs/MineAndDropJob.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Systems/NPCWorkSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/AI/Systems/NPCWorkSystem.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Camera/CameraHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Camera/CameraHandler.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/InGameConsole/DebuggerConsoleUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/InGameConsole/DebuggerConsoleUI.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/TerrainHolder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Base/Terrain/TerrainHolder.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Chunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Libs/VoxelMeshOptimizer/Chunk.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -148,7 +138,7 @@
       <workItem from="1764763816780" duration="277000" />
       <workItem from="1764764670364" duration="2233000" />
       <workItem from="1764767555769" duration="3435000" />
-      <workItem from="1764840743865" duration="1863000" />
+      <workItem from="1764840743865" duration="4050000" />
     </task>
     <servers />
   </component>
