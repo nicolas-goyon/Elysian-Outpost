@@ -1,17 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Base;
 using Libs.VoxelMeshOptimizer.OcclusionAlgorithms;
 using Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common;
 
 namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 {
 
-    public class DisjointSetMeshOptimizer<T> : MeshOptimizer<T> where T : Mesh
+    public class DisjointSetMeshOptimizer : MeshOptimizer
     {
-        private T _mesh;
+        private Mesh _mesh;
 
-        public DisjointSetMeshOptimizer(T mesh)
+        public DisjointSetMeshOptimizer(Mesh mesh)
         {
             if (mesh == null)
             {
@@ -32,7 +33,7 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
         }
 
 
-        public T Optimize(Chunk<Voxel> chunk)
+        public Mesh Optimize(Chunk chunk)
         {
             VoxelOcclusionOptimizer occluder = new(chunk);
             VisibleFaces visibleFaces = occluder.ComputeVisibleFaces();

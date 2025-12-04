@@ -1,12 +1,14 @@
+using Base;
+
 namespace Libs.VoxelMeshOptimizer
 {
 
     public class VoxelVisibilityMap
     {
         private readonly VoxelFace[,,] _visibilityMap;
-        private readonly Chunk<Voxel> _chunk;
+        private readonly Chunk _chunk;
 
-        public VoxelVisibilityMap(Chunk<Voxel> chunk)
+        public VoxelVisibilityMap(Chunk chunk)
         {
             _chunk = chunk;
             _visibilityMap = new VoxelFace[chunk.XDepth, chunk.YDepth, chunk.ZDepth];

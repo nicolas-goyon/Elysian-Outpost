@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Base;
 
 namespace Libs.VoxelMeshOptimizer
 {
@@ -60,7 +61,7 @@ namespace Libs.VoxelMeshOptimizer
             uint x,
             uint y,
             uint z,
-            Chunk<Voxel> chunk)
+            Chunk chunk)
         {
             if (chunk.IsOutOfBound(x, y, z)) throw new ArgumentOutOfRangeException();
 
@@ -188,7 +189,7 @@ namespace Libs.VoxelMeshOptimizer
             Axis planeAxis1, AxisOrder planeAxis1Order,
             Axis planeAxis2, AxisOrder planeAxis2Order,
             uint x, uint y, uint z,
-            Chunk<Voxel> chunk)
+            Chunk chunk)
         {
             // Ensure that all three axes are distinct.
             if (!chunk.AreDifferentAxis(sliceAxis, planeAxis1, planeAxis2))

@@ -3,7 +3,8 @@ using Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common;
 using Libs.Security;  // Add Guard namespace
 using System.Collections.Generic;  // For List and Dictionary
 using System;
-using System.Linq; // For Exception
+using System.Linq;
+using Base; // For Exception
 
 namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 {
@@ -17,9 +18,9 @@ namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
         private readonly Voxel?[,] _voxels;
         private readonly int _width;
         private readonly int _height;
-        private readonly Chunk<Voxel> _chunk;
+        private readonly Chunk _chunk;
 
-        public DisjointSetVisiblePlaneOptimizer(VisiblePlane plane, Chunk<Voxel> chunk)
+        public DisjointSetVisiblePlaneOptimizer(VisiblePlane plane, Chunk chunk)
         {
             Guard.IsNotNull(plane, nameof(plane));
             Guard.IsNotNull(plane.Voxels, nameof(plane.Voxels));
