@@ -6,7 +6,7 @@
 The project involves revamping a game similar to StoneHearth, with two primary enhancements. Firstly, we're introducing a novel pathfinding algorithm that retains previously calculated paths, akin to a pheromone trail. This approach aims to facilitate new calculations by utilizing existing, quicker paths. The algorithm is based on A-star, but the cost of each block change is contingent on the block type. For instance, a roadblock is favored over a dirt block, and frequently used blocks are also prioritized.
 The second major enhancement is ensuring the game functions on computers without a GPU or, at most, an Intel UHD. The goal is to optimize the game for low-end computers.
 
-Unity will be the chosen game engine for this project.
+The project moves from Unity to BRUTAL, a C# framework on .NET 10 and Vulkan. [ADR 0001](docs/adr/0001-move-from-unity-to-brutal.md) explains the decision.
 
 # StoneHearth’s description
 
