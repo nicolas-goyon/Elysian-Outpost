@@ -24,3 +24,15 @@ Key Features:
 8. **Modding and Community**: StoneHearth boasts a dedicated modding community that continually expands the game's content through custom scenarios, buildings, items, and more. The game's developers actively support modding, making it easy for players to create and share their own unique additions to the StoneHearth universe.
 9. **Art and Music**: The game's charming, voxel-based graphics create a visually appealing and distinctive world, while the original soundtrack composed by Kurtis Seits complements the atmosphere and enhances the overall gaming experience.
 10. **Accessibility and Replayability**: StoneHearth's intuitive controls, tutorial system, and adjustable difficulty settings make it welcoming to both newcomers and experienced gamers. The procedurally generated worlds and myriad customization options ensure that each playthrough offers a fresh and engaging experience.
+
+# License
+
+- Assets use the [Creative Commons Attribution 4.0 International](LICENSE-ASSETS) license (CC BY 4.0). An asset is a media file of the game: an image, a 3D model, a texture, a color palette, a sound or a music file.
+  - Attribution: "Elysian Outpost contributors, https://github.com/nicolas-goyon/Elysian-Outpost".
+  - Now, these files are assets: the files in `Elysian-Outpost/Assets/Resources/` (texture atlas and chunk model) and `Elysian-Outpost/ChunkBase.obj` (an exported chunk model).
+- All other files of the project use the [Mozilla Public License 2.0](LICENSE) (MPL-2.0): the code, the documents and the project files.
+- Third-party files keep their own licenses. The two licenses above do not apply to them:
+  - `Elysian-Outpost/Assets/TextMesh Pro/`: files of TextMesh Pro, by Unity Technologies (Unity Companion License). The font LiberationSans uses the SIL Open Font License 1.1. The EmojiOne sprites use the terms of EmojiOne (see `Sprites/EmojiOne Attribution.txt`).
+  - `Elysian-Outpost/Assets/Scripts/Base/SystemPlugin/UniClipboard.cs`: a changed version of [UniClipboard](https://github.com/sanukin39/UniClipboard), by wataru.sanuki, under the MIT License.
+  - `Elysian-Outpost/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSet.cs`: a changed version of the union-find code of [algs4](https://github.com/kevin-wayne/algs4), by Robert Sedgewick and Kevin Wayne, under the GPL-3.0-or-later ([license text](Elysian-Outpost/LICENSE-GPL-3.0.txt)).
+- From M1, the game uses BRUTAL. Each build obeys the BRUTAL License v1.0 (#42).
