@@ -1,0 +1,48 @@
+name: Bug
+description: Something does not work as specified.
+labels: ["type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write in STE100: active voice, one instruction in each sentence, a maximum of 20 words in an instruction, no semicolons, no phrasal verbs. See the [style guide](https://github.com/nicolas-goyon/Elysian-Outpost/blob/HEAD/docs/STYLE.md).
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Give the release tag or the commit hash.
+      placeholder: v0.1.0 or 1a2b3c4
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Write numbered steps. Write one action in each step.
+      placeholder: |
+        1. Start the app.
+        2. Remove a voxel at a chunk border.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-result
+    attributes:
+      label: Expected result
+      description: Give the result that the specification or the issue describes.
+    validations:
+      required: true
+  - type: textarea
+    id: actual-result
+    attributes:
+      label: Actual result
+      description: Give the result that you see.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Give the log lines and the stack trace. This field is optional.
+      render: text
+    validations:
+      required: false
