@@ -1,3 +1,29 @@
+// This file is a changed version of the union-find code of algs4:
+// https://github.com/kevin-wayne/algs4
+// The comments come from WeightedQuickUnionUF.java. The Find method is like
+// the method of WeightedQuickUnionPathCompressionUF.java (algs4 book site).
+// The Elysian Outpost contributors translated the code from Java to C# in 2025.
+// algs4 uses the GNU General Public License, version 3 or later. Thus this
+// file uses the same license.
+//
+// Copyright 2002-2025, Robert Sedgewick and Kevin Wayne.
+//
+// This file is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This file is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this file (Elysian-Outpost/LICENSE-GPL-3.0.txt).
+// If not, see <https://www.gnu.org/licenses/>.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
 {
 
