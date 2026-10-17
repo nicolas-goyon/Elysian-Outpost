@@ -1,0 +1,40 @@
+name: Epic
+description: A group of tasks. Split it into issues before the work starts.
+title: "Epic: "
+labels: ["type: epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write in STE100: active voice, one instruction in each sentence, a maximum of 20 words in an instruction, no semicolons, no phrasal verbs. See the [style guide](https://github.com/nicolas-goyon/Elysian-Outpost/blob/HEAD/docs/STYLE.md).
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Give the facts that the reader needs, with file paths and links.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Give the result in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Write one checkbox for each part of the work. Each part becomes an issue later.
+      placeholder: |
+        - [ ] Define the item types.
+        - [ ] Add the stockpile zones.
+    validations:
+      required: true
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions
+      description: Give the questions that the owner must answer. This field is optional.
+    validations:
+      required: false
