@@ -75,7 +75,9 @@ The first line has this format: `type(#issue): Description`
 7. A pull request of type `perf` gives the benchmark results before and after the change.
 8. Each pull request passes the CI checks (#11).
 9. Complete the checklist of the pull request template.
-10. Merge each pull request with a merge commit. Do not squash and do not rebase. Then the commits stay atomic, and `main` and `develop` keep the same commits.
+10. Merge a pull request into `develop` with a squash merge. GitHub then makes one commit on `develop` for the pull request. The title of this commit must have the commit format.
+11. Merge a pull request into `main`, and a pull request from `main` into `develop`, with a merge commit. Then `main` and `develop` keep the same commits.
+12. Do not use a rebase merge.
 
 These pull requests have no issue:
 
