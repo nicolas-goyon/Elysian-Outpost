@@ -9,4 +9,9 @@
     <PackageReference Include="Ahwoo.BRUTAL.Numerics" Version="2026.10.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The palette of the game (#2). BlockPalette.Game reads it. -->
+    <EmbeddedResource Include="..\..\data\palette.json" LogicalName="ElysianOutpost.Core.Voxels.palette.json" Link="Voxels\palette.json" />
+  </ItemGroup>
+
 </Project>
