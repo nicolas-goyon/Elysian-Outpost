@@ -8,7 +8,7 @@ namespace ElysianOutpost.Core.Simulation;
 /// <remarks>
 /// The clock keeps the time that is shorter than one tick for the next frame.
 /// If a frame needs more ticks than the limit, the clock drops the ticks after the limit.
-/// Thus a slow frame makes the simulation slower, and the next frames do not try to catch up.
+/// Thus a slow frame makes the simulation slower. The next frames do not run the dropped ticks.
 /// </remarks>
 public sealed class FixedStepClock
 {

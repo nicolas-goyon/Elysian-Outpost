@@ -38,12 +38,18 @@ internal sealed class MainLoop(GlfwWindow window, LogCategory log, TimeSpan? tim
         int reportFrameCount = 0;
 
         log.Info($"The main loop starts: {TicksPerSecond} ticks per second, a maximum of {MaxTicksPerFrame} ticks in one frame.");
-        while (!window.ShouldClose)
+        while (true)
         {
             TimeSpan frameStart = stopwatch.Elapsed;
 
             // Glfw.PollEvents also throws the exceptions of the window callbacks.
+            // The callbacks can also run in Glfw.WaitEventsTimeout, which does not throw their exceptions.
+            // Thus the loop calls Glfw.PollEvents before it examines ShouldClose.
             Glfw.PollEvents();
+            if (window.ShouldClose)
+            {
+                break;
+            }
 
             int ticks = clock.Advance(frameStart - previousFrameStart);
             previousFrameStart = frameStart;
@@ -71,8 +77,11 @@ internal sealed class MainLoop(GlfwWindow window, LogCategory log, TimeSpan? tim
                 window.ShouldClose = true;
             }
 
-            TimeSpan wait = _minFrameDuration - (stopwatch.Elapsed - frameStart);
-            if (wait > TimeSpan.Zero)
+            // Glfw.WaitEventsTimeout stops when an event arrives. Thus the loop waits again until the end of the frame.
+            TimeSpan frameEnd = frameStart + _minFrameDuration;
+            for (TimeSpan wait = frameEnd - stopwatch.Elapsed;
+                 wait > TimeSpan.Zero && !window.ShouldClose;
+                 wait = frameEnd - stopwatch.Elapsed)
             {
                 Glfw.WaitEventsTimeout(wait.TotalSeconds);
             }

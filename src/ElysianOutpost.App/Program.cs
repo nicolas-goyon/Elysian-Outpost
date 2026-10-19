@@ -10,31 +10,46 @@ using ElysianOutpost.App.Logging;
 using Microsoft.Extensions.Logging;
 
 // The option "--exit-after <seconds>" closes the window after a time limit, for automatic tests.
+// The limit is more than 0 seconds and not more than one day.
+const double MaxTimeLimitSeconds = 86_400;
 TimeSpan? timeLimit = null;
 if (args is ["--exit-after", string value]
     && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
-    && seconds > 0)
+    && seconds > 0
+    && seconds <= MaxTimeLimitSeconds)
 {
     timeLimit = TimeSpan.FromSeconds(seconds);
 }
 else if (args.Length > 0)
 {
-    Console.Error.WriteLine("Usage: ElysianOutpost.App [--exit-after <seconds>]");
+    Console.Error.WriteLine($"Usage: ElysianOutpost.App [--exit-after <seconds>], with 0 < seconds <= {MaxTimeLimitSeconds}");
     return 2;
 }
 
 // The log file is in the folder of the executable. Each start of the app replaces it.
+// If the app cannot write the file, for example in a read-only folder, the logs go only to the console.
 string logFile = Path.Combine(AppContext.BaseDirectory, "logs", "app.log");
-Directory.CreateDirectory(Path.GetDirectoryName(logFile)!);
 using var consoleSink = new TextWriterLoggerProvider(Console.Out, ownsWriter: false);
-using var fileSink = new TextWriterLoggerProvider(new StreamWriter(logFile, append: false), ownsWriter: true);
-LogSystem.Initialize(builder => builder
-    .SetMinimumLevel(LogLevel.Information)
-    .AddProvider(consoleSink)
-    .AddProvider(fileSink));
+using TextWriterLoggerProvider? fileSink = OpenLogFile(logFile, out string? logFileError);
+LogSystem.Initialize(builder =>
+{
+    builder.SetMinimumLevel(LogLevel.Information).AddProvider(consoleSink);
+    if (fileSink is not null)
+    {
+        builder.AddProvider(fileSink);
+    }
+});
 
 var log = LogCategory.Make("App");
-log.Info($"Elysian Outpost starts on {Platform.CurrentFamily}. Log file: {logFile}");
+log.Info($"Elysian Outpost starts on {Platform.CurrentFamily}.");
+if (fileSink is null)
+{
+    log.Warning($"The app cannot write the log file {logFile}: {logFileError} The logs go only to the console.");
+}
+else
+{
+    log.Info($"Log file: {logFile}");
+}
 
 Glfw.ErrorCallback += (code, description) => Glfw.Log.Error($"GLFW error {code}: {description}");
 if (!Glfw.Init())
@@ -75,3 +90,18 @@ finally
 
 log.Info($"Elysian Outpost stops.");
 return 0;
+
+static TextWriterLoggerProvider? OpenLogFile(string path, out string? error)
+{
+    try
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        error = null;
+        return new TextWriterLoggerProvider(new StreamWriter(path, append: false), ownsWriter: true);
+    }
+    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+    {
+        error = exception.Message;
+        return null;
+    }
+}
