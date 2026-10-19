@@ -21,7 +21,7 @@ public sealed class DependencyRulesTests
         Assert.True(violations.Count == 0, FailureMessage(violations));
     }
 
-    // The core library has no dependencies now. This test makes sure that the parser reads a real assets file.
+    // This test makes sure that the parser reads a real assets file, with direct and transitive dependencies.
     [Fact]
     public void Parse_AssetsFileOfThisProject_GivesItsDependencies()
     {
