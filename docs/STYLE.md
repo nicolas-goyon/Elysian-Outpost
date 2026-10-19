@@ -70,6 +70,9 @@ Use these terms. Add a term when a new concept needs a name.
 | port | To move code from the legacy project to the solution without a change of behavior, except the changes that the issue lists. |
 | ADR | Architecture decision record. A document in `docs/adr/` that records one decision and its reasons. |
 | asset | A media file of the game: an image, a 3D model, a texture, a color palette, a sound or a music file. Assets use the CC BY 4.0 license. |
+| direct dependency | A package or a project that the project file references. A reference in an imported file, for example `Directory.Build.props`, also gives a direct dependency. |
+| transitive dependency | A package or a project that a dependency brings. The project does not reference it directly. |
+| assets file | The file `obj/project.assets.json` of a project. The restore step writes it. It gives all the dependencies of the project. It is not related to the assets of the game. |
 
 ### Simulation and pathfinding
 
