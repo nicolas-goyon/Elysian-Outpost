@@ -70,3 +70,11 @@
 # Temporary auto-generated Android Assets
 /Elysian-Outpost/[Aa]ssets/[Ss]treamingAssets/aa.meta
 /Elysian-Outpost/[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# .NET solution (#15)
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+/.idea/
