@@ -1,63 +1,58 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Base;
-using Libs.VoxelMeshOptimizer.OcclusionAlgorithms;
-using Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common;
+// SPDX-License-Identifier: MPL-2.0
 
-namespace Libs.VoxelMeshOptimizer.OptimizationAlgorithms.DisjointSet
+using ElysianOutpost.Core.Voxels;
+
+namespace ElysianOutpost.Core.Meshing;
+
+public class DisjointSetMeshOptimizer : MeshOptimizer
 {
+    private Mesh _mesh;
 
-    public class DisjointSetMeshOptimizer : MeshOptimizer
+    public DisjointSetMeshOptimizer(Mesh mesh)
     {
-        private Mesh _mesh;
-
-        public DisjointSetMeshOptimizer(Mesh mesh)
+        if (mesh == null)
         {
-            if (mesh == null)
-            {
-                throw new ArgumentNullException(nameof(mesh));
-            }
-            
-            if (mesh.Quads == null)
-            {
-                throw new ArgumentException("Mesh quads cannot be null");
-            }
-            
-            if (mesh.Quads.Any())
-            {
-                throw new ArgumentException($"Mesh must be empty, currently has { mesh.Quads.Count } quads");
-            }
-
-            this._mesh = mesh;
+            throw new ArgumentNullException(nameof(mesh));
         }
 
-
-        public Mesh Optimize(Chunk chunk)
+        if (mesh.Quads == null)
         {
-            VoxelOcclusionOptimizer occluder = new(chunk);
-            VisibleFaces visibleFaces = occluder.ComputeVisibleFaces();
-
-            // TODO : Check diff
-            // foreach (DisjointSetVisiblePlaneOptimizer optimizer in from visibleFace in visibleFaces.PlanesByAxis from face in visibleFace.Value select new DisjointSetVisiblePlaneOptimizer(face, chunk))
-            // {
-            //     optimizer.Optimize();
-            //     List<MeshQuad> quads = optimizer.ToMeshQuads();
-            //     _mesh.Quads.AddRange(quads);
-            // }
-            
-            foreach (var visibleFace in visibleFaces.PlanesByAxis)
-            {
-                foreach (var face in visibleFace.Value)
-                {
-                    var optimizer = new DisjointSetVisiblePlaneOptimizer(face, chunk);
-                    optimizer.Optimize();
-                    var quads = optimizer.ToMeshQuads();
-                    _mesh.Quads.AddRange(quads);
-                }
-            }
-
-            return _mesh;
+            throw new ArgumentException("Mesh quads cannot be null");
         }
+
+        if (mesh.Quads.Any())
+        {
+            throw new ArgumentException($"Mesh must be empty, currently has {mesh.Quads.Count} quads");
+        }
+
+        this._mesh = mesh;
+    }
+
+
+    public Mesh Optimize(Chunk chunk)
+    {
+        VoxelOcclusionOptimizer occluder = new(chunk);
+        VisibleFaces visibleFaces = occluder.ComputeVisibleFaces();
+
+        // TODO : Check diff
+        // foreach (DisjointSetVisiblePlaneOptimizer optimizer in from visibleFace in visibleFaces.PlanesByAxis from face in visibleFace.Value select new DisjointSetVisiblePlaneOptimizer(face, chunk))
+        // {
+        //     optimizer.Optimize();
+        //     List<MeshQuad> quads = optimizer.ToMeshQuads();
+        //     _mesh.Quads.AddRange(quads);
+        // }
+
+        foreach (var visibleFace in visibleFaces.PlanesByAxis)
+        {
+            foreach (var face in visibleFace.Value)
+            {
+                var optimizer = new DisjointSetVisiblePlaneOptimizer(face, chunk);
+                optimizer.Optimize();
+                var quads = optimizer.ToMeshQuads();
+                _mesh.Quads.AddRange(quads);
+            }
+        }
+
+        return _mesh;
     }
 }

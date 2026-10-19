@@ -1,16 +1,13 @@
-using Libs.VoxelMeshOptimizer.OcclusionAlgorithms.Common;
+// SPDX-License-Identifier: MPL-2.0
 
-namespace Libs.VoxelMeshOptimizer.OcclusionAlgorithms
+namespace ElysianOutpost.Core.Meshing;
+
+public interface Occluder
 {
-
-
-    public interface Occluder
-    {
-        /// <summary>
-        /// Computes a collection of 2D planes (slices) in each direction,
-        /// representing all visible faces in the chunk. Each plane references the voxels
-        /// that have a face visible in that slice and direction.
-        /// </summary>
-        public VisibleFaces ComputeVisibleFaces();
-    }
+    /// <summary>
+    /// Computes a collection of 2D planes (slices) in each direction,
+    /// representing all visible faces in the chunk. Each plane references the voxels
+    /// that have a face visible in that slice and direction.
+    /// </summary>
+    public VisibleFaces ComputeVisibleFaces();
 }

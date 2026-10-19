@@ -1,10 +1,10 @@
-using Base;
+// SPDX-License-Identifier: MPL-2.0
 
-namespace Libs.VoxelMeshOptimizer
+using ElysianOutpost.Core.Voxels;
+
+namespace ElysianOutpost.Core.Meshing;
+
+public interface MeshOptimizer
 {
-
-    public interface MeshOptimizer
-    {
-        public Mesh Optimize(Chunk chunk);
-    }
+    public Mesh Optimize(Chunk chunk);
 }
