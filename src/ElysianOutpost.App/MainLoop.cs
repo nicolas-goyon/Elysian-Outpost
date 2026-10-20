@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Brutal.GlfwApi;
 using Brutal.Logging;
 using ElysianOutpost.App.Rendering;
+using ElysianOutpost.App.Ui;
 using ElysianOutpost.Core.Simulation;
 
 namespace ElysianOutpost.App;
@@ -13,9 +14,10 @@ namespace ElysianOutpost.App;
 /// </summary>
 /// <param name="window">The window of the app.</param>
 /// <param name="renderer">The renderer that draws the frames in the window.</param>
+/// <param name="overlay">The debug overlay.</param>
 /// <param name="log">The log category of the app.</param>
 /// <param name="timeLimit">The time after which the loop closes the window, or <c>null</c> for no limit.</param>
-internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, LogCategory log, TimeSpan? timeLimit)
+internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, DebugOverlay overlay, LogCategory log, TimeSpan? timeLimit)
 {
     private const int TicksPerSecond = 20;
     private const int MaxTicksPerFrame = 5;
@@ -59,12 +61,14 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, LogCa
 
             int ticks = clock.Advance(frameStart - previousFrameStart);
             previousFrameStart = frameStart;
+            long ticksStart = Stopwatch.GetTimestamp();
             for (int i = 0; i < ticks; i++)
             {
                 Tick();
             }
 
-            bool presented = renderer.DrawFrame();
+            overlay.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
+            bool presented = renderer.DrawFrame(overlay.BuildFrame());
             if (presented)
             {
                 reportFrameCount++;

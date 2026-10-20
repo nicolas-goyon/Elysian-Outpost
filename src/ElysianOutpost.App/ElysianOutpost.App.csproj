@@ -15,6 +15,10 @@
   <ItemGroup>
     <PackageReference Include="Ahwoo.BRUTAL.Core" Version="2026.10.1" />
     <PackageReference Include="Ahwoo.BRUTAL.Glfw" Version="2026.10.4" />
+    <!-- Dear ImGui and ImPlot for the debug overlay (#36). The backends package also brings Ahwoo.BRUTAL.OpenGl, which the app does not use. -->
+    <PackageReference Include="Ahwoo.BRUTAL.ImGui" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.ImGui.Backends" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.ImPlot" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.Logging" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.Vulkan" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.Vulkan.Abstractions" Version="2026.10.2" />
