@@ -7,6 +7,7 @@ using Brutal.Logging;
 using Brutal.Numerics;
 using ElysianOutpost.App;
 using ElysianOutpost.App.Logging;
+using ElysianOutpost.App.Rendering;
 using Microsoft.Extensions.Logging;
 
 // The option "--exit-after <seconds>" closes the window after a time limit, for automatic tests.
@@ -51,6 +52,9 @@ else
     log.Info($"Log file: {logFile}");
 }
 
+// The Vulkan bindings need this fallback on Linux before their first use. See VulkanLibrary.
+VulkanLibrary.AddLinuxFallback();
+
 Glfw.ErrorCallback += (code, description) => Glfw.Log.Error($"GLFW error {code}: {description}");
 if (!Glfw.Init())
 {
@@ -60,7 +64,7 @@ if (!Glfw.Init())
 
 try
 {
-    // The renderer will use Vulkan (#35). Thus the window has no OpenGL context.
+    // The renderer uses Vulkan. Thus the window has no OpenGL context.
     Glfw.WindowHint(GlfwWindowHint.ClientApi, Glfw.Constants.GLFW_NO_API);
     GlfwWindow window = Glfw.CreateWindow(new GlfwWindow.CreateInfo
     {
@@ -71,7 +75,10 @@ try
     try
     {
         log.Info($"The window is open: {window.Width}x{window.Height} pixels, platform {Glfw.GetPlatform()}.");
-        new MainLoop(window, log, timeLimit).Run();
+
+        // The renderer uses the surface of the window. Thus the app releases the renderer before the window.
+        using var renderer = new VulkanRenderer(window, LogCategory.Make("Renderer"));
+        new MainLoop(window, renderer, log, timeLimit).Run();
     }
     finally
     {
