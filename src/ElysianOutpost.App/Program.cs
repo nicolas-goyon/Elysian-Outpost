@@ -8,6 +8,7 @@ using Brutal.Numerics;
 using ElysianOutpost.App;
 using ElysianOutpost.App.Logging;
 using ElysianOutpost.App.Rendering;
+using ElysianOutpost.App.Ui;
 using Microsoft.Extensions.Logging;
 
 // The option "--exit-after <seconds>" closes the window after a time limit, for automatic tests.
@@ -55,7 +56,19 @@ else
 // The Vulkan bindings need this fallback on Linux before their first use. See VulkanLibrary.
 VulkanLibrary.AddLinuxFallback();
 
-Glfw.ErrorCallback += (code, description) => Glfw.Log.Error($"GLFW error {code}: {description}");
+Glfw.ErrorCallback += (code, description) =>
+{
+    // A missing standard cursor shape is not an error of the app, for example on an X server without a cursor theme.
+    // The ImGui backend then uses the arrow cursor. Upstream Dear ImGui hides these errors while it creates its cursors.
+    if (code == GlfwErrorCode.CursorUnavailable)
+    {
+        Glfw.Log.Info($"A standard cursor shape is not available ({description}). The app uses the arrow cursor in its place.");
+    }
+    else
+    {
+        Glfw.Log.Error($"GLFW error {code}: {description}");
+    }
+};
 if (!Glfw.Init())
 {
     log.Critical($"GLFW did not start.");
@@ -76,9 +89,12 @@ try
     {
         log.Info($"The window is open: {window.Width}x{window.Height} pixels, platform {Glfw.GetPlatform()}.");
 
-        // The renderer uses the surface of the window. Thus the app releases the renderer before the window.
-        using var renderer = new VulkanRenderer(window, LogCategory.Make("Renderer"));
-        new MainLoop(window, renderer, log, timeLimit).Run();
+        // The using declarations release the objects in the opposite order: the overlay, the renderer, ImGui, then the window.
+        // The renderer uses the surface of the window and the ImGui context.
+        using var imGui = new ImGuiHost(window);
+        using var renderer = new VulkanRenderer(window, imGui, LogCategory.Make("Renderer"));
+        using var overlay = new DebugOverlay(window, imGui, renderer.GpuName);
+        new MainLoop(window, renderer, overlay, log, timeLimit).Run();
     }
     finally
     {

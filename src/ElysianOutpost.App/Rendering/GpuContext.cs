@@ -45,7 +45,9 @@ internal sealed unsafe class GpuContext : IDisposable
 
             Surface = CreateSurface(_instance, window);
             (PhysicalDevice, QueueFamily) = SelectPhysicalDevice(_instance, Surface);
-            LogPhysicalDevice(log, PhysicalDevice);
+            VkPhysicalDeviceProperties properties = PhysicalDevice.GetProperties();
+            GpuName = VulkanDeviceInfo.GetDeviceName(in properties);
+            LogPhysicalDevice(log, GpuName, in properties);
             Device = CreateDevice(PhysicalDevice, QueueFamily);
             Queue = Device.GetQueue(QueueFamily, 0);
         }
@@ -72,6 +74,11 @@ internal sealed unsafe class GpuContext : IDisposable
     public PhysicalDevice PhysicalDevice { get; } = null!;
 
     /// <summary>
+    /// Gets the name of the selected physical device, for example the name of the GPU.
+    /// </summary>
+    public string GpuName { get; } = string.Empty;
+
+    /// <summary>
     /// Gets the index of the queue family for the graphics commands and the presentation.
     /// </summary>
     public int QueueFamily { get; }
@@ -79,7 +86,10 @@ internal sealed unsafe class GpuContext : IDisposable
     /// <summary>
     /// Gets the logical device.
     /// </summary>
-    public Device Device { get; } = null!;
+    /// <remarks>
+    /// The type is <see cref="DeviceEx"/>, because the Vulkan backend of ImGui needs it (#36).
+    /// </remarks>
+    public DeviceEx Device { get; } = null!;
 
     /// <summary>
     /// Gets the queue for the graphics commands and the presentation.
@@ -224,15 +234,14 @@ internal sealed unsafe class GpuContext : IDisposable
         return -1;
     }
 
-    private static void LogPhysicalDevice(LogCategory log, PhysicalDevice device)
+    private static void LogPhysicalDevice(LogCategory log, string name, in VkPhysicalDeviceProperties properties)
     {
-        VkPhysicalDeviceProperties properties = device.GetProperties();
         int loaderVersion;
         Vulkan.EnumerateInstanceVersion(&loaderVersion);
-        log.Info($"GPU: {VulkanDeviceInfo.GetDeviceName(in properties)} ({properties.DeviceType}). Driver version: {VulkanDeviceInfo.FormatDriverVersion(in properties)}. Vulkan version: {VulkanDeviceInfo.FormatApiVersion(properties.ApiVersion)} (loader {VulkanDeviceInfo.FormatApiVersion(loaderVersion)}).");
+        log.Info($"GPU: {name} ({properties.DeviceType}). Driver version: {VulkanDeviceInfo.FormatDriverVersion(in properties)}. Vulkan version: {VulkanDeviceInfo.FormatApiVersion(properties.ApiVersion)} (loader {VulkanDeviceInfo.FormatApiVersion(loaderVersion)}).");
     }
 
-    private static Device CreateDevice(PhysicalDevice physicalDevice, int queueFamily)
+    private static DeviceEx CreateDevice(PhysicalDevice physicalDevice, int queueFamily)
     {
         float priority = 1f;
         var queueInfo = new VkDeviceQueueCreateInfo
@@ -251,7 +260,7 @@ internal sealed unsafe class GpuContext : IDisposable
 
         var extensions = new HashSet<string> { VK.KHR_SWAPCHAIN_EXTENSION_NAME };
         VulkanHelpers.AddMandatoryIfSupportedDeviceExtensions(extensions, physicalDevice);
-        return physicalDevice.CreateDevice(new Device.CreateInfo
+        return physicalDevice.CreateDevice(new DeviceEx.CreateInfo
         {
             Extensions = extensions,
             QueueCreateInfos = new ReadOnlySpan<VkDeviceQueueCreateInfo>(&queueInfo, 1),

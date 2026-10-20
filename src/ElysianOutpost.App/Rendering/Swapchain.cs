@@ -155,8 +155,14 @@ internal sealed unsafe class Swapchain : IDisposable
         Images = [];
     }
 
-    // Selects an sRGB format. Then the GPU converts the linear colors of the shaders to sRGB.
-    private static VkSurfaceFormatKHR SelectFormat(PhysicalDevice device, VkSurfaceKHR surface)
+    /// <summary>
+    /// Selects the format of the swapchain images. The method prefers an sRGB format.
+    /// Then the GPU converts the linear colors of the shaders to sRGB.
+    /// </summary>
+    /// <param name="device">The physical device.</param>
+    /// <param name="surface">The surface of the window.</param>
+    /// <returns>The format and the color space of the images.</returns>
+    public static VkSurfaceFormatKHR SelectFormat(PhysicalDevice device, VkSurfaceKHR surface)
     {
         int count = device.GetSurfaceFormatsKHR_Count(surface);
         Span<VkSurfaceFormatKHR> formats = stackalloc VkSurfaceFormatKHR[count];

@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MPL-2.0
 
+using System.Diagnostics;
 using Brutal.GlfwApi;
+using Brutal.ImGuiApi;
 using Brutal.Logging;
 using Brutal.Numerics;
 using Brutal.VulkanApi;
 using Brutal.VulkanApi.Abstractions;
+using ElysianOutpost.App.Ui;
 
 namespace ElysianOutpost.App.Rendering;
 
 /// <summary>
-/// Draws the frames of the app with Vulkan. Now each frame has only the sky color.
+/// Draws the frames of the app with Vulkan. Now each frame has the sky color and the ImGui windows.
 /// </summary>
 /// <remarks>
 /// The renderer prepares the next frame while the GPU draws the current frame: two frames in flight.
@@ -27,6 +30,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     private readonly GlfwWindow _window;
     private readonly LogCategory _log;
     private readonly GpuContext _gpu;
+    private readonly ImGuiPass _imGuiPass = null!;
     private Swapchain? _swapchain;
     private readonly VkCommandPool[] _commandPools = new VkCommandPool[FramesInFlight];
     private readonly CommandBuffer[] _commandBuffers = new CommandBuffer[FramesInFlight];
@@ -41,9 +45,10 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     /// Initializes a new instance of the <see cref="VulkanRenderer"/> class for a window.
     /// </summary>
     /// <param name="window">The window. It must not have an OpenGL context.</param>
+    /// <param name="imGui">The ImGui host. The renderer draws its frames. Release the renderer before the host.</param>
     /// <param name="log">The log category of the renderer.</param>
     /// <exception cref="InvalidOperationException">Vulkan or a suitable GPU is not available.</exception>
-    public VulkanRenderer(GlfwWindow window, LogCategory log)
+    public VulkanRenderer(GlfwWindow window, ImGuiHost imGui, LogCategory log)
     {
         _window = window;
         _log = log;
@@ -51,6 +56,8 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         try
         {
             CreateFrameResources();
+            VkFormat format = Swapchain.SelectFormat(_gpu.PhysicalDevice, _gpu.Surface).Format;
+            _imGuiPass = new ImGuiPass(_gpu, imGui, format, FramesInFlight);
         }
         catch
         {
@@ -60,11 +67,24 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     }
 
     /// <summary>
+    /// Gets the name of the GPU, for example for the debug overlay.
+    /// </summary>
+    public string GpuName => _gpu.GpuName;
+
+    /// <summary>
+    /// Gets the time to record the ImGui commands in the last call of <see cref="DrawFrame"/>.
+    /// The value is zero if the last call did not draw ImGui.
+    /// </summary>
+    public TimeSpan ImGuiRecordTime { get; private set; }
+
+    /// <summary>
     /// Draws and presents one frame.
     /// </summary>
+    /// <param name="imGuiDrawData">The draw data of the ImGui frame to draw after the scene, or a null pointer for no ImGui frame.</param>
     /// <returns><c>true</c> if the renderer presented a frame. <c>false</c> if the window has no visible area, for example a minimized window.</returns>
-    public bool DrawFrame()
+    public bool DrawFrame(ImDrawDataPtr imGuiDrawData)
     {
+        ImGuiRecordTime = TimeSpan.Zero;
         int2 size = _window.FramebufferSize;
         if (size.X <= 0 || size.Y <= 0)
         {
@@ -103,7 +123,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
         // Reset the fence only now. If the acquisition fails, the fence stays signaled for the next call.
         _gpu.Device.ResetFences([fence]);
-        Record(swapchain, _commandBuffers[_frame], imageIndex);
+        Record(swapchain, _commandBuffers[_frame], imageIndex, imGuiDrawData);
         Submit(_commandBuffers[_frame], _imageAvailable[_frame], swapchain.RenderingFinished[imageIndex], fence);
         bool presented = Present(swapchain, imageIndex);
         _frame = (_frame + 1) % FramesInFlight;
@@ -125,6 +145,9 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         {
             _gpu.Device.WaitIdle();
             DestroyFrameResources();
+
+            // The framebuffers of the ImGui pass use the image views of the swapchain. Thus the pass goes first.
+            _imGuiPass?.Dispose();
             _swapchain?.Dispose();
         }
 
@@ -137,10 +160,6 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             _log.Info($"The Vulkan validation layers reported {ValidationLog.ErrorCount} error and {ValidationLog.WarningCount} warning messages.");
         }
     }
-
-    // Converts one sRGB color component to a linear value (IEC 61966-2-1).
-    private static float SrgbToLinear(float value) =>
-        value <= 0.04045f ? value / 12.92f : MathF.Pow((value + 0.055f) / 1.055f, 2.4f);
 
     private void CreateFrameResources()
     {
@@ -193,6 +212,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     private Swapchain CreateSwapchain(int2 size)
     {
         var swapchain = new Swapchain(_gpu, size);
+        _imGuiPass.CreateFramebuffers(swapchain);
         _swapchainFramebufferSize = size;
         _swapchainOutdated = false;
         _log.Info($"The swapchain is ready: {swapchain.Images.Length} images of {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels, format {swapchain.Format}, FIFO presentation.");
@@ -201,13 +221,18 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
     private void RecreateSwapchain(Swapchain swapchain, int2 size)
     {
+        // The framebuffers of the ImGui pass use the image views of the swapchain.
+        // The GPU must be idle before the release of the framebuffers.
+        _gpu.Device.WaitIdle();
+        _imGuiPass.DestroyFramebuffers();
         swapchain.Recreate(size);
+        _imGuiPass.CreateFramebuffers(swapchain);
         _swapchainFramebufferSize = size;
         _swapchainOutdated = false;
         _log.Info($"The swapchain changes to {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels.");
     }
 
-    private static void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex)
+    private void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex, ImDrawDataPtr imGuiDrawData)
     {
         VkImage image = swapchain.Images[imageIndex];
         commandBuffer.Reset();
@@ -224,9 +249,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             VkPipelineStageFlags2.ColorAttachmentOutputBit,
             VkAccessFlags2.ColorAttachmentWriteBit);
 
-        float4 clear = swapchain.Format is VkFormat.B8G8R8A8SRGB or VkFormat.R8G8B8A8SRGB
-            ? new float4(SrgbToLinear(_skyColorSrgb.X), SrgbToLinear(_skyColorSrgb.Y), SrgbToLinear(_skyColorSrgb.Z), 1f)
-            : _skyColorSrgb;
+        float4 clear = ColorSpace.IsSrgb(swapchain.Format) ? ColorSpace.SrgbToLinear(_skyColorSrgb) : _skyColorSrgb;
         var colorAttachment = new VkRenderingAttachmentInfo
         {
             ImageView = swapchain.ImageViews[imageIndex],
@@ -244,8 +267,16 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         };
         commandBuffer.BeginRendering(in renderingInfo);
 
-        // The next renderers draw here: the chunk meshes (#39) and the debug overlay (#36).
+        // The chunk renderer (#39) draws here.
         commandBuffer.EndRendering();
+
+        // ImGui draws over the scene, in its own render pass. See ImGuiPass.
+        if (!imGuiDrawData.IsNull())
+        {
+            long start = Stopwatch.GetTimestamp();
+            _imGuiPass.Record(commandBuffer, imageIndex, swapchain.Extent, imGuiDrawData);
+            ImGuiRecordTime = Stopwatch.GetElapsedTime(start);
+        }
 
         // The signal of the "rendering finished" semaphore must wait for this layout change.
         // Thus the barrier has a destination stage. Without it, the synchronization validation finds a hazard.
