@@ -29,7 +29,10 @@ Key Features:
 
 - Assets use the [Creative Commons Attribution 4.0 International](LICENSE-ASSETS) license (CC BY 4.0). An asset is a media file of the game: an image, a 3D model, a texture, a color palette, a sound or a music file.
   - Attribution: "Elysian Outpost contributors, https://github.com/nicolas-goyon/Elysian-Outpost".
-  - Now, these files are assets: the files in `Elysian-Outpost/Assets/Resources/` (texture atlas and chunk model) and `Elysian-Outpost/ChunkBase.obj` (an exported chunk model).
+  - Now, these files are assets:
+    - the files in `Elysian-Outpost/Assets/Resources/` (texture atlas and chunk model),
+    - `Elysian-Outpost/ChunkBase.obj` (an exported chunk model),
+    - `data/palette.json` (the colors of the block types).
 - All other files of the project use the [Mozilla Public License 2.0](LICENSE) (MPL-2.0): the code, the documents and the project files.
 - Third-party files keep their own licenses. The two licenses above do not apply to them:
   - `Elysian-Outpost/Assets/TextMesh Pro/`: files of TextMesh Pro, by Unity Technologies (Unity Companion License). The font LiberationSans uses the SIL Open Font License 1.1. The EmojiOne sprites use the terms of EmojiOne (see `Sprites/EmojiOne Attribution.txt`).
