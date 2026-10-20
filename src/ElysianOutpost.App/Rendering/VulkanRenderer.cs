@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Brutal.GlfwApi;
 using Brutal.ImGuiApi;
 using Brutal.Logging;
@@ -8,11 +9,14 @@ using Brutal.Numerics;
 using Brutal.VulkanApi;
 using Brutal.VulkanApi.Abstractions;
 using ElysianOutpost.App.Ui;
+using ElysianOutpost.Core.Cameras;
+using ElysianOutpost.Core.Lighting;
+using ElysianOutpost.Core.WorldGeneration;
 
 namespace ElysianOutpost.App.Rendering;
 
 /// <summary>
-/// Draws the frames of the app with Vulkan. Now each frame has the sky color and the ImGui windows.
+/// Draws the frames of the app with Vulkan. Each frame has the sky color, the chunk meshes, and then the ImGui windows.
 /// </summary>
 /// <remarks>
 /// The renderer prepares the next frame while the GPU draws the current frame: two frames in flight.
@@ -27,11 +31,23 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     // The sky color in sRGB (#87CEEB). The clear operation needs linear values, because the swapchain format is sRGB.
     private static readonly float4 _skyColorSrgb = new(0x87 / 255f, 0xCE / 255f, 0xEB / 255f, 1f);
 
+    // The color aspect, one mip level and one layer: all the subresources of a swapchain image.
+    private static readonly VkImageSubresourceRange _colorRange = new()
+    {
+        AspectMask = VkImageAspectFlags.ColorBit,
+        LevelCount = 1,
+        LayerCount = 1,
+    };
+
     private readonly GlfwWindow _window;
     private readonly LogCategory _log;
     private readonly GpuContext _gpu;
     private readonly ImGuiPass _imGuiPass = null!;
+    private readonly ChunkPipeline _chunkPipeline = null!;
+    private readonly ChunkMeshes _chunkMeshes = null!;
+    private readonly VkFormat _depthFormat;
     private Swapchain? _swapchain;
+    private DepthBuffer? _depthBuffer;
     private readonly VkCommandPool[] _commandPools = new VkCommandPool[FramesInFlight];
     private readonly CommandBuffer[] _commandBuffers = new CommandBuffer[FramesInFlight];
     private readonly VkSemaphore[] _imageAvailable = new VkSemaphore[FramesInFlight];
@@ -58,6 +74,13 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             CreateFrameResources();
             VkFormat format = Swapchain.SelectFormat(_gpu.PhysicalDevice, _gpu.Surface).Format;
             _imGuiPass = new ImGuiPass(_gpu, imGui, format, FramesInFlight);
+
+            // The pipeline needs the formats of the images before the first swapchain. The shaders compile here.
+            _depthFormat = DepthBuffer.SelectFormat(_gpu.PhysicalDevice);
+            long start = Stopwatch.GetTimestamp();
+            _chunkPipeline = new ChunkPipeline(_gpu, format, _depthFormat, SceneLighting.LegacySampleScene);
+            _log.Info($"The chunk pipeline is ready in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F0} ms, with the depth format {_depthFormat}.");
+            _chunkMeshes = new ChunkMeshes(_gpu);
         }
         catch
         {
@@ -72,6 +95,22 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     public string GpuName => _gpu.GpuName;
 
     /// <summary>
+    /// Gets the lens of the camera: the field of view and the clip planes. The default values are the values of the legacy scene.
+    /// </summary>
+    public CameraLens Lens { get; } = new();
+
+    /// <summary>
+    /// Gets the total time of the chunk uploads to the GPU.
+    /// </summary>
+    public TimeSpan ChunkUploadTime => _chunkMeshes.UploadTime;
+
+    /// <summary>
+    /// Copies the meshes of chunks to the GPU. The next frames draw them.
+    /// </summary>
+    /// <param name="chunks">The chunks to add.</param>
+    public void AddChunks(ReadOnlySpan<BuiltChunk> chunks) => _chunkMeshes.Upload(chunks);
+
+    /// <summary>
     /// Gets the time to record the ImGui commands in the last call of <see cref="DrawFrame"/>.
     /// The value is zero if the last call did not draw ImGui.
     /// </summary>
@@ -80,9 +119,10 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     /// <summary>
     /// Draws and presents one frame.
     /// </summary>
+    /// <param name="viewMatrix">The view matrix of the camera, in the row-vector convention (<see cref="FreeFlyCamera.CreateViewMatrix"/>).</param>
     /// <param name="imGuiDrawData">The draw data of the ImGui frame to draw after the scene, or a null pointer for no ImGui frame.</param>
     /// <returns><c>true</c> if the renderer presented a frame. <c>false</c> if the window has no visible area, for example a minimized window.</returns>
-    public bool DrawFrame(ImDrawDataPtr imGuiDrawData)
+    public bool DrawFrame(float4x4 viewMatrix, ImDrawDataPtr imGuiDrawData)
     {
         ImGuiRecordTime = TimeSpan.Zero;
         int2 size = _window.FramebufferSize;
@@ -123,7 +163,9 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
         // Reset the fence only now. If the acquisition fails, the fence stays signaled for the next call.
         _gpu.Device.ResetFences([fence]);
-        Record(swapchain, _commandBuffers[_frame], imageIndex, imGuiDrawData);
+        float aspectRatio = (float)swapchain.Extent.Width / swapchain.Extent.Height;
+        float4x4 viewProjection = viewMatrix * Lens.CreateProjectionMatrix(aspectRatio);
+        Record(swapchain, _commandBuffers[_frame], imageIndex, viewProjection, imGuiDrawData);
         Submit(_commandBuffers[_frame], _imageAvailable[_frame], swapchain.RenderingFinished[imageIndex], fence);
         bool presented = Present(swapchain, imageIndex);
         _frame = (_frame + 1) % FramesInFlight;
@@ -148,6 +190,11 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
             // The framebuffers of the ImGui pass use the image views of the swapchain. Thus the pass goes first.
             _imGuiPass?.Dispose();
+
+            // The memory allocator of the GPU context must not have buffers or images at its release.
+            _chunkMeshes?.Dispose();
+            _chunkPipeline?.Dispose();
+            _depthBuffer?.Dispose();
             _swapchain?.Dispose();
         }
 
@@ -213,6 +260,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     {
         var swapchain = new Swapchain(_gpu, size);
         _imGuiPass.CreateFramebuffers(swapchain);
+        _depthBuffer = new DepthBuffer(_gpu, _depthFormat, swapchain.Extent);
         _swapchainFramebufferSize = size;
         _swapchainOutdated = false;
         _log.Info($"The swapchain is ready: {swapchain.Images.Length} images of {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels, format {swapchain.Format}, FIFO presentation.");
@@ -225,16 +273,20 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         // The GPU must be idle before the release of the framebuffers.
         _gpu.Device.WaitIdle();
         _imGuiPass.DestroyFramebuffers();
+        _depthBuffer?.Dispose();
+        _depthBuffer = null;
         swapchain.Recreate(size);
         _imGuiPass.CreateFramebuffers(swapchain);
+        _depthBuffer = new DepthBuffer(_gpu, _depthFormat, swapchain.Extent);
         _swapchainFramebufferSize = size;
         _swapchainOutdated = false;
         _log.Info($"The swapchain changes to {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels.");
     }
 
-    private void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex, ImDrawDataPtr imGuiDrawData)
+    private void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex, float4x4 viewProjection, ImDrawDataPtr imGuiDrawData)
     {
         VkImage image = swapchain.Images[imageIndex];
+        DepthBuffer depthBuffer = _depthBuffer!;
         commandBuffer.Reset();
         commandBuffer.Begin(VkCommandBufferUsageFlags.OneTimeSubmitBit);
 
@@ -242,12 +294,26 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         TransitionImage(
             commandBuffer,
             image,
+            _colorRange,
             VkImageLayout.Undefined,
             VkImageLayout.ColorAttachmentOptimal,
             VkPipelineStageFlags2.ColorAttachmentOutputBit,
             VkAccessFlags2.None,
             VkPipelineStageFlags2.ColorAttachmentOutputBit,
             VkAccessFlags2.ColorAttachmentWriteBit);
+
+        // All the frames in flight use the same depth image. The depth operations of the previous frame must end
+        // before the clear operation of this frame. The previous content is not necessary.
+        TransitionImage(
+            commandBuffer,
+            depthBuffer.Image,
+            DepthBuffer.SubresourceRange,
+            VkImageLayout.Undefined,
+            VkImageLayout.DepthStencilAttachmentOptimal,
+            VkPipelineStageFlags2.EarlyFragmentTestsBit | VkPipelineStageFlags2.LateFragmentTestsBit,
+            VkAccessFlags2.DepthStencilAttachmentWriteBit,
+            VkPipelineStageFlags2.EarlyFragmentTestsBit | VkPipelineStageFlags2.LateFragmentTestsBit,
+            VkAccessFlags2.DepthStencilAttachmentReadBit | VkAccessFlags2.DepthStencilAttachmentWriteBit);
 
         float4 clear = ColorSpace.IsSrgb(swapchain.Format) ? ColorSpace.SrgbToLinear(_skyColorSrgb) : _skyColorSrgb;
         var colorAttachment = new VkRenderingAttachmentInfo
@@ -258,16 +324,24 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             StoreOp = VkAttachmentStoreOp.Store,
             ClearValue = new VkClearValue { Color = new VkClearColorValue { Float32 = clear } },
         };
+        var depthAttachment = new VkRenderingAttachmentInfo
+        {
+            ImageView = depthBuffer.View,
+            ImageLayout = VkImageLayout.DepthStencilAttachmentOptimal,
+            LoadOp = VkAttachmentLoadOp.Clear,
+            StoreOp = VkAttachmentStoreOp.DontCare,
+            ClearValue = new VkClearValue { DepthStencil = new VkClearDepthStencilValue { Depth = 1f } },
+        };
         var renderingInfo = new VkRenderingInfo
         {
             RenderArea = new VkRect2D(swapchain.Extent),
             LayerCount = 1,
             ColorAttachmentCount = 1,
             ColorAttachments = &colorAttachment,
+            DepthAttachment = &depthAttachment,
         };
         commandBuffer.BeginRendering(in renderingInfo);
-
-        // The chunk renderer (#39) draws here.
+        RecordChunks(commandBuffer, swapchain.Extent, viewProjection);
         commandBuffer.EndRendering();
 
         // ImGui draws over the scene, in its own render pass. See ImGuiPass.
@@ -283,6 +357,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         TransitionImage(
             commandBuffer,
             image,
+            _colorRange,
             VkImageLayout.ColorAttachmentOptimal,
             VkImageLayout.PresentSrcKHR,
             VkPipelineStageFlags2.ColorAttachmentOutputBit,
@@ -292,9 +367,27 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         commandBuffer.End();
     }
 
+    // The viewport has a positive height, because the projection matrix already turns the Y axis down.
+    private void RecordChunks(CommandBuffer commandBuffer, VkExtent2D extent, float4x4 viewProjection)
+    {
+        VkViewport viewport = new()
+        {
+            Width = extent.Width,
+            Height = extent.Height,
+            MinDepth = 0f,
+            MaxDepth = 1f,
+        };
+        commandBuffer.SetViewport(0, [viewport]);
+        commandBuffer.SetScissor(0, [new VkRect2D(extent)]);
+        commandBuffer.BindPipeline(VkPipelineBindPoint.Graphics, _chunkPipeline.Pipeline);
+        commandBuffer.PushConstants(_chunkPipeline.Layout, VkShaderStageFlags.VertexBit, 0, MemoryMarshal.AsBytes(new ReadOnlySpan<float4x4>(ref viewProjection)));
+        _chunkMeshes.Record(commandBuffer, _chunkPipeline.Layout);
+    }
+
     private static void TransitionImage(
         CommandBuffer commandBuffer,
         VkImage image,
+        VkImageSubresourceRange range,
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
         VkPipelineStageFlags2 sourceStage,
@@ -313,12 +406,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             SrcQueueFamilyIndex = VK.QUEUE_FAMILY_IGNORED,
             DstQueueFamilyIndex = VK.QUEUE_FAMILY_IGNORED,
             Image = image,
-            SubresourceRange = new VkImageSubresourceRange
-            {
-                AspectMask = VkImageAspectFlags.ColorBit,
-                LevelCount = 1,
-                LayerCount = 1,
-            },
+            SubresourceRange = range,
         };
         var dependency = new VkDependencyInfo
         {

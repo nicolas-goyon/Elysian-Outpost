@@ -5,12 +5,13 @@ using Brutal.GlfwApi;
 using Brutal.Logging;
 using Brutal.VulkanApi;
 using Brutal.VulkanApi.Abstractions;
+using Brutal.VulkanApi.Vma;
 
 namespace ElysianOutpost.App.Rendering;
 
 /// <summary>
 /// The Vulkan objects that do not change with the window size. They are the instance, the surface of the window,
-/// the physical device, the logical device and the queue.
+/// the physical device, the logical device, the queue and the memory allocator.
 /// </summary>
 internal sealed unsafe class GpuContext : IDisposable
 {
@@ -50,6 +51,12 @@ internal sealed unsafe class GpuContext : IDisposable
             LogPhysicalDevice(log, GpuName, in properties);
             Device = CreateDevice(PhysicalDevice, QueueFamily);
             Queue = Device.GetQueue(QueueFamily, 0);
+            Allocator = Device.CreateVmaAllocator(new VmaAllocatorCreateInfo
+            {
+                PhysicalDevice = PhysicalDevice.Handle,
+                Device = Device.Handle,
+                VulkanApiVersion = (uint)VulkanHelpers.Api.VERSION_1_3,
+            });
         }
         catch
         {
@@ -97,7 +104,13 @@ internal sealed unsafe class GpuContext : IDisposable
     public Queue Queue { get; } = null!;
 
     /// <summary>
-    /// Releases the logical device, the surface, the debug messenger and the instance, in this order.
+    /// Gets the Vulkan Memory Allocator (VMA). It gives the memory of the buffers and of the depth image.
+    /// </summary>
+    public VmaAllocator Allocator { get; } = null!;
+
+    /// <summary>
+    /// Releases the memory allocator, the logical device, the surface, the debug messenger and the instance, in this order.
+    /// Release all the buffers and the images of the allocator before.
     /// </summary>
     public void Dispose()
     {
@@ -107,6 +120,11 @@ internal sealed unsafe class GpuContext : IDisposable
         }
 
         _disposed = true;
+        if (Allocator is not null)
+        {
+            Device.DestroyVmaAllocator(Allocator);
+        }
+
         Device?.Dispose();
         if (!Surface.IsNull())
         {

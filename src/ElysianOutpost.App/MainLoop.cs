@@ -72,7 +72,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, Debug
             }
 
             overlay.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
-            bool presented = renderer.DrawFrame(overlay.BuildFrame());
+            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), overlay.BuildFrame());
             if (presented)
             {
                 reportFrameCount++;
