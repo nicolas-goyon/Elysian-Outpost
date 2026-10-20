@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The Vulkan bindings use pointers to native structures (#35). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +16,8 @@
     <PackageReference Include="Ahwoo.BRUTAL.Core" Version="2026.10.1" />
     <PackageReference Include="Ahwoo.BRUTAL.Glfw" Version="2026.10.4" />
     <PackageReference Include="Ahwoo.BRUTAL.Logging" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.Vulkan" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.Vulkan.Abstractions" Version="2026.10.2" />
   </ItemGroup>
 
 </Project>
