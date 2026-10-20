@@ -33,9 +33,8 @@ internal sealed unsafe class GpuContext : IDisposable
             throw new InvalidOperationException("GLFW cannot find a Vulkan driver. The app needs Vulkan 1.3.");
         }
 
-        VulkanLibrary.AddLinuxFallback();
-
         _instance = CreateInstance(log, out bool validation);
+        ValidationEnabled = validation;
         try
         {
             if (validation)
@@ -56,6 +55,11 @@ internal sealed unsafe class GpuContext : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets a value that tells if the Vulkan validation layers are on.
+    /// </summary>
+    public bool ValidationEnabled { get; }
 
     /// <summary>
     /// Gets the surface of the window.

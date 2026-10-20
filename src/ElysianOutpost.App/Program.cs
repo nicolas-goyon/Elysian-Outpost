@@ -52,6 +52,9 @@ else
     log.Info($"Log file: {logFile}");
 }
 
+// The Vulkan bindings need this fallback on Linux before their first use. See VulkanLibrary.
+VulkanLibrary.AddLinuxFallback();
+
 Glfw.ErrorCallback += (code, description) => Glfw.Log.Error($"GLFW error {code}: {description}");
 if (!Glfw.Init())
 {

@@ -20,8 +20,13 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, LogCa
     private const int TicksPerSecond = 20;
     private const int MaxTicksPerFrame = 5;
 
-    // The FIFO presentation of the renderer limits the frame rate. If the window has no visible area,
-    // the renderer does not present, and the loop waits for the duration of one tick.
+    // The FIFO presentation of the renderer usually limits the frame rate to the refresh rate of the screen.
+    // Some systems do not wait in FIFO mode. Examples are a virtual machine, a software driver,
+    // or a driver setting that turns off the vertical synchronization. Thus the loop also keeps a minimum frame duration.
+    private const int MaxFramesPerSecond = 240;
+
+    // If the window has no visible area, the renderer does not present, and the loop waits for the duration of one tick.
+    private static readonly TimeSpan _minFrameDuration = TimeSpan.FromSeconds(1.0 / MaxFramesPerSecond);
     private static readonly TimeSpan _idleFrameDuration = TimeSpan.FromSeconds(1.0 / TicksPerSecond);
     private static readonly TimeSpan _reportPeriod = TimeSpan.FromSeconds(5);
 
@@ -82,9 +87,9 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, LogCa
             }
 
             // Glfw.WaitEventsTimeout stops when an event arrives. Thus the loop waits again until the end of the frame.
-            TimeSpan frameEnd = frameStart + _idleFrameDuration;
+            TimeSpan frameEnd = frameStart + (presented ? _minFrameDuration : _idleFrameDuration);
             for (TimeSpan wait = frameEnd - stopwatch.Elapsed;
-                 !presented && wait > TimeSpan.Zero && !window.ShouldClose;
+                 wait > TimeSpan.Zero && !window.ShouldClose;
                  wait = frameEnd - stopwatch.Elapsed)
             {
                 Glfw.WaitEventsTimeout(wait.TotalSeconds);

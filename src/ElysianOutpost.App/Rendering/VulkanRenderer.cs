@@ -14,7 +14,8 @@ namespace ElysianOutpost.App.Rendering;
 /// <remarks>
 /// The renderer prepares the next frame while the GPU draws the current frame: two frames in flight.
 /// Each frame in flight has its own command buffer, "image available" semaphore and fence.
-/// The FIFO presentation limits the frame rate to the refresh rate of the screen.
+/// The FIFO presentation usually limits the frame rate to the refresh rate of the screen.
+/// The renderer creates the swapchain in the first call of <see cref="DrawFrame"/> that finds a visible window area.
 /// </remarks>
 internal sealed unsafe class VulkanRenderer : IDisposable
 {
@@ -26,7 +27,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     private readonly GlfwWindow _window;
     private readonly LogCategory _log;
     private readonly GpuContext _gpu;
-    private readonly Swapchain _swapchain;
+    private Swapchain? _swapchain;
     private readonly VkCommandPool[] _commandPools = new VkCommandPool[FramesInFlight];
     private readonly CommandBuffer[] _commandBuffers = new CommandBuffer[FramesInFlight];
     private readonly VkSemaphore[] _imageAvailable = new VkSemaphore[FramesInFlight];
@@ -49,10 +50,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         _gpu = new GpuContext(window, log);
         try
         {
-            _swapchainFramebufferSize = window.FramebufferSize;
-            _swapchain = new Swapchain(_gpu, ValidSize(_swapchainFramebufferSize));
             CreateFrameResources();
-            _log.Info($"The swapchain is ready: {_swapchain.Images.Length} images of {_swapchain.Extent.Width}x{_swapchain.Extent.Height} pixels, format {_swapchain.Format}, FIFO presentation.");
         }
         catch
         {
@@ -73,10 +71,13 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             return false;
         }
 
+        // A window can start without a visible area, for example a minimized window. Thus the first visible frame creates the swapchain.
+        Swapchain swapchain = _swapchain ??= CreateSwapchain(size);
+
         // The window system can report the new size before the swapchain becomes out of date.
         if (_swapchainOutdated || size.X != _swapchainFramebufferSize.X || size.Y != _swapchainFramebufferSize.Y)
         {
-            RecreateSwapchain(size);
+            RecreateSwapchain(swapchain, size);
         }
 
         VkFence fence = _inFlight[_frame];
@@ -85,20 +86,26 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         int imageIndex;
         try
         {
-            _gpu.Device.AcquireNextImageKHR(_swapchain.Handle, -1, _imageAvailable[_frame], VkFence.NullHandle, out imageIndex);
+            VkResult acquired = _gpu.Device.AcquireNextImageKHR(swapchain.Handle, -1, _imageAvailable[_frame], VkFence.NullHandle, out imageIndex);
+
+            // A suboptimal swapchain can still show this frame. The next call of DrawFrame creates the swapchain again.
+            if (acquired == VkResult.SuboptimalKHR)
+            {
+                _swapchainOutdated = true;
+            }
         }
         catch (VkResultError error) when (error.Result == VkResult.ErrorOutOfDateKHR)
         {
             // The swapchain does not match the window anymore. The semaphore is not signaled, thus the next frame can use it.
-            RecreateSwapchain(size);
+            RecreateSwapchain(swapchain, size);
             return false;
         }
 
         // Reset the fence only now. If the acquisition fails, the fence stays signaled for the next call.
         _gpu.Device.ResetFences([fence]);
-        Record(_commandBuffers[_frame], imageIndex);
-        Submit(_commandBuffers[_frame], _imageAvailable[_frame], _swapchain.RenderingFinished[imageIndex], fence);
-        bool presented = Present(imageIndex);
+        Record(swapchain, _commandBuffers[_frame], imageIndex);
+        Submit(_commandBuffers[_frame], _imageAvailable[_frame], swapchain.RenderingFinished[imageIndex], fence);
+        bool presented = Present(swapchain, imageIndex);
         _frame = (_frame + 1) % FramesInFlight;
         return presented;
     }
@@ -121,14 +128,15 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             _swapchain?.Dispose();
         }
 
+        bool validation = _gpu.ValidationEnabled;
         _gpu.Dispose();
-#if DEBUG
-        _log.Info($"The Vulkan validation layers reported {ValidationLog.ErrorCount} error and {ValidationLog.WarningCount} warning messages.");
-#endif
-    }
 
-    // A swapchain needs a size of 1 pixel or more. DrawFrame does not draw if the window has no visible area.
-    private static int2 ValidSize(int2 size) => new(Math.Max(size.X, 1), Math.Max(size.Y, 1));
+        // Without the validation layers, the totals have no meaning. Thus the renderer writes them only with the layers.
+        if (validation)
+        {
+            _log.Info($"The Vulkan validation layers reported {ValidationLog.ErrorCount} error and {ValidationLog.WarningCount} warning messages.");
+        }
+    }
 
     // Converts one sRGB color component to a linear value (IEC 61966-2-1).
     private static float SrgbToLinear(float value) =>
@@ -182,17 +190,26 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         }
     }
 
-    private void RecreateSwapchain(int2 size)
+    private Swapchain CreateSwapchain(int2 size)
     {
-        _swapchain.Recreate(ValidSize(size));
+        var swapchain = new Swapchain(_gpu, size);
         _swapchainFramebufferSize = size;
         _swapchainOutdated = false;
-        _log.Info($"The swapchain changes to {_swapchain.Extent.Width}x{_swapchain.Extent.Height} pixels.");
+        _log.Info($"The swapchain is ready: {swapchain.Images.Length} images of {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels, format {swapchain.Format}, FIFO presentation.");
+        return swapchain;
     }
 
-    private void Record(CommandBuffer commandBuffer, int imageIndex)
+    private void RecreateSwapchain(Swapchain swapchain, int2 size)
     {
-        VkImage image = _swapchain.Images[imageIndex];
+        swapchain.Recreate(size);
+        _swapchainFramebufferSize = size;
+        _swapchainOutdated = false;
+        _log.Info($"The swapchain changes to {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels.");
+    }
+
+    private static void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex)
+    {
+        VkImage image = swapchain.Images[imageIndex];
         commandBuffer.Reset();
         commandBuffer.Begin(VkCommandBufferUsageFlags.OneTimeSubmitBit);
 
@@ -207,12 +224,12 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             VkPipelineStageFlags2.ColorAttachmentOutputBit,
             VkAccessFlags2.ColorAttachmentWriteBit);
 
-        float4 clear = _swapchain.Format is VkFormat.B8G8R8A8SRGB or VkFormat.R8G8B8A8SRGB
+        float4 clear = swapchain.Format is VkFormat.B8G8R8A8SRGB or VkFormat.R8G8B8A8SRGB
             ? new float4(SrgbToLinear(_skyColorSrgb.X), SrgbToLinear(_skyColorSrgb.Y), SrgbToLinear(_skyColorSrgb.Z), 1f)
             : _skyColorSrgb;
         var colorAttachment = new VkRenderingAttachmentInfo
         {
-            ImageView = _swapchain.ImageViews[imageIndex],
+            ImageView = swapchain.ImageViews[imageIndex],
             ImageLayout = VkImageLayout.ColorAttachmentOptimal,
             LoadOp = VkAttachmentLoadOp.Clear,
             StoreOp = VkAttachmentStoreOp.Store,
@@ -220,7 +237,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         };
         var renderingInfo = new VkRenderingInfo
         {
-            RenderArea = new VkRect2D(_swapchain.Extent),
+            RenderArea = new VkRect2D(swapchain.Extent),
             LayerCount = 1,
             ColorAttachmentCount = 1,
             ColorAttachments = &colorAttachment,
@@ -230,6 +247,8 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         // The next renderers draw here: the chunk meshes (#39) and the debug overlay (#36).
         commandBuffer.EndRendering();
 
+        // The signal of the "rendering finished" semaphore must wait for this layout change.
+        // Thus the barrier has a destination stage. Without it, the synchronization validation finds a hazard.
         TransitionImage(
             commandBuffer,
             image,
@@ -237,7 +256,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             VkImageLayout.PresentSrcKHR,
             VkPipelineStageFlags2.ColorAttachmentOutputBit,
             VkAccessFlags2.ColorAttachmentWriteBit,
-            VkPipelineStageFlags2.None,
+            VkPipelineStageFlags2.ColorAttachmentOutputBit,
             VkAccessFlags2.None);
         commandBuffer.End();
     }
@@ -304,16 +323,16 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         _gpu.Queue.Submit2(new Span<VkSubmitInfo2>(&submit, 1), fence);
     }
 
-    private bool Present(int imageIndex)
+    private bool Present(Swapchain swapchain, int imageIndex)
     {
-        VkSwapchainKHR swapchain = _swapchain.Handle;
-        VkSemaphore renderingFinished = _swapchain.RenderingFinished[imageIndex];
+        VkSwapchainKHR handle = swapchain.Handle;
+        VkSemaphore renderingFinished = swapchain.RenderingFinished[imageIndex];
         var presentInfo = new VkPresentInfoKHR
         {
             WaitSemaphoreCount = 1,
             WaitSemaphores = &renderingFinished,
             SwapchainCount = 1,
-            Swapchains = &swapchain,
+            Swapchains = &handle,
             ImageIndices = &imageIndex,
         };
 

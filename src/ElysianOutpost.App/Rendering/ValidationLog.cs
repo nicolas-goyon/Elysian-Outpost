@@ -9,10 +9,12 @@ using Brutal.VulkanApi;
 namespace ElysianOutpost.App.Rendering;
 
 /// <summary>
-/// Receives the messages of the Vulkan validation layers, writes them to the log and counts them.
+/// Receives the messages of the Vulkan validation layers and of the Vulkan loader, and writes them to the log.
 /// </summary>
 /// <remarks>
-/// The validation layers can call the callback from other threads. Thus the counters use atomic operations.
+/// The counters contain only the validation messages. A loader message, for example about a missing driver file,
+/// is not a validation error. The validation layers can call the callback from other threads.
+/// Thus the counters use atomic operations.
 /// </remarks>
 internal static unsafe class ValidationLog
 {
@@ -22,12 +24,12 @@ internal static unsafe class ValidationLog
     private static int _warningCount;
 
     /// <summary>
-    /// Gets the number of error messages since the start of the app.
+    /// Gets the number of validation error messages since the start of the app.
     /// </summary>
     public static int ErrorCount => Volatile.Read(ref _errorCount);
 
     /// <summary>
-    /// Gets the number of warning messages since the start of the app.
+    /// Gets the number of validation warning messages since the start of the app.
     /// </summary>
     public static int WarningCount => Volatile.Read(ref _warningCount);
 
@@ -55,14 +57,23 @@ internal static unsafe class ValidationLog
         try
         {
             string message = Marshal.PtrToStringUTF8((nint)data->Message) ?? string.Empty;
+            bool validation = types.HasFlag(VkDebugUtilsMessageTypeFlagsEXT.ValidationBitEXT);
             if (severity.HasFlag(VkDebugUtilsMessageSeverityFlagsEXT.ErrorBitEXT))
             {
-                Interlocked.Increment(ref _errorCount);
+                if (validation)
+                {
+                    Interlocked.Increment(ref _errorCount);
+                }
+
                 Log.Error($"{message}");
             }
             else if (severity.HasFlag(VkDebugUtilsMessageSeverityFlagsEXT.WarningBitEXT))
             {
-                Interlocked.Increment(ref _warningCount);
+                if (validation)
+                {
+                    Interlocked.Increment(ref _warningCount);
+                }
+
                 Log.Warning($"{message}");
             }
         }
