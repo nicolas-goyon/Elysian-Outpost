@@ -3,6 +3,7 @@
 using System.Diagnostics;
 using Brutal.GlfwApi;
 using Brutal.Logging;
+using ElysianOutpost.App.Input;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.Core.Simulation;
 
@@ -36,6 +37,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, LogCa
     public void Run()
     {
         var clock = new FixedStepClock(TicksPerSecond, MaxTicksPerFrame);
+        var cameraController = new FreeFlyCameraController(window, InputSettings.Default, LogCategory.Make("Camera"));
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
@@ -56,6 +58,8 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, LogCa
             {
                 break;
             }
+
+            cameraController.Update(frameStart - previousFrameStart);
 
             int ticks = clock.Advance(frameStart - previousFrameStart);
             previousFrameStart = frameStart;
