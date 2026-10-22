@@ -29,10 +29,10 @@ internal sealed class FreeFlyCameraController
     private readonly GlfwWindow _window;
     private readonly InputSettings _settings;
     private readonly LogCategory _log;
+    private readonly CursorMovementTracker _cursorMovement = new();
     private GlfwKey _menuKey;
     private string? _menuKeyName;
     private bool _menuKeyWasDown;
-    private double2? _previousCursor;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FreeFlyCameraController"/> class, in menu mode.
@@ -59,6 +59,20 @@ internal sealed class FreeFlyCameraController
         }
 
         log.Info($"Raw mouse motion: {(rawMotion ? "on" : "off")}.");
+
+        // On X11, a cursor enter event and a focus event can make the virtual cursor jump with no mouse movement (#106).
+        // GLFW sends these events in the same event processing as the jump. Thus the tracker ignores the movement of the next frame.
+        // These events of GlfwWindow are not new GLFW callbacks: GlfwWindow sends its events to all the handlers.
+        // The controller lives as long as the window. Thus it does not remove the handlers.
+        window.OnCursorEnter += (_, entered) =>
+        {
+            if (entered)
+            {
+                _cursorMovement.IgnoreNextMovement();
+            }
+        };
+        window.OnFocus += (_, _) => _cursorMovement.IgnoreNextMovement();
+
         FindMenuKey();
         SetMode(CameraMode.Menu);
     }
@@ -98,18 +112,17 @@ internal sealed class FreeFlyCameraController
         // As in the legacy script, the camera does not move in menu mode.
         if (Mode != CameraMode.Fly || !focused)
         {
-            _previousCursor = null;
+            _cursorMovement.Reset();
             return;
         }
 
         // The controller reads the cursor from GLFW, because the cached position of GlfwWindow needs its cursor callback.
         Glfw.PInvoke.GetCursorPos(_window, out double cursorX, out double cursorY);
-        if (_previousCursor is double2 previous)
+        float2 cursorMovement = _cursorMovement.Next(new double2(cursorX, cursorY));
+        if (cursorMovement.X != 0f || cursorMovement.Y != 0f)
         {
-            Camera.Look(new float2((float)(cursorX - previous.X), (float)(cursorY - previous.Y)));
+            Camera.Look(cursorMovement);
         }
-
-        _previousCursor = new double2(cursorX, cursorY);
 
         var direction = new float3(
             Axis(_settings.MoveRight, _settings.MoveLeft),
@@ -132,7 +145,7 @@ internal sealed class FreeFlyCameraController
         Mode = mode;
 
         // The first frame of fly mode only reads the cursor position. Thus the cursor movement before this frame does not turn the camera.
-        _previousCursor = null;
+        _cursorMovement.Reset();
 
         float3 position = Camera.Position;
         _log.Info($"Camera mode: {mode}. Position: {position.X:F1}, {position.Y:F1}, {position.Z:F1}. Yaw: {Camera.Yaw:F1} degrees. Pitch: {Camera.Pitch:F1} degrees.");
