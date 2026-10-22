@@ -7,6 +7,8 @@ using ElysianOutpost.App.Input;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.App.Ui;
 using ElysianOutpost.Core.Simulation;
+using ElysianOutpost.Core.Voxels;
+using ElysianOutpost.Core.WorldGeneration;
 
 namespace ElysianOutpost.App;
 
@@ -33,6 +35,9 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, Debug
     private static readonly TimeSpan _idleFrameDuration = TimeSpan.FromSeconds(1.0 / TicksPerSecond);
     private static readonly TimeSpan _reportPeriod = TimeSpan.FromSeconds(5);
 
+    // While the world builds, each frame uses this time for the chunks. Thus the window events and the frames continue.
+    private static readonly TimeSpan _worldBuildBudget = TimeSpan.FromMilliseconds(25);
+
     /// <summary>
     /// Runs the loop until the window must close.
     /// </summary>
@@ -40,6 +45,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, Debug
     {
         var clock = new FixedStepClock(TicksPerSecond, MaxTicksPerFrame);
         var cameraController = new FreeFlyCameraController(window, InputSettings.Default, LogCategory.Make("Camera"));
+        var world = new WorldLoader(new WorldBuilder(WorldSettings.SampleScene, BlockPalette.Game, default), renderer, LogCategory.Make("World"));
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
@@ -72,7 +78,8 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, Debug
             }
 
             overlay.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
-            bool presented = renderer.DrawFrame(overlay.BuildFrame());
+            world.Update(_worldBuildBudget);
+            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), overlay.BuildFrame());
             if (presented)
             {
                 reportFrameCount++;
@@ -104,6 +111,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, Debug
             }
         }
 
+        world.LogIfIncomplete();
         log.Info($"The main loop stops after {clock.TickCount} ticks.");
     }
 
