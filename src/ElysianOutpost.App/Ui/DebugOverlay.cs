@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-using System.Diagnostics;
-using Brutal.GlfwApi;
 using Brutal.ImGuiApi;
 using Brutal.ImPlotApi;
 using Brutal.Numerics;
@@ -10,15 +8,14 @@ using ElysianOutpost.Core.Diagnostics;
 namespace ElysianOutpost.App.Ui;
 
 /// <summary>
-/// The debug overlay: an ImGui window with the performance of the app. The F3 key shows and hides it.
+/// The debug overlay: an ImGui window with the performance of the app. The F3 key shows and hides it (see <see cref="UserInterface"/>).
 /// </summary>
 /// <remarks>
-/// The overlay is visible at the start, because the app shows the performance nowhere else.
-/// When the overlay is hidden, the app does not start ImGui frames.
-/// Then the overlay only adds the times of each frame to its statistics, and the graph stays complete.
+/// The overlay is visible after the start screen, because the app shows the performance nowhere else.
+/// When the overlay is hidden, it only adds the times of each frame to its statistics, and the graph stays complete.
 /// The overlay does not allocate managed memory in each frame.
 /// </remarks>
-internal sealed class DebugOverlay : IDisposable
+internal sealed class DebugOverlay
 {
     private const double GraphSeconds = 10;
 
@@ -29,100 +26,43 @@ internal sealed class DebugOverlay : IDisposable
     private static readonly float2 _windowPosition = new(10, 10);
     private static readonly float2 _graphSize = new(360, 140);
 
-    private readonly GlfwWindow _window;
-    private readonly ImGuiHost _imGui;
     private readonly string _gpuName;
+    private readonly CreditsWindow _credits;
     private readonly FrameStatistics _statistics = new(_statisticsPeriod, HistoryCapacity);
-    private readonly GlfwKeyCallback _keyCallback;
     private double _frameStartSeconds;
-    private TimeSpan _buildTime;
-    private bool _visible = true;
-    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DebugOverlay"/> class.
     /// </summary>
-    /// <param name="window">The window. The overlay reads the F3 key from it.</param>
-    /// <param name="imGui">The ImGui host that draws the overlay.</param>
     /// <param name="gpuName">The name of the GPU that the renderer uses.</param>
-    public DebugOverlay(GlfwWindow window, ImGuiHost imGui, string gpuName)
+    /// <param name="credits">The credits window. The "Credits" button of the overlay opens it.</param>
+    public DebugOverlay(string gpuName, CreditsWindow credits)
     {
-        _window = window;
-        _imGui = imGui;
         _gpuName = gpuName;
-        _keyCallback = OnKey;
-        _window.OnKey += _keyCallback;
+        _credits = credits;
     }
 
     /// <summary>
     /// Gets or sets a value that tells if the overlay is visible.
     /// </summary>
-    public bool Visible
-    {
-        get => _visible;
-        set
-        {
-            _visible = value;
-            _imGui.InputEnabled = value;
-        }
-    }
+    public bool Visible { get; set; } = true;
 
     /// <summary>
-    /// Adds the times of one frame to the statistics. Call it one time in each frame, before <see cref="BuildFrame"/>.
+    /// Adds the times of one frame to the statistics. Call it one time in each frame, before <see cref="Draw"/>.
     /// </summary>
     /// <param name="frameStart">The start of the frame, from the clock of the main loop.</param>
     /// <param name="tickTime">The time of the simulation ticks in the frame.</param>
-    /// <param name="overlayRecordTime">The time that the renderer used to record the ImGui commands in the previous frame.</param>
-    public void AddFrame(TimeSpan frameStart, TimeSpan tickTime, TimeSpan overlayRecordTime)
+    /// <param name="overlayTime">The ImGui time of the previous frame: the time to build the ImGui frame and to record its commands.</param>
+    public void AddFrame(TimeSpan frameStart, TimeSpan tickTime, TimeSpan overlayTime)
     {
-        // The overlay time of the previous frame: the time to build the ImGui frame and to record its commands.
-        _statistics.AddFrame(frameStart, tickTime, _buildTime + overlayRecordTime);
+        _statistics.AddFrame(frameStart, tickTime, overlayTime);
         _frameStartSeconds = frameStart.TotalSeconds;
     }
 
     /// <summary>
-    /// Builds the ImGui frame of the overlay.
+    /// Draws the "Performance" window in the current ImGui frame. The close button of the window hides the overlay, as the F3 key does.
     /// </summary>
-    /// <returns>The draw data for the renderer, or a null pointer if the overlay is hidden.</returns>
-    public ImDrawDataPtr BuildFrame()
-    {
-        if (!_visible)
-        {
-            _buildTime = TimeSpan.Zero;
-            return default;
-        }
-
-        long start = Stopwatch.GetTimestamp();
-        _imGui.NewFrame();
-        DrawPerformanceWindow();
-        ImDrawDataPtr drawData = _imGui.Render();
-        _buildTime = Stopwatch.GetElapsedTime(start);
-        return drawData;
-    }
-
-    /// <summary>
-    /// Stops the reading of the F3 key.
-    /// </summary>
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-        _window.OnKey -= _keyCallback;
-    }
-
-    private void OnKey(GlfwWindow window, GlfwKey key, int scancode, GlfwKeyAction action, GlfwModifier mods)
-    {
-        if (key == GlfwKey.F3 && action == GlfwKeyAction.Press)
-        {
-            Visible = !Visible;
-        }
-    }
-
-    private void DrawPerformanceWindow()
+    public void Draw()
     {
         // The ImGui window stays in the top left corner. When the app window becomes very small, for example 1 x 1 pixels,
         // ImGui moves the ImGui window. The fixed position puts it back in the corner after such a change.
@@ -147,6 +87,11 @@ internal sealed class DebugOverlay : IDisposable
 
             ImGui.Text($"GPU: {_gpuName}");
             DrawFrameTimeGraph();
+            if (ImGui.Button("Credits (F1)"u8))
+            {
+                _credits.Open = true;
+            }
+
             ImGui.TextDisabled("F3: show or hide this window"u8);
         }
 

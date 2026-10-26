@@ -22,6 +22,8 @@
     <PackageReference Include="Ahwoo.BRUTAL.Logging" Version="2026.10.2" />
     <!-- The shader compiler (shaderc) compiles the GLSL shaders of the chunk renderer at the start of the app (#39). -->
     <PackageReference Include="Ahwoo.BRUTAL.ShaderC" Version="2026.10.2" />
+    <!-- stb_image decodes the PNG file of the BRUTAL logo for the start screen (#42). -->
+    <PackageReference Include="Ahwoo.BRUTAL.Stb" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.Vulkan" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.Vulkan.Abstractions" Version="2026.10.2" />
     <!-- The Vulkan Memory Allocator gives the memory of the chunk buffers and of the depth image (#39). -->
@@ -31,6 +33,8 @@
   <ItemGroup>
     <!-- The GLSL sources of the shaders. ShaderCompiler reads them with the names ElysianOutpost.App.Shaders.<file name>. -->
     <EmbeddedResource Include="Shaders\*.vert;Shaders\*.frag" LogicalName="ElysianOutpost.App.Shaders.%(Filename)%(Extension)" />
+    <!-- The BRUTAL logo of the start screen (#42). It belongs to Ahwoo Limited. See Assets/Brutal/README.md. -->
+    <EmbeddedResource Include="Assets\Brutal\brutal-logo.png" LogicalName="ElysianOutpost.App.Assets.brutal-logo.png" />
   </ItemGroup>
 
   <!-- NOTICE.txt and the license files in the output folder (#42). -->

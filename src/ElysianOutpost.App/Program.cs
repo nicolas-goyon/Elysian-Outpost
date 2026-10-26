@@ -89,12 +89,12 @@ try
     {
         log.Info($"The window is open: {window.Width}x{window.Height} pixels, platform {Glfw.GetPlatform()}.");
 
-        // The using declarations release the objects in the opposite order: the overlay, the renderer, ImGui, then the window.
-        // The renderer uses the surface of the window and the ImGui context.
+        // The using declarations release the objects in the opposite order: the user interface, the renderer, ImGui, then the window.
+        // The renderer uses the surface of the window and the ImGui context. It keeps the texture of the logo.
         using var imGui = new ImGuiHost(window);
         using var renderer = new VulkanRenderer(window, imGui, LogCategory.Make("Renderer"));
-        using var overlay = new DebugOverlay(window, imGui, renderer.GpuName);
-        new MainLoop(window, renderer, overlay, log, timeLimit).Run();
+        using var ui = new UserInterface(window, imGui, renderer, LogCategory.Make("Ui"));
+        new MainLoop(window, renderer, ui, log, timeLimit).Run();
     }
     finally
     {
