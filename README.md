@@ -8,6 +8,17 @@ The second major enhancement is ensuring the game functions on computers without
 
 The project moves from Unity to BRUTAL, a C# framework on .NET 10 and Vulkan. [ADR 0001](docs/adr/0001-move-from-unity-to-brutal.md) explains the decision.
 
+# Test builds
+
+The CI makes a Windows test build for each change of `develop` and for each pull request (#110). To get the last build of `develop`:
+
+1. Click "Sign in" on GitHub. GitHub gives the artifacts only to a user with an account.
+2. Open the runs of the [Test build](https://github.com/nicolas-goyon/Elysian-Outpost/actions/workflows/test-build.yml?query=branch%3Adevelop) workflow, and select the last run of `develop`.
+3. In the "Artifacts" part of the run page, download `ElysianOutpost-win-x64-<commit>`. GitHub keeps each artifact for 14 days.
+4. Extract the zip file to a folder. Then start `ElysianOutpost.App.exe`.
+
+The build runs on Windows 10 or 11 (x64), with a GPU driver for Vulkan 1.3. The build contains the .NET runtime, thus you do not install .NET. The zip file also contains `NOTICE.txt`, and the license files of the components in the `licenses` folder.
+
 # StoneHearth’s description
 
 StoneHearth is a captivating, open-world game that combines elements of city-building, strategy, and role-playing games (RPG), set in a fantastical, procedurally generated universe. Developed by Radiant Entertainment, the game offers a unique and immersive experience, allowing players to explore, expand, and defend their own thriving settlements.
