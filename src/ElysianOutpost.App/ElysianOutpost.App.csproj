@@ -33,4 +33,7 @@
     <EmbeddedResource Include="Shaders\*.vert;Shaders\*.frag" LogicalName="ElysianOutpost.App.Shaders.%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <!-- NOTICE.txt and the license files in the output folder (#42). -->
+  <Import Project="Licenses.targets" />
+
 </Project>

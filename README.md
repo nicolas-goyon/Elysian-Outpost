@@ -38,4 +38,5 @@ Key Features:
   - `Elysian-Outpost/Assets/TextMesh Pro/`: files of TextMesh Pro, by Unity Technologies (Unity Companion License). The font LiberationSans uses the SIL Open Font License 1.1. The EmojiOne sprites use the terms of EmojiOne (see `Sprites/EmojiOne Attribution.txt`).
   - `Elysian-Outpost/Assets/Scripts/Base/SystemPlugin/UniClipboard.cs`: a changed version of [UniClipboard](https://github.com/sanukin39/UniClipboard), by wataru.sanuki, under the MIT License.
   - `Elysian-Outpost/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSet.cs`: a changed version of the union-find code of [algs4](https://github.com/kevin-wayne/algs4), by Robert Sedgewick and Kevin Wayne, under the GPL-3.0-or-later ([license text](Elysian-Outpost/LICENSE-GPL-3.0.txt)).
-- From M1, the game uses BRUTAL. Each build obeys the BRUTAL License v1.0 (#42).
+- From M1, the game uses BRUTAL. Each build obeys the BRUTAL License v1.0 (#42):
+  - The build output contains `NOTICE.txt` next to the program, and the folder `licenses` with the license files of each NuGet package and of this project.
