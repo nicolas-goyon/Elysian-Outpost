@@ -12,6 +12,7 @@ namespace ElysianOutpost.Core.WorldGeneration;
 /// </summary>
 /// <remarks>
 /// The builder uses the terrain generation of #33 and the mesher of #31. It measures the time of each step.
+/// It keeps the voxels of each chunk in <see cref="Voxels"/>, for example for the voxel ray (#40).
 /// </remarks>
 public sealed class WorldBuilder
 {
@@ -33,7 +34,13 @@ public sealed class WorldBuilder
         _generation = new MainGeneration(settings.ChunkSize, settings.Seed);
         _palette = palette;
         _positions = settings.GetChunkPositions(center);
+        Voxels = new VoxelWorld(settings.ChunkSize);
     }
+
+    /// <summary>
+    /// Gets the voxels of the chunks that the builder made. The builder adds each chunk before <see cref="TryBuildNext"/> returns it.
+    /// </summary>
+    public VoxelWorld Voxels { get; }
 
     /// <summary>
     /// Gets the number of chunks of the world.
@@ -82,6 +89,7 @@ public sealed class WorldBuilder
         long start = Stopwatch.GetTimestamp();
         ushort[,,] voxels = _generation.GenerateChunkAt(position);
         long generated = Stopwatch.GetTimestamp();
+        Voxels.AddChunk(position, voxels);
         List<MeshQuad> quads = new DisjointSetMeshOptimizer(new Mesh()).Optimize(new Chunk(voxels, position)).Quads;
         ChunkMeshData mesh = ChunkMeshData.Build(quads, _palette);
         long meshed = Stopwatch.GetTimestamp();
