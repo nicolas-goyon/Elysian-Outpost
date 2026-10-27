@@ -194,17 +194,47 @@ public sealed class VoxelRayTests
         Assert.Equal(1.5f, hit.Distance, 1e-5f);
     }
 
-    [Fact]
-    public void TryCast_FromAVoxelBoundary_StartsInTheVoxelAfterTheBoundary()
+    // The origin is on the boundary x = 1, between the voxels (0, 0, 0) and (1, 0, 0).
+    // The ray enters the voxel on the side of its direction through the boundary face, at the distance 0.
+    [Theory]
+    [InlineData(-1, 0, 1)]
+    [InlineData(1, 1, -1)]
+    public void TryCast_FromAVoxelBoundary_EntersTheVoxelOnTheSideOfTheDirection(int directionX, int solidX, int normalX)
     {
-        // The origin is on the boundary x = 1. The floor gives the voxel (1, 0, 0). The ray to -X then enters (0, 0, 0) at the distance 0.
-        VoxelWorld world = MakeWorld(new int3(0, 0, 0));
+        VoxelWorld world = MakeWorld(new int3(solidX, 0, 0));
 
-        Assert.True(VoxelRay.TryCast(world, new float3(1f, 0.5f, 0.5f), new float3(-1, 0, 0), out VoxelRayHit hit));
+        Assert.True(VoxelRay.TryCast(world, new float3(1f, 0.5f, 0.5f), new float3(directionX, 0, 0), out VoxelRayHit hit));
 
-        Assert.Equal(new int3(0, 0, 0), hit.Voxel);
-        Assert.Equal(new int3(1, 0, 0), hit.Normal);
+        Assert.Equal(new int3(solidX, 0, 0), hit.Voxel);
+        Assert.Equal(new int3(normalX, 0, 0), hit.Normal);
+        Assert.Equal(new int3(solidX + normalX, 0, 0), hit.EmptyVoxel);
         Assert.Equal(0f, hit.Distance);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    public void TryCast_FromAVoxelBoundary_IgnoresTheVoxelBehindTheOrigin(int directionX)
+    {
+        // The solid voxel is on the other side of the boundary x = 1. The ray leaves it and does not enter it.
+        int behind = directionX < 0 ? 1 : 0;
+        VoxelWorld world = MakeWorld(new int3(behind, 0, 0), new int3(behind + (directionX * 4), 0, 0));
+
+        Assert.True(VoxelRay.TryCast(world, new float3(1f, 0.5f, 0.5f), new float3(directionX, 0, 0), out VoxelRayHit hit));
+
+        Assert.Equal(new int3(behind + (directionX * 4), 0, 0), hit.Voxel);
+        Assert.Equal(3f, hit.Distance, 1e-5f);
+    }
+
+    [Fact]
+    public void TryCast_ParallelToAVoxelBoundary_StartsInTheVoxelAfterTheBoundary()
+    {
+        // The origin is on the boundary y = 1. The ray goes to +X along the boundary, in the voxels with y = 1.
+        VoxelWorld world = MakeWorld(new int3(3, 0, 0), new int3(4, 1, 0));
+
+        Assert.True(VoxelRay.TryCast(world, new float3(0.5f, 1f, 0.5f), new float3(1, 0, 0), out VoxelRayHit hit));
+
+        Assert.Equal(new int3(4, 1, 0), hit.Voxel);
     }
 
     [Fact]
@@ -251,7 +281,7 @@ public sealed class VoxelRayTests
         voxels[4][0, 0, 0] = 1;
         Assert.True(VoxelRay.TryCast(world, new float3(0.5f, 0.5f, 0.5f), new float3(1, 0, 0), out VoxelRayHit hit));
         Assert.Equal(new int3(64, 0, 0), hit.Voxel);
-        Assert.Equal(VoxelRay.DefaultMaxDistance, 64f);
+        Assert.Equal(64f, VoxelRay.DefaultMaxDistance);
     }
 
     [Fact]
@@ -268,12 +298,14 @@ public sealed class VoxelRayTests
         Assert.Equal(12f, hit.Distance, 1e-5f);
     }
 
+    // Outside the chunks, all the voxels are empty. Thus these tests cannot see where the ray stops: they check only the result.
+    // The stop at the world limits only makes the ray faster.
     [Theory]
     [InlineData(20f, 0.5f, 1f, 0f)] // Outside the world on the X axis, to +X: away from the world.
     [InlineData(0.5f, 20f, 1f, 0f)] // Above the world and parallel to its top: it never enters the world.
-    [InlineData(0.5f, 0.5f, 1f, 0f)] // In the world: it goes out at x = 8 and finds no voxel.
-    [InlineData(0.5f, 0.5f, 1f, 0.5f)] // In the world: it goes out at y = 8 and finds no voxel.
-    public void TryCast_OutOfTheWorldLimits_FindsNoVoxel(float x, float y, float directionX, float directionY)
+    [InlineData(0.5f, 0.5f, 1f, 0f)] // In the world: it goes out at x = 8.
+    [InlineData(0.5f, 0.5f, 1f, 0.5f)] // In the world: it goes out at y = 8.
+    public void TryCast_ThatLeavesTheWorld_FindsNoVoxel(float x, float y, float directionX, float directionY)
     {
         // The solid voxels are not on these rays.
         VoxelWorld world = MakeWorld(new int3(-8, 0, 0), new int3(0, 0, -8));

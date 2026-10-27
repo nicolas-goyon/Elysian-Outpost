@@ -19,7 +19,11 @@ namespace ElysianOutpost.Core.Voxels;
 /// The algorithm then crosses the X boundary first, then the Y boundary, then the Z boundary.
 /// </para>
 /// <para>
-/// The calculations use double precision. The voxel positions of the world are small, thus the distances are exact to about 1e-12 voxels.
+/// An origin exactly on a voxel boundary is on a face of two voxels. The ray starts in the voxel on the side of the direction,
+/// and it enters that voxel through that face at the distance 0. If the ray is parallel to the boundary, it starts in the voxel after the boundary.
+/// </para>
+/// <para>
+/// The calculations use double precision. Rounding errors are much smaller than one voxel.
 /// </para>
 /// </remarks>
 public static class VoxelRay
@@ -101,10 +105,32 @@ public static class VoxelRay
             }
         }
 
-        Span<int> cell = [(int)Math.Floor(start[0]), (int)Math.Floor(start[1]), (int)Math.Floor(start[2])];
-        if (world.IsSolid(new int3(cell[0], cell[1], cell[2])))
+        // The first voxel of the ray. On a boundary, a ray in the negative direction starts in the voxel before the boundary.
+        // Then the origin is on a face of the first voxel, and the ray enters it through that face (the first such axis in the order X, Y, Z).
+        Span<int> cell = stackalloc int[3];
+        int entryAxis = -1;
+        for (int axis = 0; axis < 3; axis++)
         {
-            hit = new VoxelRayHit(new int3(cell[0], cell[1], cell[2]), default, 0f, world.GetVoxel(new int3(cell[0], cell[1], cell[2])));
+            double floor = Math.Floor(start[axis]);
+            cell[axis] = (int)floor;
+            if (floor == start[axis] && dir[axis] != 0)
+            {
+                cell[axis] -= dir[axis] < 0 ? 1 : 0;
+                entryAxis = entryAxis < 0 ? axis : entryAxis;
+            }
+        }
+
+        var first = new int3(cell[0], cell[1], cell[2]);
+        ushort firstBlock = world.GetVoxel(first);
+        if (firstBlock != 0)
+        {
+            Span<int> entry = [0, 0, 0];
+            if (entryAxis >= 0)
+            {
+                entry[entryAxis] = dir[entryAxis] < 0 ? 1 : -1;
+            }
+
+            hit = new VoxelRayHit(first, new int3(entry[0], entry[1], entry[2]), 0f, firstBlock);
             return true;
         }
 

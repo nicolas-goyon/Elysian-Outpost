@@ -61,7 +61,7 @@ public sealed class VoxelWorld
     public int3 Max { get; private set; }
 
     /// <summary>
-    /// Adds a chunk. The world keeps the array. Do not change the array after this call.
+    /// Adds a chunk. The world keeps the array and does not copy it. Thus a change of the array changes the world.
     /// </summary>
     /// <param name="position">The world position of the first voxel of the chunk. Each coordinate is a multiple of the chunk size.</param>
     /// <param name="voxels">The block type of each voxel, with the indices [x, y, z]. The lengths are the chunk size.</param>

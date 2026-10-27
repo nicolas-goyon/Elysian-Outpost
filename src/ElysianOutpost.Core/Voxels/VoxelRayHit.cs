@@ -10,14 +10,14 @@ namespace ElysianOutpost.Core.Voxels;
 /// <param name="Voxel">The world position of the solid voxel.</param>
 /// <param name="Normal">
 /// The normal of the face that the ray crosses to enter the voxel: a unit vector on one axis, that points back to the origin of the ray.
-/// The value is (0, 0, 0) if the origin of the ray is in the solid voxel.
+/// The value is (0, 0, 0) if the origin of the ray is in the solid voxel, and not on one of its faces.
 /// </param>
 /// <param name="Distance">The distance from the origin of the ray to the hit point on the face, in world units.</param>
 /// <param name="BlockType">The block type of the solid voxel. It is not 0.</param>
 public readonly record struct VoxelRayHit(int3 Voxel, int3 Normal, float Distance, ushort BlockType)
 {
     /// <summary>
-    /// Gets the face that the ray crosses to enter the voxel, or <see cref="VoxelFace.NONE"/> if the origin of the ray is in the solid voxel.
+    /// Gets the face that the ray crosses to enter the voxel, or <see cref="VoxelFace.NONE"/> if the origin of the ray is in the solid voxel and not on one of its faces.
     /// </summary>
     public VoxelFace Face => (Normal.X, Normal.Y, Normal.Z) switch
     {

@@ -18,7 +18,8 @@ namespace ElysianOutpost.App.Rendering;
 /// </para>
 /// <para>
 /// The box is a little larger than the voxel (<see cref="Margin"/>), and the vertex shader moves the lines a little nearer to the camera.
-/// Thus the edges are in front of the faces of the voxel, and the depth test hides only the edges behind the voxel or behind other voxels.
+/// Thus the edges are in front of the faces of the voxel. The depth test hides the edges behind the voxel or behind other voxels,
+/// if they are farther than the offset behind them (see <c>selection.vert</c>).
 /// The lines do not write the depth.
 /// </para>
 /// </remarks>
