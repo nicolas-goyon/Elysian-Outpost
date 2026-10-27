@@ -16,7 +16,7 @@ using ElysianOutpost.Core.WorldGeneration;
 namespace ElysianOutpost.App.Rendering;
 
 /// <summary>
-/// Draws the frames of the app with Vulkan. Each frame has the sky color, the chunk meshes, and then the ImGui windows.
+/// Draws the frames of the app with Vulkan. Each frame has the sky color, the chunk meshes, the selection box, and then the ImGui windows.
 /// During the start screen, a frame has only the background color of the start screen and the ImGui draw data.
 /// </summary>
 /// <remarks>
@@ -46,6 +46,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     private readonly ImGuiPass _imGuiPass = null!;
     private readonly ChunkPipeline _chunkPipeline = null!;
     private readonly ChunkMeshes _chunkMeshes = null!;
+    private readonly SelectionBoxPipeline _selectionBoxPipeline = null!;
     private readonly List<ImGuiTexture> _imGuiTextures = [];
     private readonly VkFormat _depthFormat;
     private Swapchain? _swapchain;
@@ -80,8 +81,13 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             // The pipeline needs the formats of the images before the first swapchain. The shaders compile here.
             _depthFormat = DepthBuffer.SelectFormat(_gpu.PhysicalDevice);
             long start = Stopwatch.GetTimestamp();
-            _chunkPipeline = new ChunkPipeline(_gpu, format, _depthFormat, SceneLighting.LegacySampleScene);
-            _log.Info($"The chunk pipeline is ready in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F0} ms, with the depth format {_depthFormat}.");
+            using (var compiler = new ShaderCompiler())
+            {
+                _chunkPipeline = new ChunkPipeline(_gpu, format, _depthFormat, SceneLighting.LegacySampleScene, compiler);
+                _selectionBoxPipeline = new SelectionBoxPipeline(_gpu, format, _depthFormat, compiler);
+            }
+
+            _log.Info($"The chunk and selection box pipelines are ready in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F0} ms, with the depth format {_depthFormat}.");
             _chunkMeshes = new ChunkMeshes(_gpu);
         }
         catch
@@ -139,8 +145,9 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     /// <param name="viewMatrix">The view matrix of the camera, in the row-vector convention (<see cref="FreeFlyCamera.CreateViewMatrix"/>).</param>
     /// <param name="imGuiDrawData">The draw data of the ImGui frame to draw after the scene, or a null pointer for no ImGui frame.</param>
     /// <param name="showScene"><c>true</c> to draw the sky and the chunks. <c>false</c> for the start screen: the background color of <see cref="StartScreen"/> and no chunk.</param>
+    /// <param name="selectedVoxel">The world position of the voxel in the selection box, or <c>null</c> for no box. The start screen shows no box.</param>
     /// <returns><c>true</c> if the renderer presented a frame. <c>false</c> if the window has no visible area, for example a minimized window.</returns>
-    public bool DrawFrame(float4x4 viewMatrix, ImDrawDataPtr imGuiDrawData, bool showScene)
+    public bool DrawFrame(float4x4 viewMatrix, ImDrawDataPtr imGuiDrawData, bool showScene, int3? selectedVoxel)
     {
         ImGuiRecordTime = TimeSpan.Zero;
         int2 size = _window.FramebufferSize;
@@ -183,7 +190,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         _gpu.Device.ResetFences([fence]);
         float aspectRatio = (float)swapchain.Extent.Width / swapchain.Extent.Height;
         float4x4 viewProjection = viewMatrix * Lens.CreateProjectionMatrix(aspectRatio);
-        Record(swapchain, _commandBuffers[_frame], imageIndex, viewProjection, imGuiDrawData, showScene);
+        Record(swapchain, _commandBuffers[_frame], imageIndex, viewProjection, imGuiDrawData, showScene, selectedVoxel);
         Submit(_commandBuffers[_frame], _imageAvailable[_frame], swapchain.RenderingFinished[imageIndex], fence);
         bool presented = Present(swapchain, imageIndex);
         _frame = (_frame + 1) % FramesInFlight;
@@ -218,6 +225,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             // The memory allocator of the GPU context must not have buffers or images at its release.
             _chunkMeshes?.Dispose();
             _chunkPipeline?.Dispose();
+            _selectionBoxPipeline?.Dispose();
             _depthBuffer?.Dispose();
             _swapchain?.Dispose();
         }
@@ -307,7 +315,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         _log.Info($"The swapchain changes to {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels.");
     }
 
-    private void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex, float4x4 viewProjection, ImDrawDataPtr imGuiDrawData, bool showScene)
+    private void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex, float4x4 viewProjection, ImDrawDataPtr imGuiDrawData, bool showScene, int3? selectedVoxel)
     {
         VkImage image = swapchain.Images[imageIndex];
         DepthBuffer depthBuffer = _depthBuffer!;
@@ -371,6 +379,12 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         if (showScene)
         {
             RecordChunks(commandBuffer, swapchain.Extent, viewProjection);
+
+            // The box uses the depth of the chunks. Thus it comes after them.
+            if (selectedVoxel is int3 voxel)
+            {
+                _selectionBoxPipeline.Record(commandBuffer, viewProjection, voxel);
+            }
         }
 
         commandBuffer.EndRendering();

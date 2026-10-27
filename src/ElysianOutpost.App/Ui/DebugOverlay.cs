@@ -4,6 +4,7 @@ using Brutal.ImGuiApi;
 using Brutal.ImPlotApi;
 using Brutal.Numerics;
 using ElysianOutpost.Core.Diagnostics;
+using ElysianOutpost.Core.Voxels;
 
 namespace ElysianOutpost.App.Ui;
 
@@ -48,6 +49,11 @@ internal sealed class DebugOverlay
     public bool Visible { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets the voxel at the center of the screen (#40), or <c>null</c> if the camera looks at no voxel. The overlay shows it.
+    /// </summary>
+    public VoxelRayHit? Target { get; set; }
+
+    /// <summary>
     /// Adds the times of one frame to the statistics. Call it one time in each frame, before <see cref="Draw"/>.
     /// </summary>
     /// <param name="frameStart">The start of the frame, from the clock of the main loop.</param>
@@ -86,6 +92,15 @@ internal sealed class DebugOverlay
             }
 
             ImGui.Text($"GPU: {_gpuName}");
+            if (Target is VoxelRayHit target)
+            {
+                ImGui.Text($"Target: ({target.Voxel.X}, {target.Voxel.Y}, {target.Voxel.Z}), block {target.BlockType}, face {FaceName(target.Face)}, distance {target.Distance:F1}");
+            }
+            else
+            {
+                ImGui.Text("Target: none"u8);
+            }
+
             DrawFrameTimeGraph();
             if (ImGui.Button("Credits (F1)"u8))
             {
@@ -104,6 +119,18 @@ internal sealed class DebugOverlay
             Visible = false;
         }
     }
+
+    // The names of the faces are constant strings. Thus the text of the overlay does not format an enumeration in each frame.
+    private static string FaceName(VoxelFace face) => face switch
+    {
+        VoxelFace.Xpos => "+X",
+        VoxelFace.Xneg => "-X",
+        VoxelFace.Ypos => "+Y (top)",
+        VoxelFace.Yneg => "-Y (bottom)",
+        VoxelFace.Zpos => "+Z",
+        VoxelFace.Zneg => "-Z",
+        _ => "none (inside)",
+    };
 
     private void DrawFrameTimeGraph()
     {
