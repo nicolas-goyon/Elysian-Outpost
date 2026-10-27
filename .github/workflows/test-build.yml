@@ -1,0 +1,89 @@
+# Windows test build (#110): a self-contained build for Windows x64, as an artifact of each run.
+# A person can download the build from the page of the run, without the .NET SDK.
+name: Test build
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  PUBLISH_DIR: publish/ElysianOutpost-win-x64
+
+jobs:
+  windows:
+    name: Windows test build
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the .NET SDK from global.json
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # A self-contained publish needs the runtime pack of Windows x64. Thus the restore gets the runtime identifier.
+      - name: Restore for Windows x64
+        run: dotnet restore src/ElysianOutpost.App --runtime win-x64 -p:SelfContained=true
+
+      - name: Publish for Windows x64
+        run: dotnet publish src/ElysianOutpost.App --no-restore --configuration Release --runtime win-x64 --self-contained --output ${{ env.PUBLISH_DIR }}
+
+      # The repository is public. Thus each artifact is a copy of the product for other persons.
+      # The BRUTAL License v1.0 asks for NOTICE.txt with each copy (section 2.3). The build of #42 adds the license files.
+      - name: Check the license files
+        shell: bash
+        run: |
+          missing=0
+          if [ ! -f "$PUBLISH_DIR/ElysianOutpost.App.exe" ]; then
+            echo "::error::The build output does not contain ElysianOutpost.App.exe."
+            missing=1
+          fi
+          if [ ! -f "$PUBLISH_DIR/NOTICE.txt" ]; then
+            echo "::error::The build output does not contain NOTICE.txt. The BRUTAL License v1.0 asks for this file with each copy of the app (section 2.3, #42)."
+            missing=1
+          fi
+          if [ -z "$(find "$PUBLISH_DIR/licenses" -type f 2>/dev/null | head -n 1)" ]; then
+            echo "::error::The build output does not contain license files in the licenses folder (#42)."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::The workflow does not upload this build."
+            exit 1
+          fi
+          echo "The build output contains NOTICE.txt. Number of license files: $(find "$PUBLISH_DIR/licenses" -type f | wc -l)."
+          echo "Number of files in the build output: $(find "$PUBLISH_DIR" -type f | wc -l). Size: $(du -sm "$PUBLISH_DIR" | cut -f1) MB."
+
+      # For a pull request, the build contains the merge of the pull request into its base branch, as in the CI.
+      # The name has the last commit of the pull request, because GitHub shows this commit.
+      - name: Make the artifact name
+        id: artifact
+        shell: bash
+        env:
+          COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: echo "name=ElysianOutpost-win-x64-${COMMIT::7}" >> "$GITHUB_OUTPUT"
+
+      # upload-artifact makes the zip file. The files of the build are at the root of the zip file.
+      # A pull request from a fork contains code of another person. Thus the workflow does not upload its build.
+      - name: Upload the test build
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ${{ env.PUBLISH_DIR }}
+          if-no-files-found: error
+          retention-days: 14
