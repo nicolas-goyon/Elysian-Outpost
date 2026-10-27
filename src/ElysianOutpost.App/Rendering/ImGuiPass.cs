@@ -20,7 +20,7 @@ namespace ElysianOutpost.App.Rendering;
 /// </remarks>
 internal sealed unsafe class ImGuiPass : IDisposable
 {
-    // The backend needs at least 8 descriptor sets. ImGui uses one texture for the fonts.
+    // The backend needs at least 8 descriptor sets. ImGui uses one texture for the fonts, and the start screen uses one for the logo.
     private const int DescriptorPoolSize = 8;
 
     private readonly GpuContext _gpu;
@@ -72,6 +72,26 @@ internal sealed unsafe class ImGuiPass : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets the format of the swapchain images that the pass draws on.
+    /// </summary>
+    public VkFormat Format => _format;
+
+    /// <summary>
+    /// Gives ImGui access to an image, for example for <c>ImDrawList.AddImage</c>. The backend makes a descriptor set for the image.
+    /// </summary>
+    /// <param name="sampler">The sampler of the image.</param>
+    /// <param name="imageView">The view of the image. The image must have the layout <see cref="VkImageLayout.ShaderReadOnlyOptimal"/>.</param>
+    /// <returns>The reference of the texture for ImGui. Call <see cref="RemoveTexture"/> before the release of the image.</returns>
+    public ImTextureRef AddTexture(VkSampler sampler, VkImageView imageView) =>
+        _backend!.AddTexture(sampler, imageView, VkImageLayout.ShaderReadOnlyOptimal);
+
+    /// <summary>
+    /// Releases the descriptor set of a texture that <see cref="AddTexture"/> made. The GPU must not use it.
+    /// </summary>
+    /// <param name="texture">The reference of the texture.</param>
+    public void RemoveTexture(ImTextureRef texture) => _backend!.RemoveTexture(texture);
 
     /// <summary>
     /// Creates one framebuffer for each image of the swapchain. Call it after each creation of the swapchain.

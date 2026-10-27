@@ -1,0 +1,57 @@
+<Project>
+
+  <!--
+    The license files of the app (#42). Each copy of the app contains:
+    - NOTICE.txt next to the executable (section 2.3 of the BRUTAL License v1.0). All the BRUTAL packages have the same NOTICE.txt.
+    - licenses/<package id>/: the license files and the third-party notices of each NuGet package that puts files in the output.
+      For a self-contained publish, the .NET runtime pack is one of these packages.
+    - licenses/ElysianOutpost/: the licenses of this project.
+    The targets add these files as content items. Thus the build copies them to the output folder, and the publish copies them to the publish folder.
+  -->
+
+  <PropertyGroup>
+    <!-- The package that gives NOTICE.txt. The app references it directly. -->
+    <BrutalNoticePackageId>Ahwoo.BRUTAL.Core</BrutalNoticePackageId>
+  </PropertyGroup>
+
+  <Target Name="AddLicenseFiles"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="ResolvePackageAssets;ResolveRuntimePackAssets">
+
+    <!-- One item for each package that puts files in the output: managed assemblies, native libraries and runtime pack files. -->
+    <ItemGroup>
+      <_LicensePackageName Include="@(RuntimeCopyLocalItems->'%(NuGetPackageId)|%(NuGetPackageVersion)')" Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' != ''" />
+      <_LicensePackageName Include="@(NativeCopyLocalItems->'%(NuGetPackageId)|%(NuGetPackageVersion)')" Condition="'%(NativeCopyLocalItems.NuGetPackageId)' != ''" />
+      <_LicensePackageName Include="@(RuntimePackAsset->'%(NuGetPackageId)|%(NuGetPackageVersion)')" Condition="'%(RuntimePackAsset.NuGetPackageId)' != ''" />
+    </ItemGroup>
+    <RemoveDuplicates Inputs="@(_LicensePackageName)">
+      <Output TaskParameter="Filtered" ItemName="_LicensePackage" />
+    </RemoveDuplicates>
+
+    <!-- NuGet keeps each package in <package root>/<lowercase id>/<version>/. -->
+    <ItemGroup>
+      <_LicensePackage>
+        <PackageId>$([System.String]::Copy('%(Identity)').Split('|')[0])</PackageId>
+        <Folder>$(NuGetPackageRoot)$([System.String]::Copy('%(Identity)').Split('|')[0].ToLowerInvariant())/$([System.String]::Copy('%(Identity)').Split('|')[1])/</Folder>
+      </_LicensePackage>
+    </ItemGroup>
+
+    <!-- The usual names of license and notice files at the root of a package, and all the files of a LICENSES folder. -->
+    <ItemGroup>
+      <_LicenseFile Include="%(_LicensePackage.Folder)LICENSE*;%(_LicensePackage.Folder)License*;%(_LicensePackage.Folder)NOTICE*;%(_LicensePackage.Folder)*NOTICES*;%(_LicensePackage.Folder)ThirdPartyNotices*;%(_LicensePackage.Folder)LICENSES/**/*">
+        <PackageId>%(_LicensePackage.PackageId)</PackageId>
+      </_LicenseFile>
+      <_BrutalNotice Include="@(_LicenseFile)" Condition="'%(PackageId)' == '$(BrutalNoticePackageId)' and '%(Filename)%(Extension)' == 'NOTICE.txt'" />
+    </ItemGroup>
+
+    <Error Condition="'@(_BrutalNotice)' == ''" Text="The package $(BrutalNoticePackageId) has no NOTICE.txt. Each copy of the app must contain this file (BRUTAL License v1.0, section 2.3)." />
+
+    <ItemGroup>
+      <Content Include="@(_BrutalNotice)" Link="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+      <Content Include="@(_LicenseFile)" Link="licenses/%(PackageId)/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+      <Content Include="$(MSBuildThisFileDirectory)../../LICENSE" Link="licenses/ElysianOutpost/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+      <Content Include="$(MSBuildThisFileDirectory)../../LICENSE-ASSETS" Link="licenses/ElysianOutpost/LICENSE-ASSETS.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -17,10 +17,10 @@ namespace ElysianOutpost.App;
 /// </summary>
 /// <param name="window">The window of the app.</param>
 /// <param name="renderer">The renderer that draws the frames in the window.</param>
-/// <param name="overlay">The debug overlay.</param>
+/// <param name="ui">The ImGui parts of the app: the start screen, the debug overlay and the credits window.</param>
 /// <param name="log">The log category of the app.</param>
 /// <param name="timeLimit">The time after which the loop closes the window, or <c>null</c> for no limit.</param>
-internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, DebugOverlay overlay, LogCategory log, TimeSpan? timeLimit)
+internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserInterface ui, LogCategory log, TimeSpan? timeLimit)
 {
     private const int TicksPerSecond = 20;
     private const int MaxTicksPerFrame = 5;
@@ -67,7 +67,13 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, Debug
                 break;
             }
 
-            cameraController.Update(frameStart - previousFrameStart);
+            // During the start screen, the camera input does nothing (BRUTAL License v1.0, section 2.2).
+            ui.Update(frameStart);
+            bool startScreen = ui.StartScreen.IsActive;
+            if (!startScreen)
+            {
+                cameraController.Update(frameStart - previousFrameStart);
+            }
 
             int ticks = clock.Advance(frameStart - previousFrameStart);
             previousFrameStart = frameStart;
@@ -77,12 +83,15 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, Debug
                 Tick();
             }
 
-            overlay.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
+            ui.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
+
+            // The world builds also during the start screen, but it shows only after the start screen.
             world.Update(_worldBuildBudget);
-            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), overlay.BuildFrame());
+            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen);
             if (presented)
             {
                 reportFrameCount++;
+                ui.OnFramePresented(stopwatch.Elapsed);
             }
 
             if (frameStart - reportStart >= _reportPeriod)

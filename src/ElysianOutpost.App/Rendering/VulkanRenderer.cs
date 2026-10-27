@@ -17,6 +17,7 @@ namespace ElysianOutpost.App.Rendering;
 
 /// <summary>
 /// Draws the frames of the app with Vulkan. Each frame has the sky color, the chunk meshes, and then the ImGui windows.
+/// During the start screen, a frame has only the background color of the start screen and the ImGui draw data.
 /// </summary>
 /// <remarks>
 /// The renderer prepares the next frame while the GPU draws the current frame: two frames in flight.
@@ -45,6 +46,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     private readonly ImGuiPass _imGuiPass = null!;
     private readonly ChunkPipeline _chunkPipeline = null!;
     private readonly ChunkMeshes _chunkMeshes = null!;
+    private readonly List<ImGuiTexture> _imGuiTextures = [];
     private readonly VkFormat _depthFormat;
     private Swapchain? _swapchain;
     private DepthBuffer? _depthBuffer;
@@ -111,6 +113,21 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     public void AddChunks(ReadOnlySpan<BuiltChunk> chunks) => _chunkMeshes.Upload(chunks);
 
     /// <summary>
+    /// Copies an image to the GPU for ImGui, for example the logo of the start screen.
+    /// The renderer keeps the texture and releases it in <see cref="Dispose"/>, after the GPU is idle.
+    /// </summary>
+    /// <param name="rgbaPixels">The sRGB pixels, 4 bytes for each pixel (red, green, blue and alpha), in rows from the top row.</param>
+    /// <param name="width">The width of the image, in pixels.</param>
+    /// <param name="height">The height of the image, in pixels.</param>
+    /// <returns>The texture. Do not release it.</returns>
+    public ImGuiTexture CreateImGuiTexture(ReadOnlySpan<byte> rgbaPixels, int width, int height)
+    {
+        var texture = new ImGuiTexture(_gpu, _imGuiPass, rgbaPixels, width, height);
+        _imGuiTextures.Add(texture);
+        return texture;
+    }
+
+    /// <summary>
     /// Gets the time to record the ImGui commands in the last call of <see cref="DrawFrame"/>.
     /// The value is zero if the last call did not draw ImGui.
     /// </summary>
@@ -121,8 +138,9 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     /// </summary>
     /// <param name="viewMatrix">The view matrix of the camera, in the row-vector convention (<see cref="FreeFlyCamera.CreateViewMatrix"/>).</param>
     /// <param name="imGuiDrawData">The draw data of the ImGui frame to draw after the scene, or a null pointer for no ImGui frame.</param>
+    /// <param name="showScene"><c>true</c> to draw the sky and the chunks. <c>false</c> for the start screen: the background color of <see cref="StartScreen"/> and no chunk.</param>
     /// <returns><c>true</c> if the renderer presented a frame. <c>false</c> if the window has no visible area, for example a minimized window.</returns>
-    public bool DrawFrame(float4x4 viewMatrix, ImDrawDataPtr imGuiDrawData)
+    public bool DrawFrame(float4x4 viewMatrix, ImDrawDataPtr imGuiDrawData, bool showScene)
     {
         ImGuiRecordTime = TimeSpan.Zero;
         int2 size = _window.FramebufferSize;
@@ -165,7 +183,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         _gpu.Device.ResetFences([fence]);
         float aspectRatio = (float)swapchain.Extent.Width / swapchain.Extent.Height;
         float4x4 viewProjection = viewMatrix * Lens.CreateProjectionMatrix(aspectRatio);
-        Record(swapchain, _commandBuffers[_frame], imageIndex, viewProjection, imGuiDrawData);
+        Record(swapchain, _commandBuffers[_frame], imageIndex, viewProjection, imGuiDrawData, showScene);
         Submit(_commandBuffers[_frame], _imageAvailable[_frame], swapchain.RenderingFinished[imageIndex], fence);
         bool presented = Present(swapchain, imageIndex);
         _frame = (_frame + 1) % FramesInFlight;
@@ -188,7 +206,13 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             _gpu.Device.WaitIdle();
             DestroyFrameResources();
 
-            // The framebuffers of the ImGui pass use the image views of the swapchain. Thus the pass goes first.
+            // The backend of the ImGui pass releases the descriptor sets of the textures. Thus the textures go before the pass.
+            foreach (ImGuiTexture texture in _imGuiTextures)
+            {
+                texture.Dispose();
+            }
+
+            // The framebuffers of the ImGui pass use the image views of the swapchain. Thus the pass goes before the swapchain.
             _imGuiPass?.Dispose();
 
             // The memory allocator of the GPU context must not have buffers or images at its release.
@@ -283,7 +307,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         _log.Info($"The swapchain changes to {swapchain.Extent.Width}x{swapchain.Extent.Height} pixels.");
     }
 
-    private void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex, float4x4 viewProjection, ImDrawDataPtr imGuiDrawData)
+    private void Record(Swapchain swapchain, CommandBuffer commandBuffer, int imageIndex, float4x4 viewProjection, ImDrawDataPtr imGuiDrawData, bool showScene)
     {
         VkImage image = swapchain.Images[imageIndex];
         DepthBuffer depthBuffer = _depthBuffer!;
@@ -315,7 +339,8 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             VkPipelineStageFlags2.EarlyFragmentTestsBit | VkPipelineStageFlags2.LateFragmentTestsBit,
             VkAccessFlags2.DepthStencilAttachmentReadBit | VkAccessFlags2.DepthStencilAttachmentWriteBit);
 
-        float4 clear = ColorSpace.IsSrgb(swapchain.Format) ? ColorSpace.SrgbToLinear(_skyColorSrgb) : _skyColorSrgb;
+        float4 clearSrgb = showScene ? _skyColorSrgb : StartScreen.BackgroundColorSrgb;
+        float4 clear = ColorSpace.IsSrgb(swapchain.Format) ? ColorSpace.SrgbToLinear(clearSrgb) : clearSrgb;
         var colorAttachment = new VkRenderingAttachmentInfo
         {
             ImageView = swapchain.ImageViews[imageIndex],
@@ -341,7 +366,13 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             DepthAttachment = &depthAttachment,
         };
         commandBuffer.BeginRendering(in renderingInfo);
-        RecordChunks(commandBuffer, swapchain.Extent, viewProjection);
+
+        // The start screen hides the world (BRUTAL License v1.0, section 2.2: the logo shows before the gameplay).
+        if (showScene)
+        {
+            RecordChunks(commandBuffer, swapchain.Extent, viewProjection);
+        }
+
         commandBuffer.EndRendering();
 
         // ImGui draws over the scene, in its own render pass. See ImGuiPass.
