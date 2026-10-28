@@ -56,7 +56,12 @@ internal sealed class TextWriterLoggerProvider(TextWriter writer, bool ownsWrite
         }
     }
 
-    private static string LevelName(LogLevel level) => level switch
+    /// <summary>
+    /// Gets the name of a log level in a line of text. The console log uses the same names (see <see cref="ConsoleLogLoggerProvider"/>).
+    /// </summary>
+    /// <param name="level">The log level.</param>
+    /// <returns>The name in capital letters, for example "INFO".</returns>
+    internal static string LevelName(LogLevel level) => level switch
     {
         LogLevel.Trace => "TRACE",
         LogLevel.Debug => "DEBUG",

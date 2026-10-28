@@ -89,6 +89,11 @@ internal sealed class ImGuiHost : IDisposable
     }
 
     /// <summary>
+    /// Gets a value that tells if the colors of the ImGui style are linear values (see <see cref="UseLinearColors"/>).
+    /// </summary>
+    public bool LinearColors => _linearColors;
+
+    /// <summary>
     /// Converts the colors of the ImGui style from sRGB to linear values. Call it when the swapchain has an sRGB format.
     /// The method converts the colors only one time.
     /// </summary>

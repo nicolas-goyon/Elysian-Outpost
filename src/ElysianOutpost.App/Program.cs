@@ -9,6 +9,7 @@ using ElysianOutpost.App;
 using ElysianOutpost.App.Logging;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.App.Ui;
+using ElysianOutpost.Core.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 // The option "--exit-after <seconds>" closes the window after a time limit, for automatic tests.
@@ -33,9 +34,12 @@ else if (args.Length > 0)
 string logFile = Path.Combine(AppContext.BaseDirectory, "logs", "app.log");
 using var consoleSink = new TextWriterLoggerProvider(Console.Out, ownsWriter: false);
 using TextWriterLoggerProvider? fileSink = OpenLogFile(logFile, out string? logFileError);
+
+// The in-game console shows the log messages of all threads (#37).
+ConsoleLog consoleLog = InGameConsole.CreateLog();
 LogSystem.Initialize(builder =>
 {
-    builder.SetMinimumLevel(LogLevel.Information).AddProvider(consoleSink);
+    builder.SetMinimumLevel(LogLevel.Information).AddProvider(consoleSink).AddProvider(new ConsoleLogLoggerProvider(consoleLog));
     if (fileSink is not null)
     {
         builder.AddProvider(fileSink);
@@ -93,7 +97,7 @@ try
         // The renderer uses the surface of the window and the ImGui context. It keeps the texture of the logo.
         using var imGui = new ImGuiHost(window);
         using var renderer = new VulkanRenderer(window, imGui, LogCategory.Make("Renderer"));
-        using var ui = new UserInterface(window, imGui, renderer, LogCategory.Make("Ui"));
+        using var ui = new UserInterface(window, imGui, renderer, consoleLog, LogCategory.Make("Ui"));
         new MainLoop(window, renderer, ui, log, timeLimit).Run();
     }
     finally
