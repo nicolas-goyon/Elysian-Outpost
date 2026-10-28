@@ -41,15 +41,11 @@ Key Features:
 - Assets use the [Creative Commons Attribution 4.0 International](LICENSE-ASSETS) license (CC BY 4.0). An asset is a media file of the game: an image, a 3D model, a texture, a color palette, a sound or a music file.
   - Attribution: "Elysian Outpost contributors, https://github.com/nicolas-goyon/Elysian-Outpost".
   - Now, these files are assets:
-    - the files in `Elysian-Outpost/Assets/Resources/` (texture atlas and chunk model),
-    - `Elysian-Outpost/ChunkBase.obj` (an exported chunk model),
     - `data/palette.json` (the colors of the block types).
 - All other files of the project use the [Mozilla Public License 2.0](LICENSE) (MPL-2.0): the code, the documents and the project files.
 - Third-party files keep their own licenses. The two licenses above do not apply to them:
-  - `Elysian-Outpost/Assets/TextMesh Pro/`: files of TextMesh Pro, by Unity Technologies (Unity Companion License). The font LiberationSans uses the SIL Open Font License 1.1. The EmojiOne sprites use the terms of EmojiOne (see `Sprites/EmojiOne Attribution.txt`).
-  - `Elysian-Outpost/Assets/Scripts/Base/SystemPlugin/UniClipboard.cs`: a changed version of [UniClipboard](https://github.com/sanukin39/UniClipboard), by wataru.sanuki, under the MIT License.
-  - `Elysian-Outpost/Assets/Scripts/Libs/VoxelMeshOptimizer/OptimizationAlgorithms/DisjointSet/DisjointSet.cs`: a changed version of the union-find code of [algs4](https://github.com/kevin-wayne/algs4), by Robert Sedgewick and Kevin Wayne, under the GPL-3.0-or-later ([license text](Elysian-Outpost/LICENSE-GPL-3.0.txt)).
   - `src/ElysianOutpost.App/Assets/Brutal/brutal-logo.png`: the BRUTAL logo, a trademark of Ahwoo Limited. The app shows it on its start screen, as section 2.2 of the BRUTAL License v1.0 asks.
+- The legacy Unity project left the repository in M1 (#14). The tag [`unity-final`](https://github.com/nicolas-goyon/Elysian-Outpost/tree/unity-final) keeps it. At that tag, the files of the legacy project keep the licenses of that version of this file: [README.md at `unity-final`](https://github.com/nicolas-goyon/Elysian-Outpost/blob/unity-final/README.md#license).
 - From M1, the game uses BRUTAL. Each build obeys the BRUTAL License v1.0 (#42):
   - The start screen shows the BRUTAL logo for at least 2 seconds, before the world.
   - The credits window (F1, or the "Credits" button of the debug overlay) shows the BRUTAL copyright notice and the third-party components.

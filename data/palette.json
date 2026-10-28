@@ -1,5 +1,5 @@
 {
-  "description": "Colors of the block types. The id of an entry is the block type ID. Each color is an sRGB color with alpha, in the format #RRGGBBAA. The colors come from the texture atlas of the legacy project (Elysian-Outpost/Assets/Resources/TextureAtlasRessource.png). The atlas has 8 x 8 tiles of 16 x 16 pixels, and tile 0 is at the bottom left.",
+  "description": "Colors of the block types. The id of an entry is the block type ID. Each color is an sRGB color with alpha, in the format #RRGGBBAA. The colors come from the texture atlas of the legacy project (Elysian-Outpost/Assets/Resources/TextureAtlasRessource.png at the tag unity-final). The atlas has 8 x 8 tiles of 16 x 16 pixels, and tile 0 is at the bottom left.",
   "blockTypes": [
     {"id": 0, "name": "air", "color": "#310000FF"},
     {"id": 1, "color": "#820000FF"},
