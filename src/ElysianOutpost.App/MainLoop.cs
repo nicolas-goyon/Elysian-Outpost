@@ -79,7 +79,11 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             }
 
             // The voxel edits change the world only in fly mode, because the cursor is free in menu mode.
-            editor.Update(cameraController.Camera, showTarget: !startScreen, edit: cameraController.Mode == CameraMode.Fly);
+            // Without the focus, a click can only give the focus back to the window. Thus it does not change the world.
+            editor.Update(
+                cameraController.Camera,
+                showTarget: !startScreen,
+                edit: cameraController.Mode == CameraMode.Fly && cameraController.IsFocused());
             ui.Overlay.Target = editor.Target;
             ui.Overlay.BlockType = editor.BlockType;
             ui.Overlay.BlockName = editor.BlockName;

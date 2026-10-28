@@ -117,6 +117,21 @@ internal sealed unsafe class ChunkMeshes : IDisposable
         {
             _commandBuffer.Reset();
             _commandBuffer.Begin(VkCommandBufferUsageFlags.OneTimeSubmitBit);
+
+            // The new buffers can use the memory of buffers that the upload released before. The earlier frames read that memory.
+            // The fence wait of the previous upload makes this safe, but the synchronization validation does not see a host wait.
+            // Thus this execution barrier makes the dependency explicit: the copies wait for the vertex and index reads of the earlier submissions.
+            var readsBeforeCopies = new VkMemoryBarrier2
+            {
+                SrcStageMask = VkPipelineStageFlags2.VertexAttributeInputBit | VkPipelineStageFlags2.IndexInputBit,
+                DstStageMask = VkPipelineStageFlags2.CopyBit,
+            };
+            var readsDependency = new VkDependencyInfo
+            {
+                MemoryBarrierCount = 1,
+                MemoryBarriers = &readsBeforeCopies,
+            };
+            _commandBuffer.PipelineBarrier2(in readsDependency);
             long offset = 0;
             foreach (BuiltChunk chunk in chunks)
             {
@@ -163,7 +178,8 @@ internal sealed unsafe class ChunkMeshes : IDisposable
             _gpu.Device.ResetFences([_fence]);
 
             // The GPU completed all the frames that used the old buffers. If an exception occurs before this line,
-            // the GPU can still use them. Then Dispose releases them after WaitIdle.
+            // the GPU can still use them. Then the next upload that completes, or Dispose after WaitIdle, releases them.
+            // A chunk that an exception removed from the list has no mesh until its next upload.
             ReleaseReplacedBuffers();
         }
         finally

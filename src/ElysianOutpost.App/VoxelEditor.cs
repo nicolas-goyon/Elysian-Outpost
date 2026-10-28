@@ -55,6 +55,11 @@ internal sealed class VoxelEditor
         _palette = palette;
         _log = log;
         ushort[] blockTypes = palette.GetNamedSolidBlockTypes();
+        if (blockTypes.Length == 0)
+        {
+            throw new ArgumentException("The palette has no named block type to place.", nameof(palette));
+        }
+
         ushort initial = Array.Find(blockTypes, blockType => palette.GetName(blockType) == InitialBlockName);
         _selector = new BlockSelector(blockTypes, initial != 0 ? initial : blockTypes[0]);
     }
@@ -96,6 +101,7 @@ internal sealed class VoxelEditor
         }
 
         long start = Stopwatch.GetTimestamp();
+        int edits = 0;
         _changedChunks.Clear();
         foreach (VoxelEditAction action in _actions)
         {
@@ -104,6 +110,7 @@ internal sealed class VoxelEditor
                 continue;
             }
 
+            edits++;
             if (!_changedChunks.Contains(chunk))
             {
                 _changedChunks.Add(chunk);
@@ -126,7 +133,7 @@ internal sealed class VoxelEditor
 
         long meshed = Stopwatch.GetTimestamp();
         _renderer.AddChunks(CollectionsMarshal.AsSpan(_rebuiltChunks));
-        _log.Info($"{_actions.Count} click(s) changed {_changedChunks.Count} chunk(s). Meshing: {Stopwatch.GetElapsedTime(start, meshed).TotalMilliseconds:F1} ms. Upload to the GPU: {Stopwatch.GetElapsedTime(meshed).TotalMilliseconds:F1} ms.");
+        _log.Info($"{edits} edit(s) changed {_changedChunks.Count} chunk(s). Meshing: {Stopwatch.GetElapsedTime(start, meshed).TotalMilliseconds:F1} ms. Upload to the GPU: {Stopwatch.GetElapsedTime(meshed).TotalMilliseconds:F1} ms.");
     }
 
     private VoxelRayHit? Cast(FreeFlyCamera camera) =>
@@ -153,7 +160,7 @@ internal sealed class VoxelEditor
             return true;
         }
 
-        _log.Info($"A voxel cannot go at ({hit.EmptyVoxel.X}, {hit.EmptyVoxel.Y}, {hit.EmptyVoxel.Z}): the position is outside the world, not empty, or in the camera.");
+        _log.Debug($"A voxel cannot go at ({hit.EmptyVoxel.X}, {hit.EmptyVoxel.Y}, {hit.EmptyVoxel.Z}): the position is outside the world, not empty, or in the camera.");
         return false;
     }
 }
