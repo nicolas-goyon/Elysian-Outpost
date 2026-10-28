@@ -18,7 +18,8 @@ namespace ElysianOutpost.Core.Diagnostics;
 /// </para>
 /// <para>
 /// A lock protects all the fields. Each operation keeps the lock for a short time.
-/// <see cref="Add"/> does not allocate memory. Thus a thread that writes many messages does not slow the other threads much.
+/// <see cref="Add"/> allocates memory only to make a long text shorter, and never while it keeps the lock.
+/// Thus a thread that writes many messages does not slow the other threads much.
 /// </para>
 /// </remarks>
 public sealed class ConsoleLog
