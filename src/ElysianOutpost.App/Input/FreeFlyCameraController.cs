@@ -189,5 +189,9 @@ internal sealed class FreeFlyCameraController
 
     private bool IsDown(GlfwKey key) => _window.GetKey(key) == GlfwKeyAction.Press;
 
-    private bool IsFocused() => _window.GetAttribute(GlfwWindowAttribute.Focused) == Glfw.Constants.GLFW_TRUE;
+    /// <summary>
+    /// Gets a value that tells if the window has the input focus.
+    /// </summary>
+    /// <returns><c>true</c> if the window has the focus.</returns>
+    public bool IsFocused() => _window.GetAttribute(GlfwWindowAttribute.Focused) == Glfw.Constants.GLFW_TRUE;
 }

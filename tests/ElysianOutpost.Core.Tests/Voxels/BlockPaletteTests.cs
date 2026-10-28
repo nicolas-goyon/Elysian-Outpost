@@ -36,6 +36,16 @@ public sealed class BlockPaletteTests
     }
 
     [Fact]
+    public void Game_GivesTheNamesOfTheTerrainBlockTypes()
+    {
+        Assert.Equal("air", BlockPalette.Game.GetName(0));
+        Assert.Equal("grass", BlockPalette.Game.GetName(16));
+        Assert.Null(BlockPalette.Game.GetName(1));
+        Assert.Equal(new ushort[] { 8, 11, 13, 16, 22, 24, 26 }, BlockPalette.Game.GetNamedSolidBlockTypes());
+        Assert.Throws<ArgumentOutOfRangeException>(() => BlockPalette.Game.GetName(64));
+    }
+
+    [Fact]
     public void Parse_IdsInAnyOrder_GivesTheColorsInTheOrderOfTheIds()
     {
         const string Json = """
@@ -52,6 +62,9 @@ public sealed class BlockPaletteTests
         Assert.Equal(2, palette.Count);
         Assert.Equal(new byte4(0x01, 0x02, 0x03, 0x04), palette[0]);
         Assert.Equal(new byte4(0x00, 0x72, 0x0D, 0xFF), palette[1]);
+        Assert.Null(palette.GetName(0));
+        Assert.Equal("grass", palette.GetName(1));
+        Assert.Equal(new ushort[] { 1 }, palette.GetNamedSolidBlockTypes());
     }
 
     [Theory]
@@ -67,6 +80,10 @@ public sealed class BlockPaletteTests
     [InlineData("""{"blockTypes": [{"id": 0, "color": "000000FF0"}]}""")]
     [InlineData("""{"blockTypes": [{"id": 0, "color": "#00000GFF"}]}""")]
     [InlineData("""{"blockTypes": [{"id": 0}]}""")]
+    [InlineData("""{"blockTypes": [{"id": 0, "name": "", "color": "#000000FF"}]}""")]
+    [InlineData("""{"blockTypes": [{"id": 0, "name": " ", "color": "#000000FF"}]}""")]
+    [InlineData("""{"blockTypes": [{"id": 0, "name": 3, "color": "#000000FF"}]}""")]
+    [InlineData("""{"blockTypes": [{"id": 0, "name": null, "color": "#000000FF"}]}""")]
     public void Parse_InvalidPalette_ThrowsInvalidDataException(string json)
     {
         Assert.Throws<InvalidDataException>(() => BlockPalette.Parse(json));

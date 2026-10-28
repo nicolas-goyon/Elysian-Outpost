@@ -61,6 +61,47 @@ public sealed class VoxelWorldTests
     }
 
     [Fact]
+    public void TrySetVoxel_ChangesTheVoxel_AndGivesItsChunk()
+    {
+        var world = new VoxelWorld(_chunkSize);
+        world.AddChunk(new int3(-4, 0, -2), Filled(1));
+
+        Assert.True(world.TrySetVoxel(new int3(-1, 7, -1), 5, out int3 chunk));
+        Assert.Equal(new int3(-4, 0, -2), chunk);
+        Assert.Equal(5, world.GetVoxel(new int3(-1, 7, -1)));
+        Assert.True(world.TryGetChunk(chunk, out ushort[,,]? voxels));
+        Assert.Equal(5, voxels[3, 7, 1]);
+
+        Assert.True(world.TrySetVoxel(new int3(-1, 7, -1), 0, out _));
+        Assert.False(world.IsSolid(new int3(-1, 7, -1)));
+    }
+
+    [Fact]
+    public void TrySetVoxel_OutsideAllTheChunks_ChangesNothing()
+    {
+        var world = new VoxelWorld(_chunkSize);
+        world.AddChunk(default, Filled(1));
+
+        Assert.False(world.TrySetVoxel(new int3(0, 8, 0), 5, out int3 chunk));
+        Assert.Equal(new int3(0, 8, 0), chunk);
+        Assert.Equal(0, world.GetVoxel(new int3(0, 8, 0)));
+        Assert.False(world.TryGetChunk(new int3(0, 8, 0), out _));
+    }
+
+    [Theory]
+    [InlineData(0, 0, 0, 0, 0, 0)]
+    [InlineData(3, 7, 1, 0, 0, 0)]
+    [InlineData(4, 8, 2, 4, 8, 2)]
+    [InlineData(-1, -1, -1, -4, -8, -2)]
+    [InlineData(-4, -8, -2, -4, -8, -2)]
+    [InlineData(-5, -9, -3, -8, -16, -4)]
+    public void GetChunkPosition_GivesTheFirstVoxelOfTheChunk(int x, int y, int z, int chunkX, int chunkY, int chunkZ)
+    {
+        var world = new VoxelWorld(_chunkSize);
+        Assert.Equal(new int3(chunkX, chunkY, chunkZ), world.GetChunkPosition(new int3(x, y, z)));
+    }
+
+    [Fact]
     public void MinAndMax_AreTheBoxAroundAllTheChunks()
     {
         var world = new VoxelWorld(_chunkSize);

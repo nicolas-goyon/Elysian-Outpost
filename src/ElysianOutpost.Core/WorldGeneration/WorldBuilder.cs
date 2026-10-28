@@ -90,8 +90,7 @@ public sealed class WorldBuilder
         ushort[,,] voxels = _generation.GenerateChunkAt(position);
         long generated = Stopwatch.GetTimestamp();
         Voxels.AddChunk(position, voxels);
-        List<MeshQuad> quads = new DisjointSetMeshOptimizer(new Mesh()).Optimize(new Chunk(voxels, position)).Quads;
-        ChunkMeshData mesh = ChunkMeshData.Build(quads, _palette);
+        ChunkMeshData mesh = BuildMesh(position, voxels);
         long meshed = Stopwatch.GetTimestamp();
 
         GenerationTime += Stopwatch.GetElapsedTime(start, generated);
@@ -100,5 +99,28 @@ public sealed class WorldBuilder
         BuiltChunkCount++;
         chunk = new BuiltChunk(position, mesh);
         return true;
+    }
+
+    /// <summary>
+    /// Meshes a chunk again from its voxels in <see cref="Voxels"/>, for example after a voxel edit (#41).
+    /// </summary>
+    /// <param name="chunkPosition">The position of the chunk.</param>
+    /// <returns>The position and the new mesh data of the chunk.</returns>
+    /// <exception cref="ArgumentException">The builder did not make a chunk at this position.</exception>
+    public BuiltChunk RebuildChunk(int3 chunkPosition)
+    {
+        if (!Voxels.TryGetChunk(chunkPosition, out ushort[,,]? voxels))
+        {
+            throw new ArgumentException($"The builder did not make a chunk at ({chunkPosition.X}, {chunkPosition.Y}, {chunkPosition.Z}).", nameof(chunkPosition));
+        }
+
+        return new BuiltChunk(chunkPosition, BuildMesh(chunkPosition, voxels));
+    }
+
+    // The mesher of #31. Each chunk mesh has the faces at the chunk borders. Thus a change of a chunk does not change its neighbors (#48 changes this).
+    private ChunkMeshData BuildMesh(int3 position, ushort[,,] voxels)
+    {
+        List<MeshQuad> quads = new DisjointSetMeshOptimizer(new Mesh()).Optimize(new Chunk(voxels, position)).Quads;
+        return ChunkMeshData.Build(quads, _palette);
     }
 }

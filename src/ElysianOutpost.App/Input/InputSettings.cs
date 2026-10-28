@@ -19,6 +19,7 @@ namespace ElysianOutpost.App.Input;
 /// </para>
 /// <para>
 /// The default values are the values of the legacy project. A settings file will change them later (#73).
+/// The legacy project had no binding for the voxel edits. The mouse buttons of the voxel edits come from #41.
 /// </para>
 /// </remarks>
 internal sealed record InputSettings
@@ -72,6 +73,16 @@ internal sealed record InputSettings
     /// Gets the physical key that changes the camera mode if no key of the keyboard layout gives <see cref="MenuCharacter"/>.
     /// </summary>
     public GlfwKey MenuFallbackKey { get; init; } = GlfwKey.M;
+
+    /// <summary>
+    /// Gets the mouse button that removes the voxel at the screen center, in fly mode (#41).
+    /// </summary>
+    public GlfwMouseButton RemoveVoxelButton { get; init; } = GlfwMouseButton.Left;
+
+    /// <summary>
+    /// Gets the mouse button that places a voxel before the voxel at the screen center, in fly mode (#41).
+    /// </summary>
+    public GlfwMouseButton PlaceVoxelButton { get; init; } = GlfwMouseButton.Right;
 
     /// <summary>
     /// Gets the control values of the camera: the speeds, the mouse sensitivity and the pitch limits.

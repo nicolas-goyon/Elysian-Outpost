@@ -18,16 +18,19 @@ namespace ElysianOutpost.App.Rendering;
 /// <remarks>
 /// <para>
 /// <see cref="Upload"/> copies a group of chunks to the GPU through one staging buffer, then waits until the GPU completes the copy.
-/// The wait also includes the frames in flight. The app uploads the chunks only while it builds the world.
+/// The wait also includes the frames in flight: the signal of a fence comes after all the earlier submissions to the queue
+/// (Vulkan specification, "Fence Signaling"). The renderer submits the frames to the same queue.
 /// </para>
 /// <para>
-/// Each chunk has its own buffers, thus a later change of one chunk (#41) can replace only the buffers of that chunk.
+/// Each chunk has its own buffers. Thus an upload for a chunk that has buffers replaces only the buffers of that chunk (#41).
+/// After the wait, the GPU does not use the old buffers, and the upload releases them.
 /// </para>
 /// </remarks>
 internal sealed unsafe class ChunkMeshes : IDisposable
 {
     private readonly GpuContext _gpu;
-    private readonly List<GpuChunk> _chunks = [];
+    private readonly Dictionary<int3, GpuChunk> _chunks = [];
+    private readonly List<GpuChunk> _replaced = [];
     private readonly VkCommandPool _commandPool;
     private readonly CommandBuffer _commandBuffer;
     private readonly VkFence _fence;
@@ -75,38 +78,78 @@ internal sealed unsafe class ChunkMeshes : IDisposable
 
     /// <summary>
     /// Copies the meshes of a group of chunks to new GPU buffers, and waits until the GPU completes the copy.
+    /// If a chunk has buffers, the new buffers replace them, and the method releases the old buffers after the wait.
     /// </summary>
-    /// <param name="chunks">The chunks. The method ignores a chunk with no quad.</param>
+    /// <param name="chunks">
+    /// The chunks. Each position must occur only one time. A chunk with no quad gets no buffers: the method only releases its old buffers.
+    /// </param>
+    /// <exception cref="ArgumentException">A position occurs two times in <paramref name="chunks"/>.</exception>
     public void Upload(ReadOnlySpan<BuiltChunk> chunks)
     {
         long start = Stopwatch.GetTimestamp();
         long stagingSize = 0;
-        foreach (BuiltChunk chunk in chunks)
+        bool replaces = false;
+        for (int i = 0; i < chunks.Length; i++)
         {
-            stagingSize += VertexBytes(chunk.Mesh) + IndexBytes(chunk.Mesh);
+            for (int j = 0; j < i; j++)
+            {
+                if (chunks[j].Position == chunks[i].Position)
+                {
+                    throw new ArgumentException($"The chunk at ({chunks[i].Position.X}, {chunks[i].Position.Y}, {chunks[i].Position.Z}) occurs two times.", nameof(chunks));
+                }
+            }
+
+            stagingSize += VertexBytes(chunks[i].Mesh) + IndexBytes(chunks[i].Mesh);
+            replaces |= _chunks.ContainsKey(chunks[i].Position);
         }
 
-        if (stagingSize == 0)
+        if (stagingSize == 0 && !replaces)
         {
             return;
         }
 
-        (VkBuffer staging, VmaAllocation stagingAllocation, nint mappedAddress) = CreateStagingBuffer(stagingSize);
+        // With no quad to copy, the command buffer has only the barrier. Its fence still waits for the frames that use the old buffers.
+        (VkBuffer staging, VmaAllocation stagingAllocation, nint mappedAddress) = stagingSize > 0
+            ? CreateStagingBuffer(stagingSize)
+            : (VkBuffer.NullHandle, default(VmaAllocation), 0);
         byte* mapped = (byte*)mappedAddress;
         try
         {
             _commandBuffer.Reset();
             _commandBuffer.Begin(VkCommandBufferUsageFlags.OneTimeSubmitBit);
+
+            // The new buffers can use the memory of buffers that the upload released before. The earlier frames read that memory.
+            // The fence wait of the previous upload makes this safe, but the synchronization validation does not see a host wait.
+            // Thus this execution barrier makes the dependency explicit: the copies wait for the vertex and index reads of the earlier submissions.
+            var readsBeforeCopies = new VkMemoryBarrier2
+            {
+                SrcStageMask = VkPipelineStageFlags2.VertexAttributeInputBit | VkPipelineStageFlags2.IndexInputBit,
+                DstStageMask = VkPipelineStageFlags2.CopyBit,
+            };
+            var readsDependency = new VkDependencyInfo
+            {
+                MemoryBarrierCount = 1,
+                MemoryBarriers = &readsBeforeCopies,
+            };
+            _commandBuffer.PipelineBarrier2(in readsDependency);
             long offset = 0;
             foreach (BuiltChunk chunk in chunks)
             {
+                if (_chunks.Remove(chunk.Position, out GpuChunk old))
+                {
+                    _replaced.Add(old);
+                }
+
                 if (chunk.Mesh.QuadCount > 0)
                 {
                     offset = AddChunk(chunk, staging, mapped, offset);
                 }
             }
 
-            _gpu.Allocator.FlushAllocation(stagingAllocation, ByteSize.Zero, (ByteSize)stagingSize);
+            if (stagingSize > 0)
+            {
+                _gpu.Allocator.FlushAllocation(stagingAllocation, ByteSize.Zero, (ByteSize)stagingSize);
+            }
 
             // The draws of the next frames read the new buffers. They must wait for the copy.
             var barrier = new VkMemoryBarrier2
@@ -133,10 +176,18 @@ internal sealed unsafe class ChunkMeshes : IDisposable
             _gpu.Queue.Submit2(new Span<VkSubmitInfo2>(&submit, 1), _fence);
             _gpu.Device.WaitForFences([_fence], true, -1);
             _gpu.Device.ResetFences([_fence]);
+
+            // The GPU completed all the frames that used the old buffers. If an exception occurs before this line,
+            // the GPU can still use them. Then the next upload that completes, or Dispose after WaitIdle, releases them.
+            // A chunk that an exception removed from the list has no mesh until its next upload.
+            ReleaseReplacedBuffers();
         }
         finally
         {
-            _gpu.Allocator.DestroyBuffer(staging, stagingAllocation);
+            if (stagingSize > 0)
+            {
+                _gpu.Allocator.DestroyBuffer(staging, stagingAllocation);
+            }
         }
 
         UploadTime += Stopwatch.GetElapsedTime(start);
@@ -149,7 +200,7 @@ internal sealed unsafe class ChunkMeshes : IDisposable
     /// <param name="layout">The layout of the chunk pipeline.</param>
     public void Record(CommandBuffer commandBuffer, VkPipelineLayout layout)
     {
-        foreach (GpuChunk chunk in _chunks)
+        foreach (GpuChunk chunk in _chunks.Values)
         {
             float4 position = chunk.Position;
             commandBuffer.BindVertexBuffers(0, [chunk.VertexBuffer], [default(ByteSize64)]);
@@ -170,13 +221,13 @@ internal sealed unsafe class ChunkMeshes : IDisposable
         }
 
         _disposed = true;
-        foreach (GpuChunk chunk in _chunks)
+        foreach (GpuChunk chunk in _chunks.Values)
         {
-            _gpu.Allocator.DestroyBuffer(chunk.VertexBuffer, chunk.VertexAllocation);
-            _gpu.Allocator.DestroyBuffer(chunk.IndexBuffer, chunk.IndexAllocation);
+            Release(chunk);
         }
 
         _chunks.Clear();
+        ReleaseReplacedBuffers();
         if (!_fence.IsNull())
         {
             _gpu.Device.DestroyFence(_fence, null);
@@ -187,6 +238,22 @@ internal sealed unsafe class ChunkMeshes : IDisposable
         {
             _gpu.Device.DestroyCommandPool(_commandPool, null);
         }
+    }
+
+    private void ReleaseReplacedBuffers()
+    {
+        foreach (GpuChunk chunk in _replaced)
+        {
+            Release(chunk);
+        }
+
+        _replaced.Clear();
+    }
+
+    private void Release(GpuChunk chunk)
+    {
+        _gpu.Allocator.DestroyBuffer(chunk.VertexBuffer, chunk.VertexAllocation);
+        _gpu.Allocator.DestroyBuffer(chunk.IndexBuffer, chunk.IndexAllocation);
     }
 
     private static long VertexBytes(ChunkMeshData mesh) => (long)mesh.Vertices.Length * ChunkVertex.SizeInBytes;
@@ -214,7 +281,7 @@ internal sealed unsafe class ChunkMeshes : IDisposable
             throw;
         }
 
-        _chunks.Add(new GpuChunk(
+        _chunks.Add(chunk.Position, new GpuChunk(
             vertexBuffer,
             vertexAllocation,
             indexBuffer,

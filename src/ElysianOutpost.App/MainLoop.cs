@@ -6,7 +6,6 @@ using Brutal.Logging;
 using ElysianOutpost.App.Input;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.App.Ui;
-using ElysianOutpost.Core.Cameras;
 using ElysianOutpost.Core.Simulation;
 using ElysianOutpost.Core.Voxels;
 using ElysianOutpost.Core.WorldGeneration;
@@ -48,6 +47,8 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
         var cameraController = new FreeFlyCameraController(window, InputSettings.Default, LogCategory.Make("Camera"));
         var builder = new WorldBuilder(WorldSettings.SampleScene, BlockPalette.Game, default);
         var world = new WorldLoader(builder, renderer, LogCategory.Make("World"));
+        using var editInput = new VoxelEditInput(window, InputSettings.Default);
+        var editor = new VoxelEditor(editInput, builder, renderer, BlockPalette.Game, LogCategory.Make("Edit"));
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
@@ -72,20 +73,20 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             // During the start screen, the camera input does nothing (BRUTAL License v1.0, section 2.2).
             ui.Update(frameStart);
             bool startScreen = ui.StartScreen.IsActive;
-            VoxelRayHit? target = null;
             if (!startScreen)
             {
                 cameraController.Update(frameStart - previousFrameStart);
-
-                // The voxel at the center of the screen: the camera looks along its forward vector.
-                FreeFlyCamera camera = cameraController.Camera;
-                if (VoxelRay.TryCast(builder.Voxels, camera.Position, camera.Forward, out VoxelRayHit hit))
-                {
-                    target = hit;
-                }
             }
 
-            ui.Overlay.Target = target;
+            // The voxel edits change the world only in fly mode, because the cursor is free in menu mode.
+            // Without the focus, a click can only give the focus back to the window. Thus it does not change the world.
+            editor.Update(
+                cameraController.Camera,
+                showTarget: !startScreen,
+                edit: cameraController.Mode == CameraMode.Fly && cameraController.IsFocused());
+            ui.Overlay.Target = editor.Target;
+            ui.Overlay.BlockType = editor.BlockType;
+            ui.Overlay.BlockName = editor.BlockName;
 
             int ticks = clock.Advance(frameStart - previousFrameStart);
             previousFrameStart = frameStart;
@@ -99,7 +100,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
 
             // The world builds also during the start screen, but it shows only after the start screen.
             world.Update(_worldBuildBudget);
-            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen, target?.Voxel);
+            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen, editor.Target?.Voxel);
             if (presented)
             {
                 reportFrameCount++;

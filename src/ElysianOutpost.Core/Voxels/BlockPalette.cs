@@ -8,12 +8,13 @@ using Brutal.Numerics;
 namespace ElysianOutpost.Core.Voxels;
 
 /// <summary>
-/// The colors of the block types. The index of a color is the ID of the block type.
+/// The colors and the names of the block types. The index of a color is the ID of the block type.
 /// </summary>
 /// <remarks>
 /// Each color is an sRGB color with alpha. <see cref="byte4.X"/> is the red value, <see cref="byte4.Y"/> is the green value,
 /// <see cref="byte4.Z"/> is the blue value and <see cref="byte4.W"/> is the alpha value.
 /// The file <c>data/palette.json</c> gives the colors of the game. The build puts this file into the core library.
+/// A name is optional. In the game palette, only the block types of the terrain have a name.
 /// </remarks>
 public sealed class BlockPalette
 {
@@ -22,10 +23,12 @@ public sealed class BlockPalette
     private static readonly Lazy<BlockPalette> _game = new(LoadGamePalette);
 
     private readonly byte4[] _colors;
+    private readonly string?[] _names;
 
-    private BlockPalette(byte4[] colors)
+    private BlockPalette(byte4[] colors, string?[] names)
     {
         _colors = colors;
+        _names = names;
     }
 
     /// <summary>
@@ -62,6 +65,40 @@ public sealed class BlockPalette
     }
 
     /// <summary>
+    /// Gets the name of a block type.
+    /// </summary>
+    /// <param name="blockType">The ID of the block type.</param>
+    /// <returns>The name, or <c>null</c> if the block type has no name.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The palette has no entry for this block type.</exception>
+    public string? GetName(ushort blockType)
+    {
+        if (blockType >= _names.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(blockType), blockType, $"The palette has {_names.Length} entries.");
+        }
+
+        return _names[blockType];
+    }
+
+    /// <summary>
+    /// Gives the IDs of the block types that have a name, except the block type 0 (air), in the order of the IDs.
+    /// </summary>
+    /// <returns>The IDs.</returns>
+    public ushort[] GetNamedSolidBlockTypes()
+    {
+        var blockTypes = new List<ushort>();
+        for (int id = 1; id < _names.Length; id++)
+        {
+            if (_names[id] is not null)
+            {
+                blockTypes.Add((ushort)id);
+            }
+        }
+
+        return [.. blockTypes];
+    }
+
+    /// <summary>
     /// Reads a palette in the format of <c>data/palette.json</c>.
     /// </summary>
     /// <param name="json">The content of the palette file.</param>
@@ -81,6 +118,7 @@ public sealed class BlockPalette
 
         // The IDs must be the numbers from 0 to the number of entries minus 1, in any order.
         var colors = new byte4?[blockTypes.GetArrayLength()];
+        var names = new string?[colors.Length];
         foreach (JsonElement entry in blockTypes.EnumerateArray())
         {
             int id = ReadId(entry, colors.Length);
@@ -90,9 +128,10 @@ public sealed class BlockPalette
             }
 
             colors[id] = ReadColor(entry, id);
+            names[id] = ReadName(entry, id);
         }
 
-        return new BlockPalette(Array.ConvertAll(colors, color => color!.Value));
+        return new BlockPalette(Array.ConvertAll(colors, color => color!.Value), names);
     }
 
     private static int ReadId(JsonElement entry, int count)
@@ -112,6 +151,20 @@ public sealed class BlockPalette
         }
 
         return value;
+    }
+
+    // The name is optional. If the entry has a name, the name is a string that is not empty.
+    private static string? ReadName(JsonElement entry, int id)
+    {
+        if (!entry.TryGetProperty("name"u8, out JsonElement name))
+        {
+            return null;
+        }
+
+        string? text = name.ValueKind == JsonValueKind.String ? name.GetString() : null;
+        return string.IsNullOrWhiteSpace(text)
+            ? throw new InvalidDataException($"The entry with the id {id} has a \"name\" that is not a string with characters.")
+            : text;
     }
 
     // The format of a color is #RRGGBBAA, with hexadecimal digits.

@@ -114,8 +114,9 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
     /// <summary>
     /// Copies the meshes of chunks to the GPU. The next frames draw them.
+    /// If a chunk already has a mesh, the new mesh replaces it. See <see cref="ChunkMeshes.Upload"/>.
     /// </summary>
-    /// <param name="chunks">The chunks to add.</param>
+    /// <param name="chunks">The chunks to add or to replace.</param>
     public void AddChunks(ReadOnlySpan<BuiltChunk> chunks) => _chunkMeshes.Upload(chunks);
 
     /// <summary>
