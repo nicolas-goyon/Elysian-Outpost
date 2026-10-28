@@ -28,11 +28,12 @@
       <Output TaskParameter="Filtered" ItemName="_LicensePackage" />
     </RemoveDuplicates>
 
-    <!-- NuGet keeps each package in <package root>/<lowercase id>/<version>/. -->
+    <!-- NuGet keeps each package in <package root>/<lowercase id>/<version>/.
+         With the environment variable NUGET_PACKAGES, the package root can have no slash at the end (#118). -->
     <ItemGroup>
       <_LicensePackage>
         <PackageId>$([System.String]::Copy('%(Identity)').Split('|')[0])</PackageId>
-        <Folder>$(NuGetPackageRoot)$([System.String]::Copy('%(Identity)').Split('|')[0].ToLowerInvariant())/$([System.String]::Copy('%(Identity)').Split('|')[1])/</Folder>
+        <Folder>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))$([System.String]::Copy('%(Identity)').Split('|')[0].ToLowerInvariant())/$([System.String]::Copy('%(Identity)').Split('|')[1])/</Folder>
       </_LicensePackage>
     </ItemGroup>
 
