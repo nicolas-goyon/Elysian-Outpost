@@ -66,7 +66,7 @@ Use these terms. Add a term when a new concept needs a name.
 |---|---|
 | core library | `ElysianOutpost.Core`. It does not use windows, input or the GPU. |
 | app | `ElysianOutpost.App`. The executable that uses BRUTAL for the window, the input, the GPU and the debug UI. |
-| legacy project | The Unity project in the folder `Elysian-Outpost/`. |
+| legacy project | The Unity project of the game before M1. The tag `unity-final` keeps it in the folder `Elysian-Outpost/` (#14). |
 | port | To move code from the legacy project to the solution without a change of behavior, except the changes that the issue lists. |
 | ADR | Architecture decision record. A document in `docs/adr/` that records one decision and its reasons. |
 | asset | A media file of the game: an image, a 3D model, a texture, a color palette, a sound or a music file. Assets use the CC BY 4.0 license. |

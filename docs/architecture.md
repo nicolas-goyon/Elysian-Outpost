@@ -18,7 +18,7 @@ flowchart LR
     Tests[ElysianOutpost.Core.Tests] --> Core
 ```
 
-The legacy project (`Elysian-Outpost/`) is not part of the solution.
+The legacy Unity project is not in the repository anymore. The tag `unity-final` keeps it (#14).
 
 ## Dependency rules of the core library
 
