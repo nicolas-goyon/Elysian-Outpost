@@ -8,6 +8,53 @@ The second major enhancement is ensuring the game functions on computers without
 
 The project moves from Unity to BRUTAL, a C# framework on .NET 10 and Vulkan. [ADR 0001](docs/adr/0001-move-from-unity-to-brutal.md) explains the decision.
 
+# Requirements
+
+- The [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0). The file `global.json` asks for version 10.0.100 or a later feature band.
+- A GPU with a Vulkan 1.3 driver. Install the current driver of your GPU.
+- Windows 10 or 11 (x64), or Linux (x64) with a desktop.
+- [Git](https://git-scm.com/).
+
+The app does not need Unity.
+
+# Quick start
+
+Run these commands in a terminal:
+
+```shell
+git clone https://github.com/nicolas-goyon/Elysian-Outpost.git
+cd Elysian-Outpost
+dotnet build ElysianOutpost.sln
+dotnet test ElysianOutpost.sln
+dotnet run --project src/ElysianOutpost.App
+```
+
+1. `dotnet build` downloads the NuGet packages and builds the solution. The build stops on a warning.
+2. `dotnet test` runs the tests of the core library. They do not need a GPU.
+3. `dotnet run` starts the app. The BRUTAL logo shows for 2 seconds, then the world builds.
+
+A Debug build turns on the Vulkan validation layers, if they are installed. Use `dotnet run -c Release --project src/ElysianOutpost.App` for the normal speed. The app writes its log to `logs/app.log`, in the folder of the executable.
+
+The rules for a contribution are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+# Controls
+
+The app starts in menu mode. Press M to fly. The movement keys are physical keys: on an AZERTY keyboard, they are Z, Q, S, D, A and E.
+
+| Input | Action |
+|---|---|
+| M | Change between fly mode and menu mode. In menu mode, the cursor is free and the camera does not move. |
+| Mouse | Turn the camera (fly mode). |
+| W, A, S, D | Move forward, left, back and right (fly mode). |
+| E, Q | Move up and down (fly mode). |
+| Shift | Move 5 times faster (fly mode). |
+| Left click | Remove the voxel at the screen center (fly mode). |
+| Right click | Place a voxel of the current block type before the voxel at the screen center (fly mode). |
+| Mouse wheel | Change the current block type (fly mode). |
+| `]` (the key right of P on a US keyboard) | Open and close the console. Type `help` for the commands. |
+| F3 | Show and hide the debug overlay. |
+| F1 | Show and hide the credits. |
+
 # Test builds
 
 The CI makes a Windows test build for each change of `develop` and for each pull request (#110). To get the last build of `develop`:
@@ -36,7 +83,10 @@ Key Features:
 9. **Art and Music**: The game's charming, voxel-based graphics create a visually appealing and distinctive world, while the original soundtrack composed by Kurtis Seits complements the atmosphere and enhances the overall gaming experience.
 10. **Accessibility and Replayability**: StoneHearth's intuitive controls, tutorial system, and adjustable difficulty settings make it welcoming to both newcomers and experienced gamers. The procedurally generated worlds and myriad customization options ensure that each playthrough offers a fresh and engaging experience.
 
-# License
+# Credits and license
+
+Elysian Outpost uses BRUTAL. BRUTAL game development framework is Copyright (c) 2024 Ahwoo Limited. The credits window of the app (F1) gives the BRUTAL notice and the third-party components.
+
 
 - Assets use the [Creative Commons Attribution 4.0 International](LICENSE-ASSETS) license (CC BY 4.0). An asset is a media file of the game: an image, a 3D model, a texture, a color palette, a sound or a music file.
   - Attribution: "Elysian Outpost contributors, https://github.com/nicolas-goyon/Elysian-Outpost".
