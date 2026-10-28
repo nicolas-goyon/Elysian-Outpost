@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
+using System.Reflection;
+using System.Text;
+using Brutal.GlfwApi;
 using Brutal.ImGuiApi;
 using Brutal.ImGuiApi.Abstractions;
+using Brutal.Logging;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.Core.Diagnostics;
 
@@ -24,6 +28,11 @@ namespace ElysianOutpost.App.Ui;
 /// The up arrow and the down arrow show the previous command lines.
 /// </para>
 /// <para>
+/// The commands are the commands of the legacy console, with the same names and descriptions:
+/// <c>log</c>, <c>clear</c>, <c>close</c>, <c>copy</c> and <c>help</c>. The app has no NavMesh. Thus it has no <c>navmesh_bake</c> command.
+/// The terminal of BRUTAL reads the command line. A semicolon separates two commands on one line.
+/// </para>
+/// <para>
 /// The console window cannot remove only the oldest lines. When the log removes a message that the window shows,
 /// the window removes all its lines and receives all the messages of the log again.
 /// Then the time at the start of each line in the window is the time of this copy.
@@ -42,7 +51,10 @@ internal sealed class InGameConsole
     public const int MaxMessageLength = 340;
 
     private readonly ConsoleWindow _window = new();
+    private readonly ConsoleLog _log;
     private readonly ConsoleLogReader _reader;
+    private readonly LogCategory _commandLog;
+    private readonly string _helpText;
 
     // The color of the text for each value of ConsoleMessageLevel.
     private readonly ImColor8[] _levelColors;
@@ -52,9 +64,12 @@ internal sealed class InGameConsole
     /// </summary>
     /// <param name="log">The console log. Use <see cref="CreateLog"/> to make it.</param>
     /// <param name="linearColors"><c>true</c> if the ImGui colors must be linear values (see <see cref="ImGuiHost.LinearColors"/>).</param>
-    public InGameConsole(ConsoleLog log, bool linearColors)
+    /// <param name="commandLog">The log category of the <c>log</c> command.</param>
+    public InGameConsole(ConsoleLog log, bool linearColors, LogCategory commandLog)
     {
+        _log = log;
         _reader = new ConsoleLogReader(log);
+        _commandLog = commandLog;
         _levelColors =
         [
             Color(ConsoleWindow.TraceColor, linearColors),
@@ -64,6 +79,22 @@ internal sealed class InGameConsole
             Color(ConsoleWindow.ErrorColor, linearColors),
             Color(ConsoleWindow.CriticalColor, linearColors),
         ];
+
+        // The order of the legacy console. The terminal of BRUTAL also has the commands "help" and "clear".
+        // These commands write directly to the console window, not to the console log. Commands with the same names replace them.
+        Delegate[] commands = [LogCommand, ClearCommand, CloseCommand, CopyCommand, HelpCommand];
+        var help = new StringBuilder("Available Commands:");
+        foreach (Delegate command in commands)
+        {
+            _window.Terminal.RegisterCommand(command);
+            TerminalActionAttribute action = command.Method.GetCustomAttribute<TerminalActionAttribute>()!;
+            help.Append('\n').Append(action.CommandName).Append(": ").Append(action.Description);
+        }
+
+        _helpText = help.ToString();
+
+        // The terminal gives the errors of the command line with this event, for example a wrong number of arguments.
+        _window.Terminal.OnOutput += OnTerminalOutput;
     }
 
     /// <summary>
@@ -128,6 +159,41 @@ internal sealed class InGameConsole
         else if (ImGui.IsKeyPressed(ImGuiKey.DownArrow))
         {
             _window.HandleInputAction(ConsoleWindow.Actions.Down);
+        }
+    }
+
+    [TerminalAction("log", "Logs a message to the console.", ArgParseMode.Unparsed)]
+    private void LogCommand(string message)
+    {
+        // The command sends the message to the log system. Thus the log file also receives it.
+        if (message.Length == 0)
+        {
+            _log.Add("Usage: log <message>", ConsoleMessageLevel.Information);
+        }
+        else
+        {
+            _commandLog.Info($"{message}");
+        }
+    }
+
+    [TerminalAction("clear", "Clears the console output.")]
+    private void ClearCommand() => _log.Clear();
+
+    [TerminalAction("close", "Closes the console UI.")]
+    private void CloseCommand() => _window.Hide();
+
+    // The legacy console copies the text of all its lines. The console log has the same text.
+    [TerminalAction("copy", "Copies the console output to clipboard.")]
+    private void CopyCommand() => Glfw.SetClipboard(_log.GetText());
+
+    [TerminalAction("help", "Displays a list of available commands.")]
+    private void HelpCommand() => _log.Add(_helpText, ConsoleMessageLevel.Information);
+
+    private void OnTerminalOutput(string text, TerminalInterfaceOutputType type)
+    {
+        if (text.Length > 0)
+        {
+            _log.Add(text, type == TerminalInterfaceOutputType.Error ? ConsoleMessageLevel.Error : ConsoleMessageLevel.Information);
         }
     }
 

@@ -56,7 +56,7 @@ internal sealed class UserInterface : IDisposable
         Overlay = new DebugOverlay(renderer.GpuName, Credits);
 
         // The renderer converts the ImGui colors for an sRGB swapchain before this constructor.
-        Console = new InGameConsole(consoleLog, imGui.LinearColors);
+        Console = new InGameConsole(consoleLog, imGui.LinearColors, LogCategory.Make("Console"));
         _keyCallback = OnKey;
         _window.OnKey += _keyCallback;
     }
