@@ -1,11 +1,7 @@
 <Project>
 
-  <!--
-    Common settings for the projects of the .NET solution.
-    The condition keeps these settings out of the legacy Unity project in Elysian-Outpost/.
-    Remove the condition when the legacy project leaves the repository (#14).
-  -->
-  <PropertyGroup Condition="!$([System.String]::Copy('$(MSBuildProjectDirectory)').StartsWith('$(MSBuildThisFileDirectory)Elysian-Outpost'))">
+  <!-- Common settings for the projects of the .NET solution. -->
+  <PropertyGroup>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
