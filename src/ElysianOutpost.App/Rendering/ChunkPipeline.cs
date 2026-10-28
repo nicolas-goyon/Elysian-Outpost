@@ -56,7 +56,8 @@ internal sealed unsafe class ChunkPipeline : IDisposable
     /// <param name="colorFormat">The format of the swapchain images.</param>
     /// <param name="depthFormat">The format of the depth image.</param>
     /// <param name="lighting">The light of the scene.</param>
-    public ChunkPipeline(GpuContext gpu, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting)
+    /// <param name="compiler">The shader compiler. The pipelines of the renderer use the same compiler, because the first compilation of a compiler is slow.</param>
+    public ChunkPipeline(GpuContext gpu, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting, ShaderCompiler compiler)
     {
         _gpu = gpu;
         var range = new VkPushConstantRange
@@ -73,7 +74,7 @@ internal sealed unsafe class ChunkPipeline : IDisposable
         Layout = gpu.Device.CreatePipelineLayout(in layoutInfo, null);
         try
         {
-            Pipeline = CreatePipeline(gpu.Device, Layout, colorFormat, depthFormat, lighting);
+            Pipeline = CreatePipeline(gpu.Device, Layout, colorFormat, depthFormat, lighting, compiler);
         }
         catch
         {
@@ -114,9 +115,8 @@ internal sealed unsafe class ChunkPipeline : IDisposable
         }
     }
 
-    private static VkPipeline CreatePipeline(Device device, VkPipelineLayout layout, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting)
+    private static VkPipeline CreatePipeline(Device device, VkPipelineLayout layout, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting, ShaderCompiler compiler)
     {
-        using var compiler = new ShaderCompiler();
         VkShaderModule vertexShader = compiler.CreateModule(device, "chunk.vert", ShaderKind.VertexShader);
         VkShaderModule fragmentShader = VkShaderModule.NullHandle;
         try

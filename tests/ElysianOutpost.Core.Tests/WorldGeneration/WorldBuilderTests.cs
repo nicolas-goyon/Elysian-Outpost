@@ -52,6 +52,34 @@ public sealed class WorldBuilderTests
     }
 
     [Fact]
+    public void TryBuildNext_AddsTheVoxelsOfEachChunkToTheVoxelWorld()
+    {
+        var builder = new WorldBuilder(_smallWorld, BlockPalette.Game, default);
+        var generation = new MainGeneration(_smallWorld.ChunkSize, _smallWorld.Seed);
+        Assert.Equal(_smallWorld.ChunkSize, builder.Voxels.ChunkSize);
+
+        while (builder.TryBuildNext(out BuiltChunk chunk))
+        {
+            Assert.Equal(builder.BuiltChunkCount, builder.Voxels.ChunkCount);
+            ushort[,,] expected = generation.GenerateChunkAt(chunk.Position);
+            for (int x = 0; x < expected.GetLength(0); x++)
+            {
+                for (int y = 0; y < expected.GetLength(1); y++)
+                {
+                    for (int z = 0; z < expected.GetLength(2); z++)
+                    {
+                        Assert.Equal(expected[x, y, z], builder.Voxels.GetVoxel(chunk.Position + new int3(x, y, z)));
+                    }
+                }
+            }
+        }
+
+        // A radius of 1 chunk around the origin: from -16 to 16 on the X and Z axes.
+        Assert.Equal(new int3(-16, 0, -16), builder.Voxels.Min);
+        Assert.Equal(new int3(16, 64, 16), builder.Voxels.Max);
+    }
+
+    [Fact]
     public void TryBuildNext_AfterTheLastChunk_ReturnsFalse()
     {
         var builder = new WorldBuilder(_smallWorld, BlockPalette.Game, default);

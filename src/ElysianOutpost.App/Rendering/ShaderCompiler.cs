@@ -18,7 +18,7 @@ namespace ElysianOutpost.App.Rendering;
 /// </para>
 /// <para>
 /// The first compilation of a shaderc compiler takes approximately 100 ms, and the next compilations take a few milliseconds.
-/// Thus use one instance of this class for all the shaders of a pipeline.
+/// Thus use one instance of this class for all the shaders of the renderer.
 /// </para>
 /// </remarks>
 internal sealed unsafe class ShaderCompiler : IDisposable

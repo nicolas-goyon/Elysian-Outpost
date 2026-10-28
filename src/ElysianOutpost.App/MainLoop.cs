@@ -6,6 +6,7 @@ using Brutal.Logging;
 using ElysianOutpost.App.Input;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.App.Ui;
+using ElysianOutpost.Core.Cameras;
 using ElysianOutpost.Core.Simulation;
 using ElysianOutpost.Core.Voxels;
 using ElysianOutpost.Core.WorldGeneration;
@@ -45,7 +46,8 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
     {
         var clock = new FixedStepClock(TicksPerSecond, MaxTicksPerFrame);
         var cameraController = new FreeFlyCameraController(window, InputSettings.Default, LogCategory.Make("Camera"));
-        var world = new WorldLoader(new WorldBuilder(WorldSettings.SampleScene, BlockPalette.Game, default), renderer, LogCategory.Make("World"));
+        var builder = new WorldBuilder(WorldSettings.SampleScene, BlockPalette.Game, default);
+        var world = new WorldLoader(builder, renderer, LogCategory.Make("World"));
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
@@ -70,10 +72,20 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             // During the start screen, the camera input does nothing (BRUTAL License v1.0, section 2.2).
             ui.Update(frameStart);
             bool startScreen = ui.StartScreen.IsActive;
+            VoxelRayHit? target = null;
             if (!startScreen)
             {
                 cameraController.Update(frameStart - previousFrameStart);
+
+                // The voxel at the center of the screen: the camera looks along its forward vector.
+                FreeFlyCamera camera = cameraController.Camera;
+                if (VoxelRay.TryCast(builder.Voxels, camera.Position, camera.Forward, out VoxelRayHit hit))
+                {
+                    target = hit;
+                }
             }
+
+            ui.Overlay.Target = target;
 
             int ticks = clock.Advance(frameStart - previousFrameStart);
             previousFrameStart = frameStart;
@@ -87,7 +99,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
 
             // The world builds also during the start screen, but it shows only after the start screen.
             world.Update(_worldBuildBudget);
-            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen);
+            bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen, target?.Voxel);
             if (presented)
             {
                 reportFrameCount++;
