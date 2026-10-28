@@ -72,6 +72,17 @@ internal sealed unsafe class ChunkMeshes : IDisposable
     public int ChunkCount => _chunks.Count;
 
     /// <summary>
+    /// Gets the number of GPU buffers of the chunks: a vertex buffer and an index buffer for each chunk with quads.
+    /// </summary>
+    public int BufferCount => _chunks.Count * 2;
+
+    /// <summary>
+    /// Gets the size of the GPU buffers of the chunks, in bytes, as the app requested them.
+    /// The memory that VMA uses for these buffers can be a little larger, because of the alignment.
+    /// </summary>
+    public long BufferBytes { get; private set; }
+
+    /// <summary>
     /// Gets the total time of the uploads, from the creation of the staging buffer to the end of the copy on the GPU.
     /// </summary>
     public TimeSpan UploadTime { get; private set; }
@@ -254,6 +265,7 @@ internal sealed unsafe class ChunkMeshes : IDisposable
     {
         _gpu.Allocator.DestroyBuffer(chunk.VertexBuffer, chunk.VertexAllocation);
         _gpu.Allocator.DestroyBuffer(chunk.IndexBuffer, chunk.IndexAllocation);
+        BufferBytes -= chunk.Bytes;
     }
 
     private static long VertexBytes(ChunkMeshData mesh) => (long)mesh.Vertices.Length * ChunkVertex.SizeInBytes;
@@ -287,7 +299,9 @@ internal sealed unsafe class ChunkMeshes : IDisposable
             indexBuffer,
             indexAllocation,
             chunk.Mesh.Indices.Length,
-            new float4(chunk.Position.X, chunk.Position.Y, chunk.Position.Z, 0f)));
+            new float4(chunk.Position.X, chunk.Position.Y, chunk.Position.Z, 0f),
+            vertices.Length + indices.Length));
+        BufferBytes += vertices.Length + indices.Length;
 
         _commandBuffer.CopyBuffer(staging, vertexBuffer, [new VkBufferCopy { SrcOffset = (ByteSize64)offset, DstOffset = default, Size = (ByteSize64)vertices.Length }]);
         _commandBuffer.CopyBuffer(staging, indexBuffer, [new VkBufferCopy { SrcOffset = (ByteSize64)(offset + vertices.Length), DstOffset = default, Size = (ByteSize64)indices.Length }]);
@@ -344,5 +358,6 @@ internal sealed unsafe class ChunkMeshes : IDisposable
         VkBuffer IndexBuffer,
         VmaAllocation IndexAllocation,
         int IndexCount,
-        float4 Position);
+        float4 Position,
+        long Bytes);
 }

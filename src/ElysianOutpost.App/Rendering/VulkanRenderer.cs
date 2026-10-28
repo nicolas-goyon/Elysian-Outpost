@@ -8,6 +8,7 @@ using Brutal.Logging;
 using Brutal.Numerics;
 using Brutal.VulkanApi;
 using Brutal.VulkanApi.Abstractions;
+using Brutal.VulkanApi.Vma;
 using ElysianOutpost.App.Ui;
 using ElysianOutpost.Core.Cameras;
 using ElysianOutpost.Core.Lighting;
@@ -106,6 +107,25 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     /// Gets the lens of the camera: the field of view and the clip planes. The default values are the values of the legacy scene.
     /// </summary>
     public CameraLens Lens { get; } = new();
+
+    /// <summary>
+    /// Calculates the statistics of the GPU memory (#7).
+    /// </summary>
+    /// <returns>The statistics.</returns>
+    /// <remarks>
+    /// VMA goes through all its memory blocks for these values. Thus do not call this method in each frame.
+    /// </remarks>
+    public GpuMemoryStatistics CalculateMemoryStatistics()
+    {
+        _gpu.Allocator.CalculateStatistics(out VmaTotalStatistics total);
+        VmaStatistics statistics = total.Total.Statistics;
+        return new GpuMemoryStatistics(
+            statistics.AllocationCount,
+            (long)statistics.AllocationBytes,
+            (long)statistics.BlockBytes,
+            _chunkMeshes.BufferCount,
+            _chunkMeshes.BufferBytes);
+    }
 
     /// <summary>
     /// Gets the total time of the chunk uploads to the GPU.

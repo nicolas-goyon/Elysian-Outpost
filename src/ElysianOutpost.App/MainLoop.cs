@@ -35,6 +35,9 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
     private static readonly TimeSpan _idleFrameDuration = TimeSpan.FromSeconds(1.0 / TicksPerSecond);
     private static readonly TimeSpan _reportPeriod = TimeSpan.FromSeconds(5);
 
+    // VMA goes through all its memory blocks for the statistics. Thus the loop calculates them only two times in each second.
+    private static readonly TimeSpan _memoryPeriod = TimeSpan.FromSeconds(0.5);
+
     // While the world builds, each frame uses this time for the chunks. Thus the window events and the frames continue.
     private static readonly TimeSpan _worldBuildBudget = TimeSpan.FromMilliseconds(25);
 
@@ -52,6 +55,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
+        TimeSpan? memoryUpdate = null;
         long reportTickCount = 0;
         long reportDroppedTickCount = 0;
         int reportFrameCount = 0;
@@ -87,6 +91,11 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             ui.Overlay.Target = editor.Target;
             ui.Overlay.BlockType = editor.BlockType;
             ui.Overlay.BlockName = editor.BlockName;
+            if (memoryUpdate is not TimeSpan last || frameStart - last >= _memoryPeriod)
+            {
+                ui.Overlay.GpuMemory = renderer.CalculateMemoryStatistics();
+                memoryUpdate = frameStart;
+            }
 
             int ticks = clock.Advance(frameStart - previousFrameStart);
             previousFrameStart = frameStart;
@@ -134,6 +143,8 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
         }
 
         world.LogIfIncomplete();
+        GpuMemoryStatistics memory = renderer.CalculateMemoryStatistics();
+        log.Info($"GPU memory at the end: {memory.AllocationCount} VMA allocations, {memory.AllocationBytes} bytes. Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes} bytes.");
         log.Info($"The main loop stops after {clock.TickCount} ticks.");
     }
 
