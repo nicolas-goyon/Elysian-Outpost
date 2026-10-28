@@ -95,6 +95,11 @@ internal sealed class InGameConsole
 
         // The terminal gives the errors of the command line with this event, for example a wrong number of arguments.
         _window.Terminal.OnOutput += OnTerminalOutput;
+
+        // By default, Enter ends the edit of a text field. Then the console window must activate the command line again,
+        // and ImGui ignores the characters of the next frames. With this value, the command line stays active after Enter.
+        // The app has no other ImGui text field.
+        ImGui.GetIO().ConfigInputTextEnterKeepActive = true;
     }
 
     /// <summary>
