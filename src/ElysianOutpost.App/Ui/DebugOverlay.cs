@@ -54,6 +54,16 @@ internal sealed class DebugOverlay
     public VoxelRayHit? Target { get; set; }
 
     /// <summary>
+    /// Gets or sets the current block type of the voxel edits (#41). The overlay shows it.
+    /// </summary>
+    public ushort BlockType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the current block type.
+    /// </summary>
+    public string BlockName { get; set; } = string.Empty;
+
+    /// <summary>
     /// Adds the times of one frame to the statistics. Call it one time in each frame, before <see cref="Draw"/>.
     /// </summary>
     /// <param name="frameStart">The start of the frame, from the clock of the main loop.</param>
@@ -101,12 +111,15 @@ internal sealed class DebugOverlay
                 ImGui.Text("Target: none"u8);
             }
 
+            ImGui.Text($"Block type: {BlockName} ({BlockType})");
+
             DrawFrameTimeGraph();
             if (ImGui.Button("Credits (F1)"u8))
             {
                 _credits.Open = true;
             }
 
+            ImGui.TextDisabled("Fly mode: left click removes, right click places, wheel changes the block type"u8);
             ImGui.TextDisabled("F3: show or hide this window"u8);
         }
 
