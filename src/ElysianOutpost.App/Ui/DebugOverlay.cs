@@ -3,6 +3,7 @@
 using Brutal.ImGuiApi;
 using Brutal.ImPlotApi;
 using Brutal.Numerics;
+using ElysianOutpost.App.Rendering;
 using ElysianOutpost.Core.Diagnostics;
 using ElysianOutpost.Core.Voxels;
 
@@ -22,6 +23,8 @@ internal sealed class DebugOverlay
 
     // At the limit of 240 frames per second of the main loop, 10 seconds have 2,400 frames.
     private const int HistoryCapacity = 4096;
+
+    private const double BytesPerMebibyte = 1024 * 1024;
 
     private static readonly TimeSpan _statisticsPeriod = TimeSpan.FromSeconds(0.5);
     private static readonly float2 _windowPosition = new(10, 10);
@@ -52,6 +55,11 @@ internal sealed class DebugOverlay
     /// Gets or sets the voxel at the center of the screen (#40), or <c>null</c> if the camera looks at no voxel. The overlay shows it.
     /// </summary>
     public VoxelRayHit? Target { get; set; }
+
+    /// <summary>
+    /// Gets or sets the statistics of the GPU memory (#7), or <c>null</c> before the first calculation. The overlay shows them.
+    /// </summary>
+    public GpuMemoryStatistics? GpuMemory { get; set; }
 
     /// <summary>
     /// Gets or sets the current block type of the voxel edits (#41). The overlay shows it.
@@ -102,6 +110,11 @@ internal sealed class DebugOverlay
             }
 
             ImGui.Text($"GPU: {_gpuName}");
+            if (GpuMemory is GpuMemoryStatistics memory)
+            {
+                ImGui.Text($"GPU memory: {memory.AllocationCount} allocations, {memory.AllocationBytes / BytesPerMebibyte:F1} MiB (VMA blocks: {memory.BlockBytes / BytesPerMebibyte:F1} MiB)");
+                ImGui.Text($"Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes / BytesPerMebibyte:F2} MiB");
+            }
             if (Target is VoxelRayHit target)
             {
                 ImGui.Text($"Target: ({target.Voxel.X}, {target.Voxel.Y}, {target.Voxel.Z}), block {target.BlockType}, face {FaceName(target.Face)}, distance {target.Distance:F1}");

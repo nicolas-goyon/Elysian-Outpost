@@ -133,7 +133,9 @@ internal sealed class VoxelEditor
 
         long meshed = Stopwatch.GetTimestamp();
         _renderer.AddChunks(CollectionsMarshal.AsSpan(_rebuiltChunks));
-        _log.Info($"{edits} edit(s) changed {_changedChunks.Count} chunk(s). Meshing: {Stopwatch.GetElapsedTime(start, meshed).TotalMilliseconds:F1} ms. Upload to the GPU: {Stopwatch.GetElapsedTime(meshed).TotalMilliseconds:F1} ms.");
+        double uploadMilliseconds = Stopwatch.GetElapsedTime(meshed).TotalMilliseconds;
+        GpuMemoryStatistics memory = _renderer.CalculateMemoryStatistics();
+        _log.Info($"{edits} edit(s) changed {_changedChunks.Count} chunk(s). Meshing: {Stopwatch.GetElapsedTime(start, meshed).TotalMilliseconds:F1} ms. Upload to the GPU: {uploadMilliseconds:F1} ms. GPU memory: {memory.AllocationCount} VMA allocations, {memory.AllocationBytes} bytes. Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes} bytes.");
     }
 
     private VoxelRayHit? Cast(FreeFlyCamera camera) =>
