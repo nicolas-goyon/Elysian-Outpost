@@ -20,6 +20,11 @@ namespace ElysianOutpost.App.Input;
 /// In fly mode, the cursor is hidden and locked, as <c>CursorLockMode.Locked</c>.
 /// In menu mode, the cursor is visible and stays in the window, as <c>CursorLockMode.Confined</c>.
 /// </para>
+/// <para>
+/// While ImGui has the keyboard, for example while the in-game console is open (#37), the controller ignores the keys.
+/// Then the camera is in menu mode, as the legacy console sets it. Thus the mouse does not turn the camera.
+/// When ImGui releases the keyboard, the controller sets the mode that the camera had before.
+/// </para>
 /// </remarks>
 internal sealed class FreeFlyCameraController
 {
@@ -33,6 +38,9 @@ internal sealed class FreeFlyCameraController
     private GlfwKey _menuKey;
     private string? _menuKeyName;
     private bool _menuKeyWasDown;
+
+    // True while ImGui has the keyboard and the controller changed fly mode to menu mode.
+    private bool _flyAfterCapture;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FreeFlyCameraController"/> class, in menu mode.
@@ -91,7 +99,8 @@ internal sealed class FreeFlyCameraController
     /// Reads the input and updates the camera. Call this method one time in each frame, after <c>Glfw.PollEvents</c>.
     /// </summary>
     /// <param name="frameTime">The time since the previous frame.</param>
-    public void Update(TimeSpan frameTime)
+    /// <param name="keyboardCaptured"><c>true</c> if ImGui has the keyboard. Then the controller ignores the keys and keeps menu mode.</param>
+    public void Update(TimeSpan frameTime, bool keyboardCaptured)
     {
         // The keyboard layout can change at any time. Then the name of the menu key changes, and the controller finds the key again,
         // as the legacy binding #(M). One call of glfwGetKeyName in each frame is sufficient for this check.
@@ -100,9 +109,22 @@ internal sealed class FreeFlyCameraController
             FindMenuKey();
         }
 
+        if (keyboardCaptured && Mode == CameraMode.Fly)
+        {
+            _flyAfterCapture = true;
+            SetMode(CameraMode.Menu);
+        }
+        else if (!keyboardCaptured && _flyAfterCapture)
+        {
+            _flyAfterCapture = false;
+            SetMode(CameraMode.Fly);
+        }
+
         bool focused = IsFocused();
+
+        // The controller also records the menu key while ImGui has the keyboard. Thus a key that is held down does not change the mode later.
         bool menuKeyDown = IsDown(_menuKey);
-        if (menuKeyDown && !_menuKeyWasDown)
+        if (menuKeyDown && !_menuKeyWasDown && !keyboardCaptured)
         {
             SetMode(Mode == CameraMode.Menu ? CameraMode.Fly : CameraMode.Menu);
         }

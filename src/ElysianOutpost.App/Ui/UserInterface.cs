@@ -19,7 +19,11 @@ namespace ElysianOutpost.App.Ui;
 /// <para>
 /// During the start screen, the ImGui frame has only the logo, and the keys and the mouse do nothing.
 /// After the start screen, F3 shows and hides the debug overlay, and F1 shows and hides the credits window.
-/// The console key opens and closes the in-game console. While the console is open, F1 and F3 do nothing.
+/// The console key opens and closes the in-game console.
+/// </para>
+/// <para>
+/// While the console is open or an ImGui text field is active, the keyboard is for ImGui (see <see cref="KeyboardCaptured"/>).
+/// Then F1, F3 and the keys of the camera do nothing. Only the console key continues to operate.
 /// </para>
 /// <para>
 /// When no ImGui part is visible, the app does not start ImGui frames, and ImGui does not receive the input events.
@@ -36,6 +40,7 @@ internal sealed class UserInterface : IDisposable
     private TimeSpan _buildTime;
     private TimeSpan _previousFrameStart;
     private float _frameSeconds;
+    private bool _imGuiWantsKeyboard;
     private bool _disposed;
 
     /// <summary>
@@ -82,6 +87,12 @@ internal sealed class UserInterface : IDisposable
     public InGameConsole Console { get; }
 
     /// <summary>
+    /// Gets a value that tells if the keyboard is for ImGui: the console is open, or an ImGui text field was active in the last ImGui frame.
+    /// Then the other parts of the app must ignore the keys.
+    /// </summary>
+    public bool KeyboardCaptured => Console.IsOpen || _imGuiWantsKeyboard;
+
+    /// <summary>
     /// Ends the start screen after its minimum time. Call it at the start of each frame, before the input of the camera.
     /// </summary>
     /// <param name="frameStart">The start of the frame, from the clock of the main loop.</param>
@@ -116,6 +127,7 @@ internal sealed class UserInterface : IDisposable
         _imGui.InputEnabled = windows;
         if (!startScreen && !windows)
         {
+            _imGuiWantsKeyboard = false;
             _buildTime = TimeSpan.Zero;
             return default;
         }
@@ -141,6 +153,7 @@ internal sealed class UserInterface : IDisposable
         }
 
         ImDrawDataPtr drawData = _imGui.Render();
+        _imGuiWantsKeyboard = ImGui.GetIO().WantCaptureKeyboard;
         _buildTime = Stopwatch.GetElapsedTime(start);
         return drawData;
     }
@@ -195,9 +208,9 @@ internal sealed class UserInterface : IDisposable
         {
             Console.Toggle();
         }
-        else if (Console.IsOpen)
+        else if (KeyboardCaptured)
         {
-            // The console window has the keyboard. Its command line receives the characters through ImGui.
+            // ImGui has the keyboard, for example the command line of the console. It receives the characters through its own events.
             return;
         }
         else if (key == GlfwKey.F3)

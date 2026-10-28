@@ -75,7 +75,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             bool startScreen = ui.StartScreen.IsActive;
             if (!startScreen)
             {
-                cameraController.Update(frameStart - previousFrameStart);
+                cameraController.Update(frameStart - previousFrameStart, ui.KeyboardCaptured);
             }
 
             // The voxel edits change the world only in fly mode, because the cursor is free in menu mode.
