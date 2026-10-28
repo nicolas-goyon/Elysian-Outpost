@@ -9,6 +9,7 @@ using ElysianOutpost.App;
 using ElysianOutpost.App.Logging;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.App.Ui;
+using ElysianOutpost.Core.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 // The option "--exit-after <seconds>" closes the window after a time limit, for automatic tests.
@@ -33,9 +34,12 @@ else if (args.Length > 0)
 string logFile = Path.Combine(AppContext.BaseDirectory, "logs", "app.log");
 using var consoleSink = new TextWriterLoggerProvider(Console.Out, ownsWriter: false);
 using TextWriterLoggerProvider? fileSink = OpenLogFile(logFile, out string? logFileError);
+
+// The in-game console shows the log messages of all threads (#37).
+var consoleLog = new ConsoleLog();
 LogSystem.Initialize(builder =>
 {
-    builder.SetMinimumLevel(LogLevel.Information).AddProvider(consoleSink);
+    builder.SetMinimumLevel(LogLevel.Information).AddProvider(consoleSink).AddProvider(new ConsoleLogLoggerProvider(consoleLog));
     if (fileSink is not null)
     {
         builder.AddProvider(fileSink);
