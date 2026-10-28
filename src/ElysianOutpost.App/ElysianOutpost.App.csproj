@@ -18,6 +18,8 @@
     <!-- Dear ImGui and ImPlot for the debug overlay (#36). The backends package also brings Ahwoo.BRUTAL.OpenGl, which the app does not use. -->
     <PackageReference Include="Ahwoo.BRUTAL.ImGui" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.ImGui.Backends" Version="2026.10.2" />
+    <!-- The console window and the terminal commands of the in-game console (#37). This package also brings System.CommandLine. -->
+    <PackageReference Include="Ahwoo.BRUTAL.ImGui.Abstractions" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.ImPlot" Version="2026.10.2" />
     <PackageReference Include="Ahwoo.BRUTAL.Logging" Version="2026.10.2" />
     <!-- The shader compiler (shaderc) compiles the GLSL shaders of the chunk renderer at the start of the app (#39). -->

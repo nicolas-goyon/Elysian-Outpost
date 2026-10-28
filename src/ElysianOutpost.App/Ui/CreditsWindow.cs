@@ -29,6 +29,7 @@ internal sealed class CreditsWindow
     [
         (".NET runtime and libraries (Microsoft)", "MIT"),
         ("CommunityToolkit.HighPerformance (.NET Foundation)", "MIT"),
+        ("System.CommandLine (Microsoft)", "MIT"),
         ("GLFW 3.5.1", "Zlib"),
         ("SDL_GameControllerDB (in GLFW)", "Zlib"),
         ("Wayland protocol descriptions (in GLFW, Linux)", "MIT, HPND-sell-variant"),

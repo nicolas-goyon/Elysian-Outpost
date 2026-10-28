@@ -5,17 +5,21 @@ using Brutal.GlfwApi;
 using Brutal.ImGuiApi;
 using Brutal.Logging;
 using Brutal.StbApi;
+using ElysianOutpost.App.Input;
 using ElysianOutpost.App.Rendering;
+using ElysianOutpost.Core.Diagnostics;
 
 namespace ElysianOutpost.App.Ui;
 
 /// <summary>
-/// The ImGui parts of the app: the start screen, the debug overlay and the credits window. This class builds their ImGui frames.
+/// The ImGui parts of the app: the start screen, the debug overlay, the credits window and the in-game console.
+/// This class builds their ImGui frames.
 /// </summary>
 /// <remarks>
 /// <para>
 /// During the start screen, the ImGui frame has only the logo, and the keys and the mouse do nothing.
 /// After the start screen, F3 shows and hides the debug overlay, and F1 shows and hides the credits window.
+/// The console key opens and closes the in-game console. While the console is open, F1 and F3 do nothing.
 /// </para>
 /// <para>
 /// When no ImGui part is visible, the app does not start ImGui frames, and ImGui does not receive the input events.
@@ -28,24 +32,31 @@ internal sealed class UserInterface : IDisposable
     private readonly GlfwWindow _window;
     private readonly ImGuiHost _imGui;
     private readonly GlfwKeyCallback _keyCallback;
+    private readonly GlfwKey _consoleKey = InputSettings.Default.ConsoleKey;
     private TimeSpan _buildTime;
+    private TimeSpan _previousFrameStart;
+    private float _frameSeconds;
     private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UserInterface"/> class. It loads the BRUTAL logo to the GPU.
     /// </summary>
-    /// <param name="window">The window. The class reads the F1 and F3 keys from it.</param>
+    /// <param name="window">The window. The class reads the F1 key, the F3 key and the console key from it.</param>
     /// <param name="imGui">The ImGui host that starts and ends the ImGui frames.</param>
     /// <param name="renderer">The renderer. It keeps the texture of the logo.</param>
+    /// <param name="consoleLog">The log of the in-game console. Use <see cref="InGameConsole.CreateLog"/> to make it.</param>
     /// <param name="log">The log category of the user interface.</param>
     /// <exception cref="InvalidDataException">The logo resource is missing, or stb_image cannot decode it.</exception>
-    public UserInterface(GlfwWindow window, ImGuiHost imGui, VulkanRenderer renderer, LogCategory log)
+    public UserInterface(GlfwWindow window, ImGuiHost imGui, VulkanRenderer renderer, ConsoleLog consoleLog, LogCategory log)
     {
         _window = window;
         _imGui = imGui;
         StartScreen = new StartScreen(LoadLogo(renderer), log);
         Credits = new CreditsWindow();
         Overlay = new DebugOverlay(renderer.GpuName, Credits);
+
+        // The renderer converts the ImGui colors for an sRGB swapchain before this constructor.
+        Console = new InGameConsole(consoleLog, imGui.LinearColors);
         _keyCallback = OnKey;
         _window.OnKey += _keyCallback;
     }
@@ -66,10 +77,20 @@ internal sealed class UserInterface : IDisposable
     public CreditsWindow Credits { get; }
 
     /// <summary>
+    /// Gets the in-game console.
+    /// </summary>
+    public InGameConsole Console { get; }
+
+    /// <summary>
     /// Ends the start screen after its minimum time. Call it at the start of each frame, before the input of the camera.
     /// </summary>
     /// <param name="frameStart">The start of the frame, from the clock of the main loop.</param>
-    public void Update(TimeSpan frameStart) => StartScreen.Update(frameStart);
+    public void Update(TimeSpan frameStart)
+    {
+        _frameSeconds = (float)(frameStart - _previousFrameStart).TotalSeconds;
+        _previousFrameStart = frameStart;
+        StartScreen.Update(frameStart);
+    }
 
     /// <summary>
     /// Adds the times of one frame to the statistics of the overlay. Call it one time in each frame, before <see cref="BuildFrame"/>.
@@ -86,10 +107,12 @@ internal sealed class UserInterface : IDisposable
     /// <returns>The draw data for the renderer, or a null pointer if no part is visible.</returns>
     public ImDrawDataPtr BuildFrame()
     {
+        // The console log receives messages also when the console is closed. Thus the console window takes them in each frame.
+        Console.Update();
         bool startScreen = StartScreen.IsActive;
-        bool windows = !startScreen && (Overlay.Visible || Credits.Open);
+        bool windows = !startScreen && (Overlay.Visible || Credits.Open || Console.IsOpen);
 
-        // The start screen has no ImGui window. Thus ImGui receives the input events only for the overlay and the credits.
+        // The start screen has no ImGui window. Thus ImGui receives the input events only for the overlay, the credits and the console.
         _imGui.InputEnabled = windows;
         if (!startScreen && !windows)
         {
@@ -111,6 +134,10 @@ internal sealed class UserInterface : IDisposable
             }
 
             Credits.Draw();
+            if (Console.IsOpen)
+            {
+                Console.Draw(_frameSeconds);
+            }
         }
 
         ImDrawDataPtr drawData = _imGui.Render();
@@ -164,7 +191,16 @@ internal sealed class UserInterface : IDisposable
             return;
         }
 
-        if (key == GlfwKey.F3)
+        if (key == _consoleKey)
+        {
+            Console.Toggle();
+        }
+        else if (Console.IsOpen)
+        {
+            // The console window has the keyboard. Its command line receives the characters through ImGui.
+            return;
+        }
+        else if (key == GlfwKey.F3)
         {
             Overlay.Visible = !Overlay.Visible;
         }

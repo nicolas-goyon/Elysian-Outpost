@@ -10,7 +10,7 @@ namespace ElysianOutpost.App.Input;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The movement keys and the speed keys are physical keys. GLFW names a physical key after its position on a US keyboard.
+/// The movement keys, the speed keys and the console key are physical keys. GLFW names a physical key after its position on a US keyboard.
 /// Thus these keys are at the same positions on all keyboard layouts. On an AZERTY keyboard, the movement keys are Z, Q, S, D, A and E.
 /// </para>
 /// <para>
@@ -83,6 +83,14 @@ internal sealed record InputSettings
     /// Gets the mouse button that places a voxel before the voxel at the screen center, in fly mode (#41).
     /// </summary>
     public GlfwMouseButton PlaceVoxelButton { get; init; } = GlfwMouseButton.Right;
+
+    /// <summary>
+    /// Gets the physical key that opens and closes the in-game console (#37), as the legacy binding <c>Keyboard/rightBracket</c>.
+    /// </summary>
+    /// <remarks>
+    /// The key is the key "]" of a US keyboard. On an AZERTY keyboard, it is the key "$".
+    /// </remarks>
+    public GlfwKey ConsoleKey { get; init; } = GlfwKey.RightBracket;
 
     /// <summary>
     /// Gets the control values of the camera: the speeds, the mouse sensitivity and the pitch limits.

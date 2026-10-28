@@ -36,7 +36,7 @@ using var consoleSink = new TextWriterLoggerProvider(Console.Out, ownsWriter: fa
 using TextWriterLoggerProvider? fileSink = OpenLogFile(logFile, out string? logFileError);
 
 // The in-game console shows the log messages of all threads (#37).
-var consoleLog = new ConsoleLog();
+ConsoleLog consoleLog = InGameConsole.CreateLog();
 LogSystem.Initialize(builder =>
 {
     builder.SetMinimumLevel(LogLevel.Information).AddProvider(consoleSink).AddProvider(new ConsoleLogLoggerProvider(consoleLog));
@@ -97,7 +97,7 @@ try
         // The renderer uses the surface of the window and the ImGui context. It keeps the texture of the logo.
         using var imGui = new ImGuiHost(window);
         using var renderer = new VulkanRenderer(window, imGui, LogCategory.Make("Renderer"));
-        using var ui = new UserInterface(window, imGui, renderer, LogCategory.Make("Ui"));
+        using var ui = new UserInterface(window, imGui, renderer, consoleLog, LogCategory.Make("Ui"));
         new MainLoop(window, renderer, ui, log, timeLimit).Run();
     }
     finally
