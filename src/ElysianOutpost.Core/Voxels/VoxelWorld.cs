@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+using System.Diagnostics.CodeAnalysis;
 using Brutal.Numerics;
 
 namespace ElysianOutpost.Core.Voxels;
@@ -109,14 +110,49 @@ public sealed class VoxelWorld
     /// <returns>The block type, or 0 (empty) if no chunk contains the position.</returns>
     public ushort GetVoxel(int3 position)
     {
-        int3 chunk = new(
-            FloorToMultiple(position.X, ChunkSize.X),
-            FloorToMultiple(position.Y, ChunkSize.Y),
-            FloorToMultiple(position.Z, ChunkSize.Z));
+        int3 chunk = GetChunkPosition(position);
         return _chunks.TryGetValue(chunk, out ushort[,,]? voxels)
             ? voxels[position.X - chunk.X, position.Y - chunk.Y, position.Z - chunk.Z]
             : (ushort)0;
     }
+
+    /// <summary>
+    /// Changes the block type of the voxel at a world position.
+    /// </summary>
+    /// <param name="position">The world position of the voxel.</param>
+    /// <param name="blockType">The new block type. 0 removes the voxel.</param>
+    /// <param name="chunkPosition">The position of the chunk that contains the voxel. The mesh of this chunk must change.</param>
+    /// <returns><c>true</c> if a chunk contains the position. <c>false</c> if no chunk contains it. Then the world does not change.</returns>
+    public bool TrySetVoxel(int3 position, ushort blockType, out int3 chunkPosition)
+    {
+        chunkPosition = GetChunkPosition(position);
+        if (!_chunks.TryGetValue(chunkPosition, out ushort[,,]? voxels))
+        {
+            return false;
+        }
+
+        voxels[position.X - chunkPosition.X, position.Y - chunkPosition.Y, position.Z - chunkPosition.Z] = blockType;
+        return true;
+    }
+
+    /// <summary>
+    /// Gets the voxels of a chunk.
+    /// </summary>
+    /// <param name="chunkPosition">The position of the chunk: the world position of its first voxel.</param>
+    /// <param name="voxels">The block types of the chunk, with the indices [x, y, z]. The world keeps this array. Do not change it.</param>
+    /// <returns><c>true</c> if the world has a chunk at this position.</returns>
+    public bool TryGetChunk(int3 chunkPosition, [NotNullWhen(true)] out ushort[,,]? voxels) =>
+        _chunks.TryGetValue(chunkPosition, out voxels);
+
+    /// <summary>
+    /// Gives the position of the chunk that contains a world position, also if the world has no chunk there.
+    /// </summary>
+    /// <param name="position">The world position of a voxel.</param>
+    /// <returns>The world position of the first voxel of the chunk.</returns>
+    public int3 GetChunkPosition(int3 position) => new(
+        FloorToMultiple(position.X, ChunkSize.X),
+        FloorToMultiple(position.Y, ChunkSize.Y),
+        FloorToMultiple(position.Z, ChunkSize.Z));
 
     /// <summary>
     /// Gets a value that tells if the voxel at a world position is solid: its block type is not 0.

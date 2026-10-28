@@ -80,6 +80,36 @@ public sealed class WorldBuilderTests
     }
 
     [Fact]
+    public void RebuildChunk_GivesTheMeshOfTheChangedVoxels()
+    {
+        var builder = new WorldBuilder(_smallWorld, BlockPalette.Game, default);
+        Assert.True(builder.TryBuildNext(out BuiltChunk built));
+
+        // Without a change, the mesh is the same.
+        BuiltChunk same = builder.RebuildChunk(built.Position);
+        Assert.Equal(built.Position, same.Position);
+        Assert.Equal(built.Mesh.Vertices, same.Mesh.Vertices);
+
+        // A change of the voxels changes the mesh in the same way as the mesher.
+        int3 voxel = built.Position + new int3(3, 63, 5);
+        Assert.True(builder.Voxels.TrySetVoxel(voxel, 22, out int3 chunk));
+        Assert.Equal(built.Position, chunk);
+        BuiltChunk changed = builder.RebuildChunk(chunk);
+        Assert.True(builder.Voxels.TryGetChunk(chunk, out ushort[,,]? voxels));
+        var expected = ChunkMeshData.Build(new DisjointSetMeshOptimizer(new Mesh()).Optimize(new Chunk(voxels, chunk)).Quads, BlockPalette.Game);
+        Assert.Equal(expected.Vertices, changed.Mesh.Vertices);
+        Assert.Equal(expected.Indices, changed.Mesh.Indices);
+        Assert.NotEqual(built.Mesh.QuadCount, changed.Mesh.QuadCount);
+    }
+
+    [Fact]
+    public void RebuildChunk_OfAChunkThatTheBuilderDidNotMake_Throws()
+    {
+        var builder = new WorldBuilder(_smallWorld, BlockPalette.Game, default);
+        Assert.Throws<ArgumentException>(() => builder.RebuildChunk(default));
+    }
+
+    [Fact]
     public void TryBuildNext_AfterTheLastChunk_ReturnsFalse()
     {
         var builder = new WorldBuilder(_smallWorld, BlockPalette.Game, default);
