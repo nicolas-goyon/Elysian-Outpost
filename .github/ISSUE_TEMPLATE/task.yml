@@ -1,0 +1,54 @@
+name: Task
+description: A feature, a document, a chore, a port, a test, a refactor, a performance change or a research task.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write in STE100: active voice, one instruction in each sentence, a maximum of 20 words in an instruction, no semicolons, no phrasal verbs. See the [style guide](https://github.com/nicolas-goyon/Elysian-Outpost/blob/HEAD/docs/STYLE.md).
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Give the facts that the reader needs, with file paths and links.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Give the result in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: Write numbered steps. Write one instruction in each step.
+      placeholder: |
+        1. Add the file `docs/example.md`.
+        2. Write the section "Goal".
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Write the checks that show that the work is complete.
+      placeholder: |
+        - [ ] The file `docs/example.md` exists.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Give the work that this issue does not include. This field is optional.
+    validations:
+      required: false
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Give the links and the related issues. This field is optional.
+    validations:
+      required: false

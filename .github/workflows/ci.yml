@@ -1,0 +1,51 @@
+# CI of the .NET solution (#11): build, test and format check on Linux and Windows.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the .NET SDK from global.json
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore ElysianOutpost.sln
+
+      - name: Build
+        run: dotnet build ElysianOutpost.sln --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test ElysianOutpost.sln --no-build --configuration Release
+
+      # The format check runs on Linux only. The result does not depend on the operating system.
+      - name: Check the format
+        if: runner.os == 'Linux'
+        run: dotnet format ElysianOutpost.sln --verify-no-changes --no-restore

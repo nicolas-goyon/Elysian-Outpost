@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: MPL-2.0
+
+namespace ElysianOutpost.Core.WorldGeneration;
+
+public class FrequencyLayer
+{
+    private readonly float _frequency;     // fréquence du bruit (ex: 0.01)
+    private readonly float _amplitude;     // poids de cette couche dans la heightmap
+    private readonly float _terraceSteps;    // nombre de marches pour le pallier de cette couche
+    private readonly PerlinNoise _noise;
+    private readonly int _roundPositionDigits;
+
+    /**
+     * FréquenceLayer représente une couche de bruit avec une fréquence, une amplitude, et des options de pallier et d'arrondi.
+     * @param frequency Fréquence du bruit
+     * @param amplitude Amplitude (poids) de cette couche
+     * @param noise Instance de PerlinNoise à utiliser
+     * @param terraceSteps Nombre de marches pour le pallier (1 = pas de pallier)
+     * @param roundPositionDigits Nombre de chiffres pour arrondir les positions (1 = pas d'arrondi) (créer des motifs carrés)
+     */
+    public FrequencyLayer(float frequency, float amplitude, PerlinNoise noise, float terraceSteps = 0, int roundPositionDigits = 1)
+    {
+        this._frequency = frequency;
+        this._amplitude = amplitude;
+        this._terraceSteps = terraceSteps;
+        this._noise = noise;
+        this._roundPositionDigits = roundPositionDigits;
+    }
+
+    /**
+     * Applique un “pallier” simple sur une valeur [0,1] en N marches
+     */
+    private static float ApplyTerrace01(float v, float steps)
+    {
+        v = Math.Clamp(v, 0f, 1f);
+        if (steps <= 1) return v;
+
+        float level = MathF.Round(v * (steps - 1));
+        return level / (steps - 1);
+    }
+
+    // Calcule la hauteur normalisée [0,1] à partir de toutes les couches
+    public (float ampNoised, float baseAmplitude) GetHeight01At(int worldX, int worldZ)
+    {
+
+        float x = MathF.Round(((float)worldX) / _roundPositionDigits) * _roundPositionDigits;
+        float z = MathF.Round(((float)worldZ) / _roundPositionDigits) * _roundPositionDigits;
+
+        float n = _noise.Noise(x * _frequency, z * _frequency); // [0,1]
+
+        n = _terraceSteps > 0 ? ApplyTerrace01(n, _terraceSteps) : n;
+
+        return (n * _amplitude, _amplitude);
+    }
+}
