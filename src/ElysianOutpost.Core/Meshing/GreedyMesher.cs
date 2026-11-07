@@ -39,6 +39,7 @@ namespace ElysianOutpost.Core.Meshing;
 public sealed class GreedyMesher
 {
     private ushort[] _mask = [];
+    private ushort[] _border = [];
 
     /// <summary>
     /// Makes the quads of a chunk. All the voxels outside the chunk are air.
@@ -50,7 +51,7 @@ public sealed class GreedyMesher
     {
         ArgumentNullException.ThrowIfNull(chunk);
         var quads = new List<MeshQuad>();
-        Mesh(chunk.VoxelData, (int)chunk.XDepth, (int)chunk.YDepth, (int)chunk.ZDepth, null, default, quads);
+        Mesh(chunk.VoxelData, new ChunkSize((int)chunk.XDepth, (int)chunk.YDepth, (int)chunk.ZDepth), null, default, null, quads);
         return quads;
     }
 
@@ -84,8 +85,97 @@ public sealed class GreedyMesher
         }
 
         var quads = new List<MeshQuad>();
-        Mesh(AsSpan(voxels), voxels.GetLength(0), voxels.GetLength(1), voxels.GetLength(2), world, chunkPosition, quads);
+        Mesh(AsSpan(voxels), new ChunkSize(voxels.GetLength(0), voxels.GetLength(1), voxels.GetLength(2)), world, chunkPosition, null, quads);
         return quads;
+    }
+
+    /// <summary>
+    /// Makes the quads of a chunk snapshot: an immutable copy of the voxels of a chunk and of the borders of its neighbors (#47).
+    /// A worker thread can call this method while the main thread changes the world.
+    /// </summary>
+    /// <param name="snapshot">The snapshot.</param>
+    /// <returns>A new list with the quads, in chunk coordinates.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="snapshot"/> is <c>null</c>.</exception>
+    public List<MeshQuad> Mesh(ChunkSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        var quads = new List<MeshQuad>();
+        int3 size = snapshot.Size;
+        Mesh(snapshot.Voxels, new ChunkSize(size.X, size.Y, size.Z), null, default, snapshot, quads);
+        return quads;
+    }
+
+    /// <summary>
+    /// Gets the number of voxels of the border layer of a direction: the layer of the neighbor chunk that touches the chunk.
+    /// </summary>
+    /// <param name="size">The chunk size.</param>
+    /// <param name="direction">The index of the direction, from 0 to 5, in the order −X, +X, −Y, +Y, −Z, +Z.</param>
+    /// <returns>The number of voxels of the layer.</returns>
+    internal static int BorderLength(int3 size, int direction) => direction switch
+    {
+        0 or 1 => size.Y * size.Z,
+        2 or 3 => size.X * size.Z,
+        _ => size.X * size.Y,
+    };
+
+    /// <summary>
+    /// Gets the offset from a chunk to its neighbor chunk in a direction.
+    /// </summary>
+    /// <param name="size">The chunk size.</param>
+    /// <param name="direction">The index of the direction, from 0 to 5, in the order −X, +X, −Y, +Y, −Z, +Z.</param>
+    /// <returns>The offset in voxels.</returns>
+    internal static int3 NeighborOffset(int3 size, int direction) => new ChunkSize(size.X, size.Y, size.Z).NeighborOffset(_directions[direction]);
+
+    /// <summary>
+    /// Copies the border layer of a neighbor chunk: the layer that touches the chunk in a direction.
+    /// </summary>
+    /// <param name="neighbor">The block types of the neighbor chunk, with the indices [x, y, z].</param>
+    /// <param name="direction">The index of the direction, from 0 to 5, in the order −X, +X, −Y, +Y, −Z, +Z.</param>
+    /// <param name="destination">The span that receives the layer. Its length is <see cref="BorderLength"/>.</param>
+    internal static void CopyBorder(ushort[,,] neighbor, int direction, Span<ushort> destination)
+    {
+        var size = new ChunkSize(neighbor.GetLength(0), neighbor.GetLength(1), neighbor.GetLength(2));
+        CopyBorder(AsSpan(neighbor), size, _directions[direction], destination);
+    }
+
+    // The layer of the neighbor that touches the chunk: its first layer on the positive side, its last layer on the negative side.
+    // The index of a voxel in the layer uses the two other coordinates. See ChunkSize.BorderIndex.
+    private static void CopyBorder(ReadOnlySpan<ushort> neighbor, ChunkSize size, Direction direction, Span<ushort> destination)
+    {
+        switch (direction.Axis)
+        {
+            case Axis.X:
+                {
+                    int x = direction.Descending ? 0 : size.X - 1;
+                    neighbor.Slice(size.Index(x, 0, 0), size.Y * size.Z).CopyTo(destination);
+                    break;
+                }
+
+            case Axis.Y:
+                {
+                    int y = direction.Descending ? 0 : size.Y - 1;
+                    for (int x = 0; x < size.X; x++)
+                    {
+                        neighbor.Slice(size.Index(x, y, 0), size.Z).CopyTo(destination.Slice(x * size.Z, size.Z));
+                    }
+
+                    break;
+                }
+
+            default:
+                {
+                    int z = direction.Descending ? 0 : size.Z - 1;
+                    for (int x = 0; x < size.X; x++)
+                    {
+                        for (int y = 0; y < size.Y; y++)
+                        {
+                            destination[(x * size.Y) + y] = neighbor[size.Index(x, y, z)];
+                        }
+                    }
+
+                    break;
+                }
+        }
     }
 
     // A ushort[x, y, z] array is one block of memory, in the same order as the index of Chunk.
@@ -93,26 +183,41 @@ public sealed class GreedyMesher
         ? []
         : MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetArrayDataReference(voxels)), voxels.Length);
 
-    private void Mesh(ReadOnlySpan<ushort> voxels, int sizeX, int sizeY, int sizeZ, VoxelWorld? world, int3 chunkPosition, List<MeshQuad> quads)
+    // The borders come from the snapshot, or from the world, or they are air.
+    private void Mesh(ReadOnlySpan<ushort> voxels, ChunkSize size, VoxelWorld? world, int3 chunkPosition, ChunkSnapshot? snapshot, List<MeshQuad> quads)
     {
         if (voxels.IsEmpty)
         {
             return;
         }
 
-        var size = new ChunkSize(sizeX, sizeY, sizeZ);
-        foreach (Direction direction in _directions)
+        for (int index = 0; index < _directions.Length; index++)
         {
+            Direction direction = _directions[index];
             (int width, int height, int depth) = size.Plane(direction.Axis);
             if (_mask.Length < width * height)
             {
                 _mask = new ushort[width * height];
             }
 
-            // The neighbor chunk on the side of the faces of this direction. Its voxels hide the faces of the border slice.
-            ReadOnlySpan<ushort> neighbor = world is not null && world.TryGetChunk(chunkPosition + size.NeighborOffset(direction), out ushort[,,]? neighborVoxels)
-                ? AsSpan(neighborVoxels)
-                : [];
+            // The border layer of the neighbor chunk on the side of the faces of this direction. Its voxels hide the faces of the border slice.
+            ReadOnlySpan<ushort> neighbor = [];
+            if (snapshot is not null)
+            {
+                neighbor = snapshot.GetBorder(index);
+            }
+            else if (world is not null && world.TryGetChunk(chunkPosition + size.NeighborOffset(direction), out ushort[,,]? neighborVoxels))
+            {
+                int length = width * height;
+                if (_border.Length < length)
+                {
+                    _border = new ushort[length];
+                }
+
+                CopyBorder(AsSpan(neighborVoxels), size, direction, _border.AsSpan(0, length));
+                neighbor = _border.AsSpan(0, length);
+            }
+
             Span<ushort> mask = _mask.AsSpan(0, width * height);
             for (int slice = 0; slice < depth; slice++)
             {
@@ -160,8 +265,7 @@ public sealed class GreedyMesher
     }
 
     // An ascending direction shows the negative face of a voxel, and a descending direction the positive face (legacy mesher).
-    // Outside the chunk, the neighbor voxel is in the neighbor chunk: at the same position, minus or plus one chunk size on the axis.
-    // An empty span is a neighbor chunk of air.
+    // Outside the chunk, the neighbor voxel is in the border layer of the neighbor chunk. An empty span is a neighbor chunk of air.
     private static bool IsNeighborTransparent(ReadOnlySpan<ushort> voxels, ReadOnlySpan<ushort> neighbor, ChunkSize size, Direction direction, int x, int y, int z)
     {
         int step = direction.Descending ? 1 : -1;
@@ -183,7 +287,7 @@ public sealed class GreedyMesher
             return voxels[size.Index(x, y, z)] == 0;
         }
 
-        return neighbor.IsEmpty || neighbor[size.Index((x + size.X) % size.X, (y + size.Y) % size.Y, (z + size.Z) % size.Z)] == 0;
+        return neighbor.IsEmpty || neighbor[size.BorderIndex(direction.Axis, x, y, z)] == 0;
     }
 
     // Merges the faces of the mask into rectangles, and writes one quad for each rectangle.
@@ -307,6 +411,15 @@ public sealed class GreedyMesher
     private readonly record struct ChunkSize(int X, int Y, int Z)
     {
         public int Index(int x, int y, int z) => (((x * Y) + y) * Z) + z;
+
+        // The index of a voxel in a border layer. The coordinate on the axis of the direction is outside the chunk, thus the index uses the two others.
+        // The plane width × height of each axis (see Plane) is also the length of the layer.
+        public int BorderIndex(Axis axis, int x, int y, int z) => axis switch
+        {
+            Axis.X => (y * Z) + z,
+            Axis.Y => (x * Z) + z,
+            _ => (x * Y) + y,
+        };
 
         // The offset from the chunk to its neighbor chunk on the side of the faces of a direction.
         public int3 NeighborOffset(Direction direction)
