@@ -6,6 +6,7 @@ using Brutal.Logging;
 using ElysianOutpost.App.Input;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.App.Ui;
+using ElysianOutpost.Core.Diagnostics;
 using ElysianOutpost.Core.Simulation;
 using ElysianOutpost.Core.Voxels;
 using ElysianOutpost.Core.WorldGeneration;
@@ -20,7 +21,8 @@ namespace ElysianOutpost.App;
 /// <param name="ui">The ImGui parts of the app: the start screen, the debug overlay and the credits window.</param>
 /// <param name="log">The log category of the app.</param>
 /// <param name="timeLimit">The time after which the loop closes the window, or <c>null</c> for no limit.</param>
-internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserInterface ui, LogCategory log, TimeSpan? timeLimit)
+/// <param name="profileAtStart"><c>true</c> to start a performance profile at the start of the loop (#80).</param>
+internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserInterface ui, LogCategory log, TimeSpan? timeLimit, bool profileAtStart)
 {
     private const int TicksPerSecond = 20;
     private const int MaxTicksPerFrame = 5;
@@ -56,6 +58,14 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
         var world = new WorldLoader(streamer, WorldSettings.SampleScene.GetChunkPositions(default), uploader, renderer, uploadSettings, worldLog);
         using var editInput = new VoxelEditInput(window, InputSettings.Default);
         var editor = new VoxelEditor(editInput, streamer, uploader, renderer, BlockPalette.Game, LogCategory.Make("Edit"));
+        var profiler = new PerformanceProfiler(Path.Combine(AppContext.BaseDirectory, "profiles"), LogCategory.Make("Profile"));
+        ui.Console.RegisterCommand(profiler.ConsoleCommand);
+        if (profileAtStart)
+        {
+            profiler.Start();
+        }
+
+        long gpuBytes = 0;
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
@@ -68,6 +78,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
         while (true)
         {
             TimeSpan frameStart = stopwatch.Elapsed;
+            long frameStartTimestamp = Stopwatch.GetTimestamp();
 
             // Glfw.PollEvents also throws the exceptions of the window callbacks.
             // The callbacks can also run in Glfw.WaitEventsTimeout, which does not throw their exceptions.
@@ -79,6 +90,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             }
 
             // During the start screen, the camera input does nothing (BRUTAL License v1.0, section 2.2).
+            long updateStart = Stopwatch.GetTimestamp();
             ui.Update(frameStart);
             bool startScreen = ui.StartScreen.IsActive;
             if (!startScreen)
@@ -99,7 +111,9 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             ui.Overlay.ChunkCount = renderer.ChunkCount;
             if (memoryUpdate is not TimeSpan last || frameStart - last >= _memoryPeriod)
             {
-                ui.Overlay.GpuMemory = renderer.CalculateMemoryStatistics();
+                GpuMemoryStatistics frameMemory = renderer.CalculateMemoryStatistics();
+                ui.Overlay.GpuMemory = frameMemory;
+                gpuBytes = frameMemory.AllocationBytes;
                 memoryUpdate = frameStart;
             }
 
@@ -111,13 +125,37 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
                 Tick();
             }
 
-            ui.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
+            long ticksEnd = Stopwatch.GetTimestamp();
+            ui.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart, ticksEnd), renderer.ImGuiRecordTime);
 
             // The world builds also during the start screen, but it shows only after the start screen.
+            long worldStart = Stopwatch.GetTimestamp();
             world.Update(cameraController.Camera.Position);
             ui.Overlay.UploadQueueLength = uploader.QueueLength;
             ui.Overlay.UploadBudget = uploader.Budget;
+            long renderStart = Stopwatch.GetTimestamp();
             bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen, editor.Target?.Voxel);
+            long renderEnd = Stopwatch.GetTimestamp();
+            if (profiler.IsRecording)
+            {
+                profiler.Record(frameStartTimestamp, new FrameSample
+                {
+                    EventsMilliseconds = Stopwatch.GetElapsedTime(frameStartTimestamp, updateStart).TotalMilliseconds,
+                    UpdateMilliseconds = Stopwatch.GetElapsedTime(updateStart, ticksStart).TotalMilliseconds,
+                    TickMilliseconds = Stopwatch.GetElapsedTime(ticksStart, ticksEnd).TotalMilliseconds,
+                    TickCount = ticks,
+                    WorldMilliseconds = Stopwatch.GetElapsedTime(worldStart, renderStart).TotalMilliseconds,
+                    RenderMilliseconds = Stopwatch.GetElapsedTime(renderStart, renderEnd).TotalMilliseconds,
+                    GpuMilliseconds = renderer.LastGpuFrameMilliseconds,
+                    ManagedBytes = GC.GetTotalMemory(false),
+                    Gen0Collections = GC.CollectionCount(0),
+                    Gen1Collections = GC.CollectionCount(1),
+                    Gen2Collections = GC.CollectionCount(2),
+                    GpuBytes = gpuBytes,
+                    ChunkQueueLength = uploader.QueueLength,
+                });
+                profiler.AddCost(Stopwatch.GetTimestamp() - renderEnd);
+            }
             if (presented)
             {
                 reportFrameCount++;
@@ -148,6 +186,11 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             {
                 Glfw.WaitEventsTimeout(wait.TotalSeconds);
             }
+        }
+
+        if (profiler.IsRecording)
+        {
+            profiler.Stop();
         }
 
         world.LogIfIncomplete();
