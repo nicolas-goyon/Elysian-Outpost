@@ -31,27 +31,27 @@ internal sealed class VoxelEditor
     private const string InitialBlockName = "grass";
 
     private readonly VoxelEditInput _input;
-    private readonly WorldBuilder _builder;
+    private readonly ChunkStreamer _streamer;
     private readonly VulkanRenderer _renderer;
     private readonly BlockPalette _palette;
     private readonly LogCategory _log;
     private readonly BlockSelector _selector;
     private readonly List<VoxelEditAction> _actions = [];
-    private readonly List<int3> _changedChunks = [];
+    private readonly List<int3> _changedVoxels = [];
     private readonly List<BuiltChunk> _rebuiltChunks = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="VoxelEditor"/> class.
     /// </summary>
     /// <param name="input">The mouse input of the edits.</param>
-    /// <param name="builder">The world builder. It has the voxels and meshes the changed chunks.</param>
+    /// <param name="streamer">The chunk streamer. It has the voxels and meshes the changed chunks.</param>
     /// <param name="renderer">The renderer that receives the new chunk meshes.</param>
     /// <param name="palette">The palette. Its block types with a name are the block types that the player can place.</param>
     /// <param name="log">The log category of the edits.</param>
-    public VoxelEditor(VoxelEditInput input, WorldBuilder builder, VulkanRenderer renderer, BlockPalette palette, LogCategory log)
+    public VoxelEditor(VoxelEditInput input, ChunkStreamer streamer, VulkanRenderer renderer, BlockPalette palette, LogCategory log)
     {
         _input = input;
-        _builder = builder;
+        _streamer = streamer;
         _renderer = renderer;
         _palette = palette;
         _log = log;
@@ -102,9 +102,7 @@ internal sealed class VoxelEditor
         }
 
         long start = Stopwatch.GetTimestamp();
-        int edits = 0;
-        _changedChunks.Clear();
-        Span<int3> chunks = stackalloc int3[4];
+        _changedVoxels.Clear();
         foreach (VoxelEditAction action in _actions)
         {
             if (Target is not VoxelRayHit hit || !TryEdit(action, hit, camera.Position, out int3 voxel))
@@ -112,41 +110,31 @@ internal sealed class VoxelEditor
                 continue;
             }
 
-            // An edit on a chunk border also changes the mesh of the neighbor chunk (#48).
-            edits++;
-            int count = _builder.Voxels.GetChunksToMesh(voxel, chunks);
-            foreach (int3 chunk in chunks[..count])
-            {
-                if (!_changedChunks.Contains(chunk))
-                {
-                    _changedChunks.Add(chunk);
-                }
-            }
+            _changedVoxels.Add(voxel);
 
             // The next click of the same frame uses the changed world.
             Target = Cast(camera);
         }
 
-        if (_changedChunks.Count == 0)
+        if (_changedVoxels.Count == 0)
         {
             return;
         }
 
+        // An edit on a chunk border also changes the mesh of the neighbor chunk (#48). The streamer meshes all these chunks now (#47).
         _rebuiltChunks.Clear();
-        foreach (int3 chunk in _changedChunks)
-        {
-            _rebuiltChunks.Add(_builder.RebuildChunk(chunk));
-        }
+        _streamer.MeshAfterEdit(CollectionsMarshal.AsSpan(_changedVoxels), _rebuiltChunks);
+        int edits = _changedVoxels.Count;
 
         long meshed = Stopwatch.GetTimestamp();
         _renderer.AddChunks(CollectionsMarshal.AsSpan(_rebuiltChunks));
         double uploadMilliseconds = Stopwatch.GetElapsedTime(meshed).TotalMilliseconds;
         GpuMemoryStatistics memory = _renderer.CalculateMemoryStatistics();
-        _log.Info($"{edits} edit(s) changed {_changedChunks.Count} chunk(s). Meshing: {Stopwatch.GetElapsedTime(start, meshed).TotalMilliseconds:F1} ms. Upload to the GPU: {uploadMilliseconds:F1} ms. GPU memory: {memory.AllocationCount} VMA allocations, {memory.AllocationBytes} bytes. Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes} bytes.");
+        _log.Info($"{edits} edit(s) changed {_rebuiltChunks.Count} chunk(s). Meshing: {Stopwatch.GetElapsedTime(start, meshed).TotalMilliseconds:F1} ms. Upload to the GPU: {uploadMilliseconds:F1} ms. GPU memory: {memory.AllocationCount} VMA allocations, {memory.AllocationBytes} bytes. Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes} bytes.");
     }
 
     private VoxelRayHit? Cast(FreeFlyCamera camera) =>
-        VoxelRay.TryCast(_builder.Voxels, camera.Position, camera.Forward, out VoxelRayHit hit) ? hit : null;
+        VoxelRay.TryCast(_streamer.Voxels, camera.Position, camera.Forward, out VoxelRayHit hit) ? hit : null;
 
     // Gives the world position of the changed voxel.
     private bool TryEdit(VoxelEditAction action, VoxelRayHit hit, float3 cameraPosition, out int3 voxel)
@@ -155,7 +143,7 @@ internal sealed class VoxelEditor
         if (action == VoxelEditAction.Remove)
         {
             ushort removed = hit.BlockType;
-            bool done = VoxelEdits.TryRemove(_builder.Voxels, hit, out _);
+            bool done = VoxelEdits.TryRemove(_streamer.Voxels, hit, out _);
             if (done)
             {
                 _log.Info($"Removed the voxel ({hit.Voxel.X}, {hit.Voxel.Y}, {hit.Voxel.Z}), block type {removed}.");
@@ -164,7 +152,7 @@ internal sealed class VoxelEditor
             return done;
         }
 
-        if (VoxelEdits.TryPlace(_builder.Voxels, hit, BlockType, cameraPosition, out _))
+        if (VoxelEdits.TryPlace(_streamer.Voxels, hit, BlockType, cameraPosition, out _))
         {
             int3 placed = hit.EmptyVoxel;
             _log.Info($"Placed a voxel of block type {BlockName} ({BlockType}) at ({placed.X}, {placed.Y}, {placed.Z}).");

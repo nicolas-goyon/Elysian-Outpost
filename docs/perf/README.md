@@ -16,7 +16,8 @@ The project `tests/ElysianOutpost.Benchmarks` uses [BenchmarkDotNet](https://ben
 | `ChunkBenchmarks.GenerateChunk` | The terrain generation of one chunk (seed 123, the chunk at (0, 0, 0)). |
 | `ChunkBenchmarks.MeshTerrainChunk` | The mesh of the same terrain chunk, with the conversion to the GPU vertex data. |
 | `ChunkBenchmarks.MeshCheckerboardChunk` | The mesh of a checkerboard chunk: the worst case of the mesher. Each solid voxel has six visible faces, and no face can merge. |
-| `WorldBenchmarks.BuildDefaultWorld` | The generation and the mesh of the 1024 chunks of the sample scene, on one thread, as the app does at the start. |
+| `WorldBenchmarks.BuildDefaultWorld` | The generation and the mesh of the 1024 chunks of the sample scene, on one thread, with the world builder. |
+| `WorldBenchmarks.StreamDefaultWorld` | The same world with the chunk streamer (#47), as the app does at the start. The parameter `Workers` gives the number of worker threads. |
 
 All the benchmarks use the memory diagnoser. The column `Allocated` gives the managed memory that one operation allocates.
 

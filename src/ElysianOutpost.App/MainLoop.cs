@@ -38,8 +38,6 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
     // VMA goes through all its memory blocks for the statistics. Thus the loop calculates them only two times in each second.
     private static readonly TimeSpan _memoryPeriod = TimeSpan.FromSeconds(0.5);
 
-    // While the world builds, each frame uses this time for the chunks. Thus the window events and the frames continue.
-    private static readonly TimeSpan _worldBuildBudget = TimeSpan.FromMilliseconds(25);
 
     /// <summary>
     /// Runs the loop until the window must close.
@@ -48,10 +46,14 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
     {
         var clock = new FixedStepClock(TicksPerSecond, MaxTicksPerFrame);
         var cameraController = new FreeFlyCameraController(window, InputSettings.Default, LogCategory.Make("Camera"));
-        var builder = new WorldBuilder(WorldSettings.SampleScene, BlockPalette.Game, default);
-        var world = new WorldLoader(builder, renderer, LogCategory.Make("World"));
+        LogCategory worldLog = LogCategory.Make("World");
+        using var streamer = new ChunkStreamer(
+            WorldSettings.SampleScene,
+            BlockPalette.Game,
+            onError: (job, exception) => worldLog.Error($"{job} failed: {exception}"));
+        var world = new WorldLoader(streamer, WorldSettings.SampleScene.GetChunkPositions(default), renderer, worldLog);
         using var editInput = new VoxelEditInput(window, InputSettings.Default);
-        var editor = new VoxelEditor(editInput, builder, renderer, BlockPalette.Game, LogCategory.Make("Edit"));
+        var editor = new VoxelEditor(editInput, streamer, renderer, BlockPalette.Game, LogCategory.Make("Edit"));
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
@@ -110,7 +112,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             ui.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
 
             // The world builds also during the start screen, but it shows only after the start screen.
-            world.Update(_worldBuildBudget);
+            world.Update();
             bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen, editor.Target?.Voxel);
             if (presented)
             {
