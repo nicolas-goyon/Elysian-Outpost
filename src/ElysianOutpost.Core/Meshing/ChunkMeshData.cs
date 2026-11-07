@@ -27,10 +27,12 @@ public sealed class ChunkMeshData
     private const int VerticesPerQuad = 4;
     private const int IndicesPerQuad = 6;
 
-    private ChunkMeshData(ChunkVertex[] vertices, uint[] indices)
+    private ChunkMeshData(ChunkVertex[] vertices, uint[] indices, float3 boundsMin, float3 boundsMax)
     {
         Vertices = vertices;
         Indices = indices;
+        BoundsMin = boundsMin;
+        BoundsMax = boundsMax;
     }
 
     /// <summary>
@@ -42,6 +44,16 @@ public sealed class ChunkMeshData
     /// Gets the triangle indices: six for each quad.
     /// </summary>
     public uint[] Indices { get; }
+
+    /// <summary>
+    /// Gets the lowest corner of the box around all the vertices, in chunk coordinates (#50). The value is (0, 0, 0) for a mesh with no quad.
+    /// </summary>
+    public float3 BoundsMin { get; }
+
+    /// <summary>
+    /// Gets the highest corner of the box around all the vertices, in chunk coordinates (#50). The value is (0, 0, 0) for a mesh with no quad.
+    /// </summary>
+    public float3 BoundsMax { get; }
 
     /// <summary>
     /// Gets the number of quads.
@@ -89,7 +101,15 @@ public sealed class ChunkMeshData
             indices[index + 5] = first;
         }
 
-        return new ChunkMeshData(vertices, indices);
+        float3 min = vertices.Length > 0 ? vertices[0].Position : default;
+        float3 max = min;
+        foreach (ChunkVertex vertex in vertices)
+        {
+            min = float3.Min(min, vertex.Position);
+            max = float3.Max(max, vertex.Position);
+        }
+
+        return new ChunkMeshData(vertices, indices, min, max);
     }
 
     private static float3 ToFloat3(Vector3 vector) => new(vector.X, vector.Y, vector.Z);

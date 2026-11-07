@@ -96,6 +96,19 @@ public sealed class ChunkMeshDataTests
     }
 
     [Fact]
+    public void Build_GivesTheBoxAroundTheVertices()
+    {
+        MeshQuad first = Quad(new Vector3(1, 2, 3), new Vector3(1, 5, 3), new Vector3(4, 5, 3), new Vector3(4, 2, 3), Stone);
+        MeshQuad second = Quad(new Vector3(0, 7, 6), new Vector3(0, 7, 9), new Vector3(2, 7, 9), new Vector3(2, 7, 6), Stone);
+
+        ChunkMeshData mesh = ChunkMeshData.Build([first, second], BlockPalette.Game);
+
+        Assert.Equal(new float3(0, 2, 3), mesh.BoundsMin);
+        Assert.Equal(new float3(4, 7, 9), mesh.BoundsMax);
+        Assert.Equal(default, ChunkMeshData.Build([], BlockPalette.Game).BoundsMax);
+    }
+
+    [Fact]
     public void Build_GivesThePaletteColorOfTheBlockTypeToEachVertexOfTheQuad()
     {
         BlockPalette palette = BlockPalette.Game;
