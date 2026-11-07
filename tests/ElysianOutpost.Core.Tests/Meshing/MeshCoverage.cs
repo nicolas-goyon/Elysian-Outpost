@@ -11,7 +11,7 @@ namespace ElysianOutpost.Core.Tests.Meshing;
 /// <remarks>
 /// This class does not use the code of the mesher. It finds the visible faces directly from the block types.
 /// A face of a solid voxel is visible if its neighbor voxel is air or is outside the chunk.
-/// The mesher uses the same rule (<c>VoxelVisibilityMap</c>): it makes quads on all the borders of the chunk.
+/// The mesher uses the same rule (<c>GreedyMesher</c>): it makes quads on all the borders of the chunk.
 /// Issue #48 changes this rule.
 /// </remarks>
 internal static class MeshCoverage

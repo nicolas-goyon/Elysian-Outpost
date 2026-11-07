@@ -72,7 +72,7 @@ public sealed class ChunkMeshDataTests
         var voxels = new ushort[3, 3, 3];
         voxels[1, 1, 1] = Stone;
         var chunk = new Chunk(voxels, default);
-        List<MeshQuad> quads = optimizedMesher ? new DisjointSetMeshOptimizer(new Mesh()).Optimize(chunk).Quads : chunk.ToMesh().Quads;
+        List<MeshQuad> quads = optimizedMesher ? new GreedyMesher().Mesh(chunk) : chunk.ToMesh().Quads;
 
         ChunkMeshData mesh = ChunkMeshData.Build(quads, BlockPalette.Game);
 

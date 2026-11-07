@@ -82,7 +82,7 @@ public sealed class ScreenWindingTests
         var voxels = new ushort[3, 3, 3];
         voxels[VoxelCoordinate, VoxelCoordinate, VoxelCoordinate] = 22;
         var chunk = new Chunk(voxels, new int3(0, 0, 0));
-        return optimizedMesher ? new DisjointSetMeshOptimizer(new Mesh()).Optimize(chunk).Quads : chunk.ToMesh().Quads;
+        return optimizedMesher ? new GreedyMesher().Mesh(chunk) : chunk.ToMesh().Quads;
     }
 
     // The quad normal of the optimized mesher is not correct (#46). Thus the test finds the face from the vertices:

@@ -41,7 +41,7 @@ public sealed class WorldBuilderTests
         while (builder.TryBuildNext(out BuiltChunk chunk))
         {
             var voxels = new Chunk(generation.GenerateChunkAt(chunk.Position), chunk.Position);
-            ChunkMeshData expected = ChunkMeshData.Build(new DisjointSetMeshOptimizer(new Mesh()).Optimize(voxels).Quads, BlockPalette.Game);
+            ChunkMeshData expected = ChunkMeshData.Build(new GreedyMesher().Mesh(voxels), BlockPalette.Game);
             Assert.Equal(expected.Vertices, chunk.Mesh.Vertices);
             Assert.Equal(expected.Indices, chunk.Mesh.Indices);
             Assert.True(chunk.Mesh.QuadCount > 0);
@@ -96,7 +96,7 @@ public sealed class WorldBuilderTests
         Assert.Equal(built.Position, chunk);
         BuiltChunk changed = builder.RebuildChunk(chunk);
         Assert.True(builder.Voxels.TryGetChunk(chunk, out ushort[,,]? voxels));
-        var expected = ChunkMeshData.Build(new DisjointSetMeshOptimizer(new Mesh()).Optimize(new Chunk(voxels, chunk)).Quads, BlockPalette.Game);
+        var expected = ChunkMeshData.Build(new GreedyMesher().Mesh(new Chunk(voxels, chunk)), BlockPalette.Game);
         Assert.Equal(expected.Vertices, changed.Mesh.Vertices);
         Assert.Equal(expected.Indices, changed.Mesh.Indices);
         Assert.NotEqual(built.Mesh.QuadCount, changed.Mesh.QuadCount);
