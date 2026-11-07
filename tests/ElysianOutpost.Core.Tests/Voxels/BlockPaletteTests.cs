@@ -94,4 +94,23 @@ public sealed class BlockPaletteTests
     {
         Assert.ThrowsAny<JsonException>(() => BlockPalette.Parse("{"));
     }
+
+    // chunk.vert reads the packed colors with unpackUnorm4x8: red in the low byte (#51).
+    [Fact]
+    public void GetPackedColors_PutsRedInTheLowByteAndAlphaInTheHighByte()
+    {
+        BlockPalette palette = BlockPalette.Game;
+
+        uint[] packed = palette.GetPackedColors();
+
+        Assert.Equal(palette.Count, packed.Length);
+        for (ushort i = 0; i < packed.Length; i++)
+        {
+            byte4 color = palette[i];
+            Assert.Equal(color.X, (byte)packed[i]);
+            Assert.Equal(color.Y, (byte)(packed[i] >> 8));
+            Assert.Equal(color.Z, (byte)(packed[i] >> 16));
+            Assert.Equal(color.W, (byte)(packed[i] >> 24));
+        }
+    }
 }

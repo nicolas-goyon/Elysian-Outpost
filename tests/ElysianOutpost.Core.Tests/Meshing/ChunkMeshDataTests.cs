@@ -20,9 +20,45 @@ public sealed class ChunkMeshDataTests
     {
         Assert.Equal(ChunkVertex.SizeInBytes, Unsafe.SizeOf<ChunkVertex>());
         Assert.Equal(ChunkVertex.SizeInBytes, Marshal.SizeOf<ChunkVertex>());
-        Assert.Equal(0, Marshal.OffsetOf<ChunkVertex>(nameof(ChunkVertex.Position)));
-        Assert.Equal(12, Marshal.OffsetOf<ChunkVertex>(nameof(ChunkVertex.Normal)));
-        Assert.Equal(24, Marshal.OffsetOf<ChunkVertex>(nameof(ChunkVertex.Color)));
+        Assert.Equal(8, ChunkVertex.SizeInBytes);
+        Assert.Equal(0, Marshal.OffsetOf<ChunkVertex>(nameof(ChunkVertex.PositionAndNormal)));
+        Assert.Equal(4, Marshal.OffsetOf<ChunkVertex>(nameof(ChunkVertex.BlockType)));
+    }
+
+    // chunk.vert unpacks the bits in this order: X, Y, Z on 8 bits each, then the normal index on 3 bits.
+    [Fact]
+    public void ChunkVertex_Create_PacksTheBitsInTheOrderOfTheShader()
+    {
+        ChunkVertex vertex = ChunkVertex.Create(1, 2, 255, 5, 63);
+
+        Assert.Equal(0x05FF0201u, vertex.PositionAndNormal);
+        Assert.Equal(63u, vertex.BlockType);
+        Assert.Equal(new float3(1, 2, 255), vertex.Position);
+        Assert.Equal(new float3(0, 0, 1), vertex.Normal);
+    }
+
+    [Theory]
+    [InlineData(-1, 0, 0, 0)]
+    [InlineData(256, 0, 0, 0)]
+    [InlineData(0, 256, 0, 0)]
+    [InlineData(0, 0, 256, 0)]
+    [InlineData(0, 0, 0, 6)]
+    [InlineData(0, 0, 0, -1)]
+    public void ChunkVertex_Create_ValueOutsideItsRange_Throws(int x, int y, int z, int normal)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => ChunkVertex.Create(x, y, z, normal, 0));
+    }
+
+    // The packed vertex keeps only integer positions from 0 to 255 (#51). The mesher writes only such positions.
+    [Theory]
+    [InlineData(0.5f, 0f)]
+    [InlineData(-1f, 0f)]
+    [InlineData(256f, 0f)]
+    public void Build_VertexThatIsNotAPackablePosition_ThrowsArgumentOutOfRangeException(float x, float y)
+    {
+        MeshQuad quad = Quad(new Vector3(x, y, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(1, 0, 0), Stone);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => ChunkMeshData.Build([quad], BlockPalette.Game));
     }
 
     [Fact]
@@ -109,7 +145,7 @@ public sealed class ChunkMeshDataTests
     }
 
     [Fact]
-    public void Build_GivesThePaletteColorOfTheBlockTypeToEachVertexOfTheQuad()
+    public void Build_GivesTheBlockTypeOfTheQuadToEachVertex()
     {
         BlockPalette palette = BlockPalette.Game;
         MeshQuad stone = Quad(new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(1, 0, 0), Stone);
@@ -117,9 +153,8 @@ public sealed class ChunkMeshDataTests
 
         ChunkMeshData mesh = ChunkMeshData.Build([stone, grass], palette);
 
-        Assert.All(mesh.Vertices.Take(4), vertex => Assert.Equal(palette[Stone], vertex.Color));
-        Assert.All(mesh.Vertices.Skip(4), vertex => Assert.Equal(palette[Grass], vertex.Color));
-        Assert.NotEqual(palette[Stone], palette[Grass]);
+        Assert.All(mesh.Vertices.Take(4), vertex => Assert.Equal(Stone, vertex.BlockType));
+        Assert.All(mesh.Vertices.Skip(4), vertex => Assert.Equal(Grass, vertex.BlockType));
     }
 
     // The game palette has the block types 0 to 63. A block type of more than 16 bits cannot be a palette index.
@@ -146,6 +181,14 @@ public sealed class ChunkMeshDataTests
         Assert.All(mesh.Vertices, vertex => Assert.Equal(new float3(0, 0, -1), vertex.Normal));
     }
 
+    [Fact]
+    public void Build_NormalThatIsNotTheNormalOfAFace_ThrowsArgumentOutOfRangeException()
+    {
+        MeshQuad quad = Quad(new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(1, 0, 0), Stone) with { Normal = new Vector3(0.6f, 0.8f, 0) };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => ChunkMeshData.Build([quad], BlockPalette.Game));
+    }
+
     // 20,000 quads have 80,000 vertices. A 16-bit index cannot point to the vertices after the first 65,536.
     [Fact]
     public void Build_MoreThan65536Vertices_GivesTheCorrectIndicesForTheLastQuad()
@@ -154,14 +197,16 @@ public sealed class ChunkMeshDataTests
         var quads = new List<MeshQuad>(quadCount);
         for (int i = 0; i < quadCount; i++)
         {
-            quads.Add(Quad(new Vector3(i, 0, 0), new Vector3(i, 1, 0), new Vector3(i + 1, 1, 0), new Vector3(i + 1, 0, 0), Stone));
+            // A vertex coordinate goes from 0 to 255 (#51). Thus the quads are on a grid of 200 × 100.
+            int x = i % 200, z = i / 200;
+            quads.Add(Quad(new Vector3(x, 0, z), new Vector3(x, 1, z), new Vector3(x + 1, 1, z), new Vector3(x + 1, 0, z), Stone));
         }
 
         ChunkMeshData mesh = ChunkMeshData.Build(quads, BlockPalette.Game);
 
         Assert.Equal(quadCount * 4, mesh.Vertices.Length);
         Assert.Equal([79_996u, 79_997u, 79_998u, 79_998u, 79_999u, 79_996u], mesh.Indices[^6..]);
-        Assert.Equal(new float3(19_999, 0, 0), mesh.Vertices[79_996].Position);
+        Assert.Equal(new float3(199, 0, 99), mesh.Vertices[79_996].Position);
     }
 
     [Fact]
