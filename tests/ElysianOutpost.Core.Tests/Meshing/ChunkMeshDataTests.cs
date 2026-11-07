@@ -62,8 +62,8 @@ public sealed class ChunkMeshDataTests
         Assert.Equal([0u, 1u, 2u, 2u, 3u, 0u, 4u, 5u, 6u, 6u, 7u, 4u], mesh.Indices);
     }
 
-    // The mesher writes the normal (1, 0, 0) for all the quads (#46). The mesh data must not use it.
-    // The flat normal of each face must point out of the voxel: from the center of the voxel to the center of the face.
+    // The normal of each face must point out of the voxel: from the center of the voxel to the center of the face.
+    // The two meshers write this normal (#46), and the mesh data gives it to the four vertices.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -122,15 +122,15 @@ public sealed class ChunkMeshDataTests
         Assert.Throws<ArgumentOutOfRangeException>(() => ChunkMeshData.Build([quad], BlockPalette.Game));
     }
 
+    // The mesh data does not calculate a normal from the vertices (#46). It gives the normal of the quad to the four vertices.
     [Fact]
-    public void Build_QuadWithNoArea_GivesTheZeroNormal()
+    public void Build_GivesTheNormalOfTheQuadToEachVertex()
     {
-        var point = new Vector3(2, 2, 2);
-        MeshQuad quad = Quad(point, point, point, point, Stone);
+        MeshQuad quad = Quad(new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(1, 0, 0), Stone) with { Normal = new Vector3(0, 0, -1) };
 
         ChunkMeshData mesh = ChunkMeshData.Build([quad], BlockPalette.Game);
 
-        Assert.All(mesh.Vertices, vertex => Assert.Equal(float3.Zero, vertex.Normal));
+        Assert.All(mesh.Vertices, vertex => Assert.Equal(new float3(0, 0, -1), vertex.Normal));
     }
 
     // 20,000 quads have 80,000 vertices. A 16-bit index cannot point to the vertices after the first 65,536.

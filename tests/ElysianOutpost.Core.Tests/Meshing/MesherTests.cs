@@ -254,7 +254,7 @@ public sealed class MesherTests
 
     // The normal of a quad must be the unit vector of its face direction. The direction comes from the winding order.
     // For a correct mesh, the normal of each quad also agrees with its winding order.
-    [Fact(Skip = "Known failure, #46: GreedyMesher writes the normal (1, 0, 0) for all the face directions.")]
+    [Fact]
     public void Mesher_EachQuad_HasTheNormalOfItsFaceDirection()
     {
         ushort[,,] voxels = ChunkText.Parse(

@@ -23,7 +23,8 @@ namespace ElysianOutpost.Core.Meshing;
 /// <para>
 /// The quads are the same as the quads of the legacy mesher (union-find, before #45), in the same order: the directions
 /// −X, +X, −Y, +Y, −Z, +Z, the slices in their order, and the rectangles in the order of their first face.
-/// The vertex order of each direction is also the same. All the normals are (1, 0, 0), as before (#46).
+/// The vertex order of each direction is also the same. The normal of each quad is the unit vector of its face direction (#46).
+/// It agrees with the winding order: the cross product (vertex 1 − vertex 0) × (vertex 2 − vertex 0) has the same direction.
 /// </para>
 /// <para>
 /// The mesher keeps its mask between chunks. Thus, after the first chunk, it allocates only the quads of the result.
@@ -32,9 +33,6 @@ namespace ElysianOutpost.Core.Meshing;
 /// </remarks>
 public sealed class GreedyMesher
 {
-    // The legacy normal of all the quads. #46 writes the correct normal of each direction.
-    private static readonly Vector3 _legacyNormal = new(1, 0, 0);
-
     private ushort[] _mask = [];
 
     /// <summary>
@@ -201,7 +199,8 @@ public sealed class GreedyMesher
         return true;
     }
 
-    // The vertices of the legacy mesher (DisjointSetVisiblePlaneOptimizer.ToMeshQuads before #45), for each direction.
+    // The vertices of the legacy mesher (DisjointSetVisiblePlaneOptimizer.ToMeshQuads before #45), and the normal, for each direction.
+    // An ascending direction shows the negative face of a voxel, and a descending direction the positive face.
     // minX to maxX and minY to maxY are the cells of the rectangle on the plane.
     private static MeshQuad MakeQuad(ChunkSize size, Direction direction, int slice, int minX, int maxX, int minY, int maxY, ushort block)
     {
@@ -211,53 +210,53 @@ public sealed class GreedyMesher
                 {
                     int x = size.X - slice;
                     int y1 = size.Y - minX, y2 = size.Y - maxX - 1, z1 = size.Z - minY, z2 = size.Z - maxY - 1;
-                    return Quad(new(x, y1, z1), new(x, y2, z1), new(x, y2, z2), new(x, y1, z2), block);
+                    return Quad(new(x, y1, z1), new(x, y2, z1), new(x, y2, z2), new(x, y1, z2), Vector3.UnitX, block);
                 }
 
             case (Axis.X, false):
                 {
                     int x = slice;
                     int y1 = minX, y2 = maxX + 1, z1 = minY, z2 = maxY + 1;
-                    return Quad(new(x, y2, z1), new(x, y1, z1), new(x, y1, z2), new(x, y2, z2), block);
+                    return Quad(new(x, y2, z1), new(x, y1, z1), new(x, y1, z2), new(x, y2, z2), -Vector3.UnitX, block);
                 }
 
             case (Axis.Y, true):
                 {
                     int y = size.Y - slice;
                     int x1 = size.X - minY, x2 = size.X - maxY - 1, z1 = size.Z - minX, z2 = size.Z - maxX - 1;
-                    return Quad(new(x1, y, z1), new(x1, y, z2), new(x2, y, z2), new(x2, y, z1), block);
+                    return Quad(new(x1, y, z1), new(x1, y, z2), new(x2, y, z2), new(x2, y, z1), Vector3.UnitY, block);
                 }
 
             case (Axis.Y, false):
                 {
                     int y = slice;
                     int x1 = minY, x2 = maxY + 1, z1 = minX, z2 = maxX + 1;
-                    return Quad(new(x1, y, z2), new(x1, y, z1), new(x2, y, z1), new(x2, y, z2), block);
+                    return Quad(new(x1, y, z2), new(x1, y, z1), new(x2, y, z1), new(x2, y, z2), -Vector3.UnitY, block);
                 }
 
             case (Axis.Z, true):
                 {
                     int z = size.Z - slice;
                     int x1 = size.X - minY, x2 = size.X - maxY - 1, y1 = size.Y - minX, y2 = size.Y - maxX - 1;
-                    return Quad(new(x1, y2, z), new(x1, y1, z), new(x2, y1, z), new(x2, y2, z), block);
+                    return Quad(new(x1, y2, z), new(x1, y1, z), new(x2, y1, z), new(x2, y2, z), Vector3.UnitZ, block);
                 }
 
             default:
                 {
                     int z = slice;
                     int x1 = minY, x2 = maxY + 1, y1 = minX, y2 = maxX + 1;
-                    return Quad(new(x1, y1, z), new(x1, y2, z), new(x2, y2, z), new(x2, y1, z), block);
+                    return Quad(new(x1, y1, z), new(x1, y2, z), new(x2, y2, z), new(x2, y1, z), -Vector3.UnitZ, block);
                 }
         }
     }
 
-    private static MeshQuad Quad(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, Vector3 vertex3, ushort block) => new()
+    private static MeshQuad Quad(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, Vector3 vertex3, Vector3 normal, ushort block) => new()
     {
         Vertex0 = vertex0,
         Vertex1 = vertex1,
         Vertex2 = vertex2,
         Vertex3 = vertex3,
-        Normal = _legacyNormal,
+        Normal = normal,
         VoxelID = block,
     };
 
