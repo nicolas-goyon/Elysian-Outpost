@@ -110,12 +110,13 @@ public sealed class ChunkStreamerTests
     [Fact]
     public void Update_OldResultThatArrivesLast_DoesNotReplaceTheNewerMesh()
     {
+        // The events are disposed after the streamer, because a worker can wait on them until the streamer stops.
+        using var held = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
         using var streamer = new ChunkStreamer(_world, BlockPalette.Game, workerCount: 2);
         streamer.Request(default);
         RunUntilIdle(streamer);
 
-        using var held = new ManualResetEventSlim();
-        using var release = new ManualResetEventSlim();
         int heldVersion = -1;
         streamer.MeshJobStarting = (position, version) =>
         {
@@ -136,11 +137,9 @@ public sealed class ChunkStreamerTests
         while (!meshes.ContainsKey(default))
         {
             Assert.True(watch.Elapsed < _timeout, "The newer mesh did not arrive.");
+            output.Clear();
             streamer.Update(output);
-            foreach (BuiltChunk chunk in output)
-            {
-                meshes[chunk.Position] = chunk;
-            }
+            AddDistinct(meshes, output);
         }
 
         release.Set();
@@ -171,6 +170,71 @@ public sealed class ChunkStreamerTests
         Assert.Equal(2, streamer.Voxels.ChunkCount);
         Assert.NotEmpty(errors);
         Assert.All(errors, error => Assert.Contains("Mesh of the chunk", error));
+    }
+
+    // The finding of the review of #47: the first mesh of X and the generation of its neighbor N are in the same call of Update.
+    // N starts a new mesh of X, and a worker makes it while Update reads the other results. Update gives only the newer mesh of X,
+    // because the renderer accepts a chunk only one time in one batch.
+    [Fact]
+    public void Update_TwoMeshesOfAChunkInOneCall_GivesTheChunkOneTime()
+    {
+        using var streamer = new ChunkStreamer(_world, BlockPalette.Game, workerCount: 1);
+        streamer.Request(default);
+        WaitForResults(streamer, 1);
+        Assert.Equal(1, streamer.Update([]));
+        WaitForResults(streamer, 1);
+
+        // The neighbor N, and many chunks far from X: their results make the call of Update long.
+        const int farChunks = 1500;
+        streamer.Request(new int3(8, 0, 0));
+        for (int i = 0; i < farChunks; i++)
+        {
+            streamer.Request(new int3(800 + (16 * (i % 40)), 0, 800 + (16 * (i / 40))));
+        }
+
+        WaitForResults(streamer, farChunks + 2);
+        var output = new List<BuiltChunk>();
+        streamer.Update(output);
+
+        Assert.Equal(output.Count, output.Select(chunk => chunk.Position).Distinct().Count());
+        Assert.Contains(output, chunk => chunk.Position == default);
+    }
+
+    [Fact]
+    public void Dispose_WithManyJobsInTheQueue_DoesNotRunThem()
+    {
+        var streamer = new ChunkStreamer(_world, BlockPalette.Game, workerCount: 1);
+        const int count = 3000;
+        for (int i = 0; i < count; i++)
+        {
+            streamer.Request(new int3(16 * (i % 60), 0, 16 * (i / 60)));
+        }
+
+        var watch = Stopwatch.StartNew();
+        streamer.Dispose();
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(1), $"Dispose took {watch.Elapsed}.");
+        Assert.True(streamer.WaitingResults < count / 2, $"{streamer.WaitingResults} of {count} jobs ran.");
+    }
+
+    // An exception of the error method must not stop the worker. Without the protection, the streamer never becomes idle.
+    [Fact]
+    public void ErrorMethodThatThrows_DoesNotStopTheWorker()
+    {
+        BlockPalette palette = BlockPalette.Parse("""{"blockTypes": [{"id": 0, "color": "#00000000"}, {"id": 1, "color": "#FFFFFFFF"}]}""");
+        int calls = 0;
+        var streamer = new ChunkStreamer(_world, palette, workerCount: 1, onError: (_, _) =>
+        {
+            Interlocked.Increment(ref calls);
+            throw new InvalidOperationException("The error method fails.");
+        });
+
+        streamer.Request(default);
+        streamer.Request(new int3(8, 0, 0));
+        RunUntilIdle(streamer);
+        streamer.Dispose();
+
+        Assert.True(calls >= 2);
     }
 
     [Fact]
@@ -240,11 +304,8 @@ public sealed class ChunkStreamerTests
         {
             Assert.True(watch.Elapsed < _timeout, "The streamer did not finish in time.");
             output.Clear();
-            streamer.Update(output);
-            foreach (BuiltChunk chunk in output)
-            {
-                meshes[chunk.Position] = chunk;
-            }
+            streamer.Update(output, maxResults: 1 + (int)(watch.ElapsedTicks % 64));
+            AddDistinct(meshes, output);
         }
 
         requests.Join();
@@ -288,12 +349,30 @@ public sealed class ChunkStreamerTests
                 Thread.Sleep(1);
             }
 
-            foreach (BuiltChunk chunk in output)
-            {
-                meshes[chunk.Position] = chunk;
-            }
+            AddDistinct(meshes, output);
         }
 
         return meshes;
+    }
+
+    // The renderer accepts a chunk only one time in one batch. Thus each batch must have distinct positions.
+    private static void AddDistinct(Dictionary<int3, BuiltChunk> meshes, List<BuiltChunk> batch)
+    {
+        var positions = new HashSet<int3>();
+        foreach (BuiltChunk chunk in batch)
+        {
+            Assert.True(positions.Add(chunk.Position), $"The batch has the chunk ({chunk.Position.X}, {chunk.Position.Y}, {chunk.Position.Z}) two times.");
+            meshes[chunk.Position] = chunk;
+        }
+    }
+
+    private static void WaitForResults(ChunkStreamer streamer, int count)
+    {
+        var watch = Stopwatch.StartNew();
+        while (streamer.WaitingResults < count)
+        {
+            Assert.True(watch.Elapsed < _timeout, "The results did not arrive.");
+            Thread.Sleep(1);
+        }
     }
 }

@@ -57,10 +57,16 @@ internal sealed class WorldLoader(ChunkStreamer streamer, int3[] positions, Vulk
             _batch.Clear();
         }
 
-        if (!_complete && streamer.DeliveredCount == positions.Length)
+        // The streamer is idle when all the jobs are complete. A failed job gives no mesh, thus the count can stay below the number of chunks.
+        if (!_complete && (streamer.DeliveredCount == positions.Length || streamer.IsIdle))
         {
             _complete = true;
-            log.Info($"The world is ready: {positions.Length} chunks in {Stopwatch.GetElapsedTime(_startTimestamp).TotalSeconds:F2} s. Worker time: generation {streamer.GenerationTime.TotalSeconds:F2} s, meshing {streamer.MeshingTime.TotalSeconds:F2} s. Upload to the GPU: {renderer.ChunkUploadTime.TotalSeconds:F2} s.");
+            if (streamer.DeliveredCount < positions.Length)
+            {
+                log.Error($"{positions.Length - streamer.DeliveredCount} of {positions.Length} chunks have no mesh. The log shows the failed jobs.");
+            }
+
+            log.Info($"The world is ready: {streamer.DeliveredCount} chunks in {Stopwatch.GetElapsedTime(_startTimestamp).TotalSeconds:F2} s. Worker time: generation {streamer.GenerationTime.TotalSeconds:F2} s, meshing {streamer.MeshingTime.TotalSeconds:F2} s. Upload to the GPU: {renderer.ChunkUploadTime.TotalSeconds:F2} s.");
         }
     }
 

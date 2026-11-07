@@ -13,11 +13,13 @@ namespace ElysianOutpost.Core.Meshing;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The snapshot copies about 38 KB for a chunk of 16 × 64 × 16 voxels: 32 KB for the voxels and 6 KB for the borders.
+/// The snapshot copies about 41 KB for a chunk of 16 × 64 × 16 voxels: 32 KB for the voxels and 9 KB for the borders
+/// (2 KB for each X and Z border, 0.5 KB for each Y border).
 /// A neighbor chunk that the world does not have gives no border: its voxels are air.
 /// </para>
 /// <para>
-/// The <see cref="Version"/> tells the caller if the result is still valid. The world changes the version of a chunk at each change of its data.
+/// The <see cref="Version"/> tells the caller if the result is still valid. The <see cref="WorldGeneration.ChunkStreamer"/> changes the version
+/// of a chunk at each change of its data.
 /// </para>
 /// </remarks>
 public sealed class ChunkSnapshot

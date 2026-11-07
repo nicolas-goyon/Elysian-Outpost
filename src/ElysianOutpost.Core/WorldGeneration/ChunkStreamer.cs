@@ -13,23 +13,32 @@ namespace ElysianOutpost.Core.WorldGeneration;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The streamer uses <see cref="System.Threading.Channels"/>: one channel of jobs for the workers, and one channel of results for the main thread.
-/// The two channels are thread-safe queues. The workers never touch the voxel world. A generation job returns new voxels,
-/// and a mesh job gets a <see cref="ChunkSnapshot"/>: an immutable copy of the voxels of the chunk and of the borders of its neighbors.
+/// The streamer uses <see cref="System.Threading.Channels"/>. One channel holds the jobs for the workers.
+/// One channel holds the results for the main thread. The two channels are thread-safe queues.
 /// </para>
 /// <para>
-/// Each requested chunk has a state: requested, generated, meshed, delivered. A second request for the same chunk does nothing.
-/// The mesh of a chunk starts when all its requested neighbors are generated, because the neighbors hide the faces at the borders (#48).
-/// When a neighbor arrives later, or when a voxel changes, the chunk gets a new mesh.
+/// The workers never touch the voxel world. A generation job returns new voxels.
+/// A mesh job gets a <see cref="ChunkSnapshot"/>: an immutable copy of the voxels of the chunk and of the borders of its neighbors.
+/// </para>
+/// <para>
+/// Each requested chunk has a state: <see cref="ChunkState.Requested"/>, <see cref="ChunkState.Generated"/> or <see cref="ChunkState.Delivered"/>.
+/// A second request for the same chunk does nothing. The mesh of a chunk starts when all its requested neighbors are generated,
+/// because the neighbors hide the faces at the borders (#48). When a neighbor arrives later, or when a voxel changes, the chunk gets a new mesh.
 /// </para>
 /// <para>
 /// Each chunk also has a version number. Each change of the data of a chunk, and each new mesh job, increments it.
 /// <see cref="Update"/> gives a mesh only if its version is the current version. Thus a result of old data never replaces a newer mesh.
+/// A worker also skips a mesh job that is already old when the job starts.
 /// </para>
 /// <para>
-/// A lock protects the chunk states and the voxel world. <see cref="Request"/> and <see cref="SetVoxel"/> are safe for all threads.
-/// Call <see cref="Update"/> and <see cref="MeshAfterEdit"/> from one thread: the main thread. Read <see cref="Voxels"/> only from that thread,
-/// and only when no other thread calls <see cref="SetVoxel"/>.
+/// The streamer does not try a failed job again. A failure of the generator or of the mesher is a defect,
+/// and the same data gives the same failure. The failure goes to the error method.
+/// A chunk whose generation fails leaves the streamer. A chunk whose mesh fails keeps its last mesh until the next change of its data.
+/// </para>
+/// <para>
+/// A lock protects the chunk states. <see cref="Request"/> and <see cref="SetVoxel"/> are safe for all threads.
+/// Call <see cref="Update"/> and <see cref="MeshAfterEdit"/> from one thread: the main thread.
+/// Only the main thread can read or write <see cref="Voxels"/>. It can write only when no other thread calls <see cref="SetVoxel"/>.
 /// </para>
 /// </remarks>
 public sealed class ChunkStreamer : IDisposable
@@ -38,12 +47,17 @@ public sealed class ChunkStreamer : IDisposable
     private readonly BlockPalette _palette;
     private readonly Action<string, Exception> _onError;
     private readonly Channel<Job> _jobs = Channel.CreateUnbounded<Job>(new UnboundedChannelOptions { SingleReader = false, SingleWriter = false });
-    private readonly Channel<Result> _results = Channel.CreateUnbounded<Result>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    // Only the main thread reads the results. SingleReader stays false, because the single-reader channel cannot count its items.
+    private readonly Channel<Result> _results = Channel.CreateUnbounded<Result>(new UnboundedChannelOptions { SingleReader = false, SingleWriter = false });
     private readonly Dictionary<int3, ChunkEntry> _chunks = [];
     private readonly Lock _lock = new();
     private readonly GreedyMesher _mainMesher = new();
     private readonly CancellationTokenSource _stop = new();
-    private readonly Task[] _workers;
+    private readonly Thread[] _workers;
+
+    // The index in the output list of each chunk that the current call of Update or MeshAfterEdit gave. A chunk goes only one time into one list.
+    private readonly Dictionary<int3, int> _outputIndex = [];
+    private readonly HashSet<int3> _changedChunks = [];
     private int _pendingJobs;
     private long _generationTicks;
     private long _meshingTicks;
@@ -71,10 +85,13 @@ public sealed class ChunkStreamer : IDisposable
         _palette = palette;
         _onError = onError ?? ((job, exception) => Trace.TraceError($"{job}: {exception}"));
         Voxels = new VoxelWorld(settings.ChunkSize);
-        _workers = new Task[count];
+        // Dedicated threads: the jobs are long CPU work, and the thread pool starts new threads slowly.
+        _workers = new Thread[count];
+        CancellationToken stop = _stop.Token;
         for (int i = 0; i < count; i++)
         {
-            _workers[i] = Task.Run(() => WorkAsync(_stop.Token));
+            _workers[i] = new Thread(() => Work(stop)) { IsBackground = true, Name = $"Chunk worker {i + 1}" };
+            _workers[i].Start();
         }
     }
 
@@ -121,6 +138,11 @@ public sealed class ChunkStreamer : IDisposable
     /// Gets the total time of the mesher and of the mesh data, on all the workers and on the main thread.
     /// </summary>
     public TimeSpan MeshingTime => Stopwatch.GetElapsedTime(0, Interlocked.Read(ref _meshingTicks));
+
+    /// <summary>
+    /// Gets the number of results that wait for <see cref="Update"/>. Only the tests use it.
+    /// </summary>
+    internal int WaitingResults => _results.Reader.Count;
 
     /// <summary>
     /// Gets or sets a method that a worker calls before each mesh job, with the chunk position and the version of the job.
@@ -193,7 +215,9 @@ public sealed class ChunkStreamer : IDisposable
         ArgumentNullException.ThrowIfNull(output);
         lock (_lock)
         {
-            var changed = new HashSet<int3>();
+            HashSet<int3> changed = _changedChunks;
+            changed.Clear();
+            _outputIndex.Clear();
             Span<int3> touched = stackalloc int3[4];
             foreach (int3 position in positions)
             {
@@ -232,6 +256,11 @@ public sealed class ChunkStreamer : IDisposable
     public int Update(List<BuiltChunk> output, int maxResults = int.MaxValue)
     {
         ArgumentNullException.ThrowIfNull(output);
+        lock (_lock)
+        {
+            _outputIndex.Clear();
+        }
+
         int received = 0;
         while (received < maxResults && _results.Reader.TryRead(out Result result))
         {
@@ -274,6 +303,7 @@ public sealed class ChunkStreamer : IDisposable
 
     /// <summary>
     /// Stops the workers cooperatively, and waits until they stop. The jobs that wait in the queue do not run.
+    /// A job that runs continues until its end. If a worker does not stop in 10 s, the error method gets a <see cref="TimeoutException"/>.
     /// </summary>
     public void Dispose()
     {
@@ -289,16 +319,23 @@ public sealed class ChunkStreamer : IDisposable
 
         _jobs.Writer.TryComplete();
         _stop.Cancel();
-        try
+        long deadline = Stopwatch.GetTimestamp() + (10 * Stopwatch.Frequency);
+        bool allStopped = true;
+        foreach (Thread worker in _workers)
         {
-            Task.WaitAll(_workers, TimeSpan.FromSeconds(10));
-        }
-        catch (AggregateException exception) when (exception.InnerExceptions.All(inner => inner is OperationCanceledException))
-        {
-            // A worker stopped in the middle of its wait for a job. This is the normal stop.
+            TimeSpan left = Stopwatch.GetElapsedTime(Stopwatch.GetTimestamp(), deadline);
+            if (!worker.Join(left > TimeSpan.Zero ? left : TimeSpan.Zero))
+            {
+                allStopped = false;
+                ReportError("Stop of the chunk workers", new TimeoutException($"The thread \"{worker.Name}\" did not stop in 10 s."));
+            }
         }
 
-        _stop.Dispose();
+        // A worker that did not stop can still read the token. Then the token source stays for the garbage collector.
+        if (allStopped)
+        {
+            _stop.Dispose();
+        }
     }
 
     // Under the lock.
@@ -392,7 +429,19 @@ public sealed class ChunkStreamer : IDisposable
 
         entry.DeliveredVersion = version;
         entry.State = ChunkState.Delivered;
-        output.Add(new BuiltChunk(position, mesh));
+
+        // A chunk can get two meshes in one call: a neighbor arrives after its first mesh, and a fast worker makes the next one.
+        // The newer mesh replaces the older one, because the renderer accepts a chunk only one time in one batch.
+        var built = new BuiltChunk(position, mesh);
+        if (_outputIndex.TryGetValue(position, out int index))
+        {
+            output[index] = built;
+        }
+        else
+        {
+            _outputIndex.Add(position, output.Count);
+            output.Add(built);
+        }
     }
 
     private void Enqueue(Job job)
@@ -405,36 +454,83 @@ public sealed class ChunkStreamer : IDisposable
         }
     }
 
-    private async Task WorkAsync(CancellationToken stop)
+    private void Work(CancellationToken stop)
     {
         // One mesher for each worker: a mesher keeps buffers, and it is not safe for many threads.
         var mesher = new GreedyMesher();
-        await foreach (Job job in _jobs.Reader.ReadAllAsync(stop).ConfigureAwait(false))
+        ChannelReader<Job> reader = _jobs.Reader;
+        while (!stop.IsCancellationRequested)
         {
-            Result result;
-            try
+            if (!reader.TryRead(out Job job))
             {
-                long start = Stopwatch.GetTimestamp();
-                if (job.Snapshot is null)
+                try
                 {
-                    result = new Result(job.Position, 0, true, _generation.GenerateChunkAt(job.Position), null);
-                    Interlocked.Add(ref _generationTicks, Stopwatch.GetTimestamp() - start);
+                    if (!reader.WaitToReadAsync(stop).AsTask().GetAwaiter().GetResult())
+                    {
+                        return;
+                    }
                 }
-                else
+                catch (OperationCanceledException)
                 {
-                    MeshJobStarting?.Invoke(job.Position, job.Version);
-                    result = new Result(job.Position, job.Version, false, null, ChunkMeshData.Build(mesher.Mesh(job.Snapshot), _palette));
-                    Interlocked.Add(ref _meshingTicks, Stopwatch.GetTimestamp() - start);
+                    return;
                 }
-            }
-            catch (Exception exception)
-            {
-                _onError(job.Snapshot is null ? $"Generation of the chunk {Format(job.Position)}" : $"Mesh of the chunk {Format(job.Position)}", exception);
-                result = new Result(job.Position, job.Version, job.Snapshot is null, null, null);
+
+                continue;
             }
 
-            // An empty result also goes to the main thread, because Update counts the complete jobs.
-            _results.Writer.TryWrite(result);
+            _results.Writer.TryWrite(Run(job, mesher));
+        }
+    }
+
+    // An empty result also goes to the main thread, because Update counts the complete jobs.
+    private Result Run(Job job, GreedyMesher mesher)
+    {
+        try
+        {
+            long start = Stopwatch.GetTimestamp();
+            if (job.Snapshot is null)
+            {
+                Result generated = new(job.Position, 0, true, _generation.GenerateChunkAt(job.Position), null);
+                Interlocked.Add(ref _generationTicks, Stopwatch.GetTimestamp() - start);
+                return generated;
+            }
+
+            if (IsOld(job))
+            {
+                return new Result(job.Position, job.Version, false, null, null);
+            }
+
+            MeshJobStarting?.Invoke(job.Position, job.Version);
+            Result meshed = new(job.Position, job.Version, false, null, ChunkMeshData.Build(mesher.Mesh(job.Snapshot), _palette));
+            Interlocked.Add(ref _meshingTicks, Stopwatch.GetTimestamp() - start);
+            return meshed;
+        }
+        catch (Exception exception)
+        {
+            ReportError(job.Snapshot is null ? $"Generation of the chunk {Format(job.Position)}" : $"Mesh of the chunk {Format(job.Position)}", exception);
+            return new Result(job.Position, job.Version, job.Snapshot is null, null, null);
+        }
+    }
+
+    // A newer job of the same chunk is in the queue, or a mesh after an edit replaced it. Its result cannot be delivered.
+    private bool IsOld(Job job)
+    {
+        lock (_lock)
+        {
+            return !_chunks.TryGetValue(job.Position, out ChunkEntry? entry) || entry.Version != job.Version;
+        }
+    }
+
+    // An exception of the error method must not stop a worker, because the worker must send the result of its job.
+    private void ReportError(string job, Exception exception)
+    {
+        try
+        {
+            _onError(job, exception);
+        }
+        catch (Exception callbackException)
+        {
+            Trace.TraceError($"{job}: {exception}. The error method failed: {callbackException}");
         }
     }
 
@@ -477,8 +573,8 @@ public enum ChunkState
     Generated,
 
     /// <summary>
-    /// The chunk is meshed, and <see cref="ChunkStreamer.Update"/> gave the mesh to the caller, which uploads it to the GPU.
-    /// A newer mesh can follow after a change.
+    /// <see cref="ChunkStreamer.Update"/> or <see cref="ChunkStreamer.MeshAfterEdit"/> gave a mesh of the chunk to the caller at least one time.
+    /// The caller uploads it to the GPU. The state stays the same while a newer mesh waits for a worker.
     /// </summary>
     Delivered,
 }
