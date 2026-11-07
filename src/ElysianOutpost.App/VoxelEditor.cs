@@ -22,7 +22,8 @@ namespace ElysianOutpost.App;
 /// </para>
 /// <para>
 /// After an edit, the editor meshes the changed chunk again and replaces its GPU buffers, on the main thread.
-/// Thus the change shows in the same frame. Each chunk mesh has the faces at the chunk borders, thus the neighbor chunks do not change.
+/// Thus the change shows in the same frame. An edit on a chunk border also meshes the neighbor chunks again,
+/// because the faces between two chunks depend on the voxels of the two chunks (#48).
 /// </para>
 /// </remarks>
 internal sealed class VoxelEditor
@@ -103,17 +104,23 @@ internal sealed class VoxelEditor
         long start = Stopwatch.GetTimestamp();
         int edits = 0;
         _changedChunks.Clear();
+        Span<int3> chunks = stackalloc int3[4];
         foreach (VoxelEditAction action in _actions)
         {
-            if (Target is not VoxelRayHit hit || !TryEdit(action, hit, camera.Position, out int3 chunk))
+            if (Target is not VoxelRayHit hit || !TryEdit(action, hit, camera.Position, out int3 voxel))
             {
                 continue;
             }
 
+            // An edit on a chunk border also changes the mesh of the neighbor chunk (#48).
             edits++;
-            if (!_changedChunks.Contains(chunk))
+            int count = _builder.Voxels.GetChunksToMesh(voxel, chunks);
+            foreach (int3 chunk in chunks[..count])
             {
-                _changedChunks.Add(chunk);
+                if (!_changedChunks.Contains(chunk))
+                {
+                    _changedChunks.Add(chunk);
+                }
             }
 
             // The next click of the same frame uses the changed world.
@@ -141,12 +148,14 @@ internal sealed class VoxelEditor
     private VoxelRayHit? Cast(FreeFlyCamera camera) =>
         VoxelRay.TryCast(_builder.Voxels, camera.Position, camera.Forward, out VoxelRayHit hit) ? hit : null;
 
-    private bool TryEdit(VoxelEditAction action, VoxelRayHit hit, float3 cameraPosition, out int3 chunk)
+    // Gives the world position of the changed voxel.
+    private bool TryEdit(VoxelEditAction action, VoxelRayHit hit, float3 cameraPosition, out int3 voxel)
     {
+        voxel = action == VoxelEditAction.Remove ? hit.Voxel : hit.EmptyVoxel;
         if (action == VoxelEditAction.Remove)
         {
             ushort removed = hit.BlockType;
-            bool done = VoxelEdits.TryRemove(_builder.Voxels, hit, out chunk);
+            bool done = VoxelEdits.TryRemove(_builder.Voxels, hit, out _);
             if (done)
             {
                 _log.Info($"Removed the voxel ({hit.Voxel.X}, {hit.Voxel.Y}, {hit.Voxel.Z}), block type {removed}.");
@@ -155,7 +164,7 @@ internal sealed class VoxelEditor
             return done;
         }
 
-        if (VoxelEdits.TryPlace(_builder.Voxels, hit, BlockType, cameraPosition, out chunk))
+        if (VoxelEdits.TryPlace(_builder.Voxels, hit, BlockType, cameraPosition, out _))
         {
             int3 placed = hit.EmptyVoxel;
             _log.Info($"Placed a voxel of block type {BlockName} ({BlockType}) at ({placed.X}, {placed.Y}, {placed.Z}).");
