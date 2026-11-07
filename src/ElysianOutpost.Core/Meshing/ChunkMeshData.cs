@@ -15,8 +15,8 @@ namespace ElysianOutpost.Core.Meshing;
 /// The faces that point to the camera are then clockwise on the screen. See <c>ScreenWindingTests</c>.
 /// </para>
 /// <para>
-/// The mesher writes the normal (1, 0, 0) for all the quads (#46). Thus this class calculates a flat normal from the vertices of each quad,
-/// as <c>RecalculateNormals</c> did in the legacy project. #46 removes this calculation.
+/// The four vertices of a quad get the normal of the quad. Since #46, the mesher writes the normal of the face direction.
+/// Before #46, this class calculated a flat normal from the vertices, as <c>RecalculateNormals</c> did in the legacy project.
 /// </para>
 /// <para>
 /// The indices have 32 bits. A chunk of 16 × 64 × 16 voxels can have more than 65,536 vertices, for example a 3D checkerboard.
@@ -72,7 +72,7 @@ public sealed class ChunkMeshData
             }
 
             byte4 color = palette[(ushort)quad.VoxelID];
-            float3 normal = FlatNormal(quad);
+            float3 normal = ToFloat3(quad.Normal);
             int vertex = i * VerticesPerQuad;
             vertices[vertex] = new ChunkVertex { Position = ToFloat3(quad.Vertex0), Normal = normal, Color = color };
             vertices[vertex + 1] = new ChunkVertex { Position = ToFloat3(quad.Vertex1), Normal = normal, Color = color };
@@ -90,16 +90,6 @@ public sealed class ChunkMeshData
         }
 
         return new ChunkMeshData(vertices, indices);
-    }
-
-    // The normal of the triangle (0, 1, 2). The two triangles of a quad are in the same plane, thus they have the same normal.
-    // For all the quads of the mesher, this normal points out of the solid voxel.
-    // A quad with no area gets the zero vector. The GPU does not draw such a quad.
-    private static float3 FlatNormal(MeshQuad quad)
-    {
-        Vector3 cross = Vector3.Cross(quad.Vertex1 - quad.Vertex0, quad.Vertex2 - quad.Vertex0);
-        float length = cross.Length();
-        return length > 0f ? ToFloat3(cross / length) : float3.Zero;
     }
 
     private static float3 ToFloat3(Vector3 vector) => new(vector.X, vector.Y, vector.Z);
