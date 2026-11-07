@@ -6,6 +6,7 @@ using Brutal.ShaderCApi;
 using Brutal.VulkanApi;
 using ElysianOutpost.Core.Lighting;
 using ElysianOutpost.Core.Meshing;
+using ElysianOutpost.Core.Voxels;
 
 namespace ElysianOutpost.App.Rendering;
 
@@ -46,6 +47,9 @@ internal sealed unsafe class ChunkPipeline : IDisposable
     // the nine ambient coefficients (27 floats), and the sRGB conversion (a 32-bit boolean).
     private const int SpecializationConstantCount = 34;
 
+    // The vertex shader has 64 palette colors as specialization constants (#51).
+    private const int PaletteSize = 64;
+
     private readonly GpuContext _gpu;
     private bool _disposed;
 
@@ -56,9 +60,16 @@ internal sealed unsafe class ChunkPipeline : IDisposable
     /// <param name="colorFormat">The format of the swapchain images.</param>
     /// <param name="depthFormat">The format of the depth image.</param>
     /// <param name="lighting">The light of the scene.</param>
+    /// <param name="palette">The colors of the block types. The vertex shader gets them as specialization constants. A maximum of 64 colors.</param>
     /// <param name="compiler">The shader compiler. The pipelines of the renderer use the same compiler, because the first compilation of a compiler is slow.</param>
-    public ChunkPipeline(GpuContext gpu, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting, ShaderCompiler compiler)
+    public ChunkPipeline(GpuContext gpu, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting, BlockPalette palette, ShaderCompiler compiler)
     {
+        ArgumentNullException.ThrowIfNull(palette);
+        if (palette.Count > PaletteSize)
+        {
+            throw new ArgumentException($"The chunk shader has {PaletteSize} palette colors. The palette has {palette.Count} colors.", nameof(palette));
+        }
+
         _gpu = gpu;
         var range = new VkPushConstantRange
         {
@@ -74,7 +85,7 @@ internal sealed unsafe class ChunkPipeline : IDisposable
         Layout = gpu.Device.CreatePipelineLayout(in layoutInfo, null);
         try
         {
-            Pipeline = CreatePipeline(gpu.Device, Layout, colorFormat, depthFormat, lighting, compiler);
+            Pipeline = CreatePipeline(gpu.Device, Layout, colorFormat, depthFormat, lighting, palette, compiler);
         }
         catch
         {
@@ -115,14 +126,14 @@ internal sealed unsafe class ChunkPipeline : IDisposable
         }
     }
 
-    private static VkPipeline CreatePipeline(Device device, VkPipelineLayout layout, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting, ShaderCompiler compiler)
+    private static VkPipeline CreatePipeline(Device device, VkPipelineLayout layout, VkFormat colorFormat, VkFormat depthFormat, SceneLighting lighting, BlockPalette palette, ShaderCompiler compiler)
     {
         VkShaderModule vertexShader = compiler.CreateModule(device, "chunk.vert", ShaderKind.VertexShader);
         VkShaderModule fragmentShader = VkShaderModule.NullHandle;
         try
         {
             fragmentShader = compiler.CreateModule(device, "chunk.frag", ShaderKind.FragmentShader);
-            return CreatePipeline(device, layout, colorFormat, depthFormat, lighting, vertexShader, fragmentShader);
+            return CreatePipeline(device, layout, colorFormat, depthFormat, lighting, palette, vertexShader, fragmentShader);
         }
         finally
         {
@@ -141,6 +152,7 @@ internal sealed unsafe class ChunkPipeline : IDisposable
         VkFormat colorFormat,
         VkFormat depthFormat,
         SceneLighting lighting,
+        BlockPalette palette,
         VkShaderModule vertexShader,
         VkShaderModule fragmentShader)
     {
@@ -165,6 +177,27 @@ internal sealed unsafe class ChunkPipeline : IDisposable
             Data = values,
         };
 
+        uint* paletteValues = stackalloc uint[PaletteSize];
+        PaletteValues(palette).CopyTo(new Span<uint>(paletteValues, PaletteSize));
+        VkSpecializationMapEntry* paletteEntries = stackalloc VkSpecializationMapEntry[PaletteSize];
+        for (int i = 0; i < PaletteSize; i++)
+        {
+            paletteEntries[i] = new VkSpecializationMapEntry
+            {
+                ConstantID = i,
+                Offset = (ByteSize32)(i * sizeof(uint)),
+                Size = (ByteSize64)sizeof(uint),
+            };
+        }
+
+        var paletteSpecialization = new VkSpecializationInfo
+        {
+            MapEntryCount = PaletteSize,
+            MapEntries = paletteEntries,
+            DataSize = (ByteSize64)(PaletteSize * sizeof(uint)),
+            Data = paletteValues,
+        };
+
         byte* entryPoint = stackalloc byte[] { (byte)'m', (byte)'a', (byte)'i', (byte)'n', 0 };
         VkPipelineShaderStageCreateInfo* stages = stackalloc VkPipelineShaderStageCreateInfo[2];
         stages[0] = new VkPipelineShaderStageCreateInfo
@@ -172,6 +205,7 @@ internal sealed unsafe class ChunkPipeline : IDisposable
             Stage = VkShaderStageFlags.VertexBit,
             Module = vertexShader,
             Name = entryPoint,
+            SpecializationInfo = &paletteSpecialization,
         };
         stages[1] = new VkPipelineShaderStageCreateInfo
         {
@@ -181,23 +215,20 @@ internal sealed unsafe class ChunkPipeline : IDisposable
             SpecializationInfo = &specialization,
         };
 
-        // The layout of ChunkVertex: the position (3 floats), the normal (3 floats) and the color (4 bytes).
+        // The layout of ChunkVertex (#51): two 32-bit unsigned integers. The vertex shader unpacks them.
         var binding = new VkVertexInputBindingDescription
         {
             Binding = 0,
             Stride = (ByteSize32)ChunkVertex.SizeInBytes,
             InputRate = VkVertexInputRate.Vertex,
         };
-        VkVertexInputAttributeDescription* attributes = stackalloc VkVertexInputAttributeDescription[3];
-        attributes[0] = new VkVertexInputAttributeDescription { Location = 0, Binding = 0, Format = VkFormat.R32G32B32SFloat, Offset = default };
-        attributes[1] = new VkVertexInputAttributeDescription { Location = 1, Binding = 0, Format = VkFormat.R32G32B32SFloat, Offset = (ByteSize32)12 };
-        attributes[2] = new VkVertexInputAttributeDescription { Location = 2, Binding = 0, Format = VkFormat.R8G8B8A8UNorm, Offset = (ByteSize32)24 };
+        var attribute = new VkVertexInputAttributeDescription { Location = 0, Binding = 0, Format = VkFormat.R32G32UInt, Offset = default };
         var vertexInput = new VkPipelineVertexInputStateCreateInfo
         {
             VertexBindingDescriptionCount = 1,
             VertexBindingDescriptions = &binding,
-            VertexAttributeDescriptionCount = 3,
-            VertexAttributeDescriptions = attributes,
+            VertexAttributeDescriptionCount = 1,
+            VertexAttributeDescriptions = &attribute,
         };
         var inputAssembly = new VkPipelineInputAssemblyStateCreateInfo { Topology = VkPrimitiveTopology.TriangleList };
         var viewport = new VkPipelineViewportStateCreateInfo { ViewportCount = 1, ScissorCount = 1 };
@@ -274,6 +305,14 @@ internal sealed unsafe class ChunkPipeline : IDisposable
         return values.Count == SpecializationConstantCount
             ? [.. values]
             : throw new InvalidOperationException($"The fragment shader has {SpecializationConstantCount} specialization constants, not {values.Count}.");
+    }
+
+    // The order of the values agrees with the constant IDs 0 to 63 in chunk.vert. The colors after the palette are zero.
+    private static uint[] PaletteValues(BlockPalette palette)
+    {
+        var values = new uint[PaletteSize];
+        palette.GetPackedColors().CopyTo(values, 0);
+        return values;
     }
 
     private static void AddFloat3(List<uint> values, float3 value)

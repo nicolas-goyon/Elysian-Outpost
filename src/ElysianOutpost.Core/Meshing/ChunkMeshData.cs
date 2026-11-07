@@ -15,8 +15,9 @@ namespace ElysianOutpost.Core.Meshing;
 /// The faces that point to the camera are then clockwise on the screen. See <c>ScreenWindingTests</c>.
 /// </para>
 /// <para>
-/// The four vertices of a quad get the normal of the quad. Since #46, the mesher writes the normal of the face direction.
-/// Before #46, this class calculated a flat normal from the vertices, as <c>RecalculateNormals</c> did in the legacy project.
+/// The four vertices of a quad get the normal of the quad: one of the six unit normals of the faces (#46).
+/// The vertices are packed in 8 bytes (#51): see <see cref="ChunkVertex"/>. The shader reads the color of the block type from the palette.
+/// Thus this class uses the palette only to check that each block type has a color.
 /// </para>
 /// <para>
 /// The indices have 32 bits. A chunk of 16 × 64 × 16 voxels can have more than 65,536 vertices, for example a 3D checkerboard.
@@ -78,18 +79,18 @@ public sealed class ChunkMeshData
         for (int i = 0; i < quads.Count; i++)
         {
             MeshQuad quad = quads[i];
-            if (quad.VoxelID > ushort.MaxValue)
+            if (quad.VoxelID > ushort.MaxValue || quad.VoxelID >= palette.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(quads), quad.VoxelID, $"Quad {i} has a block type that is not a 16-bit value.");
+                throw new ArgumentOutOfRangeException(nameof(quads), quad.VoxelID, $"Quad {i} has a block type that the palette does not have.");
             }
 
-            byte4 color = palette[(ushort)quad.VoxelID];
-            float3 normal = ToFloat3(quad.Normal);
+            var blockType = (ushort)quad.VoxelID;
+            int normal = NormalIndex(quad.Normal, i);
             int vertex = i * VerticesPerQuad;
-            vertices[vertex] = new ChunkVertex { Position = ToFloat3(quad.Vertex0), Normal = normal, Color = color };
-            vertices[vertex + 1] = new ChunkVertex { Position = ToFloat3(quad.Vertex1), Normal = normal, Color = color };
-            vertices[vertex + 2] = new ChunkVertex { Position = ToFloat3(quad.Vertex2), Normal = normal, Color = color };
-            vertices[vertex + 3] = new ChunkVertex { Position = ToFloat3(quad.Vertex3), Normal = normal, Color = color };
+            vertices[vertex] = Vertex(quad.Vertex0, normal, blockType, i);
+            vertices[vertex + 1] = Vertex(quad.Vertex1, normal, blockType, i);
+            vertices[vertex + 2] = Vertex(quad.Vertex2, normal, blockType, i);
+            vertices[vertex + 3] = Vertex(quad.Vertex3, normal, blockType, i);
 
             uint first = (uint)vertex;
             int index = i * IndicesPerQuad;
@@ -110,6 +111,34 @@ public sealed class ChunkMeshData
         }
 
         return new ChunkMeshData(vertices, indices, min, max);
+    }
+
+    // The mesher writes integer positions in the chunk. The packed vertex keeps them exactly (#51).
+    private static ChunkVertex Vertex(Vector3 position, int normal, ushort blockType, int quad)
+    {
+        int x = (int)position.X, y = (int)position.Y, z = (int)position.Z;
+        if (x != position.X || y != position.Y || z != position.Z
+            || x < 0 || y < 0 || z < 0 || x > ChunkVertex.MaxCoordinate || y > ChunkVertex.MaxCoordinate || z > ChunkVertex.MaxCoordinate)
+        {
+            throw new ArgumentOutOfRangeException(nameof(position), position, $"Quad {quad} has a vertex that is not an integer position from 0 to {ChunkVertex.MaxCoordinate}.");
+        }
+
+        return ChunkVertex.Create(x, y, z, normal, blockType);
+    }
+
+    // The normal of the quad must be one of the six unit normals of the faces.
+    private static int NormalIndex(Vector3 normal, int quad)
+    {
+        ReadOnlySpan<float3> normals = ChunkVertex.Normals;
+        for (int i = 0; i < normals.Length; i++)
+        {
+            if (normals[i].X == normal.X && normals[i].Y == normal.Y && normals[i].Z == normal.Z)
+            {
+                return i;
+            }
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(normal), normal, $"Quad {quad} has a normal that is not the unit normal of a face.");
     }
 
     private static float3 ToFloat3(Vector3 vector) => new(vector.X, vector.Y, vector.Z);

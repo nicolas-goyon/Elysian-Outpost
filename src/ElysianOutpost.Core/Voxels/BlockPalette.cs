@@ -47,6 +47,24 @@ public sealed class BlockPalette
     public ReadOnlySpan<byte4> Colors => _colors;
 
     /// <summary>
+    /// Gets the colors of all the block types as 32-bit values, in the order of their IDs.
+    /// Red is in bits 0 to 7, green in bits 8 to 15, blue in bits 16 to 23 and alpha in bits 24 to 31.
+    /// The GLSL function <c>unpackUnorm4x8</c> reads this format. The chunk vertex shader gets these values (#51).
+    /// </summary>
+    /// <returns>A new array with one value for each block type.</returns>
+    public uint[] GetPackedColors()
+    {
+        var values = new uint[_colors.Length];
+        for (int i = 0; i < values.Length; i++)
+        {
+            byte4 color = _colors[i];
+            values[i] = color.X | ((uint)color.Y << 8) | ((uint)color.Z << 16) | ((uint)color.W << 24);
+        }
+
+        return values;
+    }
+
+    /// <summary>
     /// Gets the color of a block type.
     /// </summary>
     /// <param name="blockType">The ID of the block type.</param>

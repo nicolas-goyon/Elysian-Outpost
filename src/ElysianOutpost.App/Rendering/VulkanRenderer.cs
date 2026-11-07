@@ -12,6 +12,7 @@ using Brutal.VulkanApi.Vma;
 using ElysianOutpost.App.Ui;
 using ElysianOutpost.Core.Cameras;
 using ElysianOutpost.Core.Lighting;
+using ElysianOutpost.Core.Voxels;
 using ElysianOutpost.Core.WorldGeneration;
 
 namespace ElysianOutpost.App.Rendering;
@@ -84,7 +85,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             long start = Stopwatch.GetTimestamp();
             using (var compiler = new ShaderCompiler())
             {
-                _chunkPipeline = new ChunkPipeline(_gpu, format, _depthFormat, SceneLighting.LegacySampleScene, compiler);
+                _chunkPipeline = new ChunkPipeline(_gpu, format, _depthFormat, SceneLighting.LegacySampleScene, BlockPalette.Game, compiler);
                 _selectionBoxPipeline = new SelectionBoxPipeline(_gpu, format, _depthFormat, compiler);
             }
 
