@@ -33,6 +33,7 @@ internal sealed class VoxelEditor
     private readonly VoxelEditInput _input;
     private readonly ChunkStreamer _streamer;
     private readonly VulkanRenderer _renderer;
+    private readonly ChunkUploader _uploader;
     private readonly BlockPalette _palette;
     private readonly LogCategory _log;
     private readonly BlockSelector _selector;
@@ -45,13 +46,15 @@ internal sealed class VoxelEditor
     /// </summary>
     /// <param name="input">The mouse input of the edits.</param>
     /// <param name="streamer">The chunk streamer. It has the voxels and meshes the changed chunks.</param>
-    /// <param name="renderer">The renderer that receives the new chunk meshes.</param>
+    /// <param name="uploader">The uploader that receives the new chunk meshes. It uploads them in the same frame.</param>
+    /// <param name="renderer">The renderer. The editor reads its memory statistics for the log.</param>
     /// <param name="palette">The palette. Its block types with a name are the block types that the player can place.</param>
     /// <param name="log">The log category of the edits.</param>
-    public VoxelEditor(VoxelEditInput input, ChunkStreamer streamer, VulkanRenderer renderer, BlockPalette palette, LogCategory log)
+    public VoxelEditor(VoxelEditInput input, ChunkStreamer streamer, ChunkUploader uploader, VulkanRenderer renderer, BlockPalette palette, LogCategory log)
     {
         _input = input;
         _streamer = streamer;
+        _uploader = uploader;
         _renderer = renderer;
         _palette = palette;
         _log = log;
@@ -127,7 +130,8 @@ internal sealed class VoxelEditor
         int edits = _changedVoxels.Count;
 
         long meshed = Stopwatch.GetTimestamp();
-        _renderer.AddChunks(CollectionsMarshal.AsSpan(_rebuiltChunks));
+        // The edits have the highest priority: they go to the GPU now, outside the budget of the world generation (#6).
+        _uploader.UploadNow(CollectionsMarshal.AsSpan(_rebuiltChunks));
         double uploadMilliseconds = Stopwatch.GetElapsedTime(meshed).TotalMilliseconds;
         GpuMemoryStatistics memory = _renderer.CalculateMemoryStatistics();
         _log.Info($"{edits} edit(s) changed {_rebuiltChunks.Count} chunk(s). Meshing: {Stopwatch.GetElapsedTime(start, meshed).TotalMilliseconds:F1} ms. Upload to the GPU: {uploadMilliseconds:F1} ms. GPU memory: {memory.AllocationCount} VMA allocations, {memory.AllocationBytes} bytes. Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes} bytes.");

@@ -51,9 +51,11 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             WorldSettings.SampleScene,
             BlockPalette.Game,
             onError: (job, exception) => worldLog.Error($"{job} failed: {exception}"));
-        var world = new WorldLoader(streamer, WorldSettings.SampleScene.GetChunkPositions(default), renderer, worldLog);
+        ChunkUploadSettings uploadSettings = ChunkUploadSettings.Default;
+        var uploader = new ChunkUploader(renderer, WorldSettings.SampleScene.ChunkSize, uploadSettings);
+        var world = new WorldLoader(streamer, WorldSettings.SampleScene.GetChunkPositions(default), uploader, renderer, uploadSettings, worldLog);
         using var editInput = new VoxelEditInput(window, InputSettings.Default);
-        var editor = new VoxelEditor(editInput, streamer, renderer, BlockPalette.Game, LogCategory.Make("Edit"));
+        var editor = new VoxelEditor(editInput, streamer, uploader, renderer, BlockPalette.Game, LogCategory.Make("Edit"));
         var stopwatch = Stopwatch.StartNew();
         TimeSpan previousFrameStart = TimeSpan.Zero;
         TimeSpan reportStart = TimeSpan.Zero;
@@ -112,7 +114,9 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             ui.AddFrame(frameStart, Stopwatch.GetElapsedTime(ticksStart), renderer.ImGuiRecordTime);
 
             // The world builds also during the start screen, but it shows only after the start screen.
-            world.Update();
+            world.Update(cameraController.Camera.Position);
+            ui.Overlay.UploadQueueLength = uploader.QueueLength;
+            ui.Overlay.UploadBudget = uploader.Budget;
             bool presented = renderer.DrawFrame(cameraController.Camera.CreateViewMatrix(), ui.BuildFrame(), showScene: !startScreen, editor.Target?.Voxel);
             if (presented)
             {

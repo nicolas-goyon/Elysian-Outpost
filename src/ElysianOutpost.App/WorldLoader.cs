@@ -19,26 +19,29 @@ namespace ElysianOutpost.App;
 /// </para>
 /// <para>
 /// The main loop calls <see cref="Update"/> one time in each frame. The first call requests all the chunks of the world.
-/// Each call receives a maximum number of results, because the upload of many chunks in one frame makes the frame long. #6 adds a time budget.
+/// Each call receives a maximum number of results, and gives the meshes to the <see cref="ChunkUploader"/>. The uploader limits the uploads of each frame (#6).
 /// </para>
 /// </remarks>
 /// <param name="streamer">The streamer of the chunks.</param>
 /// <param name="positions">The positions of the chunks of the world.</param>
-/// <param name="renderer">The renderer that receives the chunk meshes.</param>
+/// <param name="uploader">The uploader that receives the chunk meshes.</param>
+/// <param name="renderer">The renderer. The loader reads its upload time for the log.</param>
+/// <param name="settings">The limits of each frame.</param>
 /// <param name="log">The log category of the world.</param>
-internal sealed class WorldLoader(ChunkStreamer streamer, int3[] positions, VulkanRenderer renderer, LogCategory log)
+internal sealed class WorldLoader(ChunkStreamer streamer, int3[] positions, ChunkUploader uploader, VulkanRenderer renderer, ChunkUploadSettings settings, LogCategory log)
 {
-    // The maximum number of results in one frame. In a Release build on lavapipe, 32 uploads take about 5 ms.
-    private const int MaxResultsPerFrame = 32;
-
     private readonly List<BuiltChunk> _batch = [];
     private long _startTimestamp;
+    // The chunk work of each frame on the main thread during the world generation, in milliseconds. The log gives its distribution.
+    private readonly List<double> _resultTimes = [];
+    private readonly List<double> _uploadTimes = [];
     private bool _complete;
 
     /// <summary>
-    /// Requests the chunks at the first call, then receives the finished meshes and gives them to the renderer.
+    /// Requests the chunks at the first call, then receives the finished meshes and uploads the nearest ones in the budget of the frame.
     /// </summary>
-    public void Update()
+    /// <param name="camera">The world position of the camera. The chunks near the camera go to the GPU first.</param>
+    public void Update(float3 camera)
     {
         if (_startTimestamp == 0)
         {
@@ -50,15 +53,20 @@ internal sealed class WorldLoader(ChunkStreamer streamer, int3[] positions, Vulk
             }
         }
 
-        streamer.Update(_batch, MaxResultsPerFrame);
-        if (_batch.Count > 0)
+        long start = Stopwatch.GetTimestamp();
+        ReceiveResults();
+        uploader.Enqueue(CollectionsMarshal.AsSpan(_batch));
+        _batch.Clear();
+        long received = Stopwatch.GetTimestamp();
+        uploader.Update(camera);
+        if (!_complete)
         {
-            renderer.AddChunks(CollectionsMarshal.AsSpan(_batch));
-            _batch.Clear();
+            _resultTimes.Add(Stopwatch.GetElapsedTime(start, received).TotalMilliseconds);
+            _uploadTimes.Add(Stopwatch.GetElapsedTime(received).TotalMilliseconds);
         }
 
         // The streamer is idle when all the jobs are complete. A failed job gives no mesh, thus the count can stay below the number of chunks.
-        if (!_complete && (streamer.DeliveredCount == positions.Length || streamer.IsIdle))
+        if (!_complete && (streamer.DeliveredCount == positions.Length || streamer.IsIdle) && uploader.QueueLength == 0)
         {
             _complete = true;
             if (streamer.DeliveredCount < positions.Length)
@@ -66,7 +74,37 @@ internal sealed class WorldLoader(ChunkStreamer streamer, int3[] positions, Vulk
                 log.Error($"{positions.Length - streamer.DeliveredCount} of {positions.Length} chunks have no mesh. The log shows the failed jobs.");
             }
 
-            log.Info($"The world is ready: {streamer.DeliveredCount} chunks in {Stopwatch.GetElapsedTime(_startTimestamp).TotalSeconds:F2} s. Worker time: generation {streamer.GenerationTime.TotalSeconds:F2} s, meshing {streamer.MeshingTime.TotalSeconds:F2} s. Upload to the GPU: {renderer.ChunkUploadTime.TotalSeconds:F2} s.");
+            log.Info($"The world is ready: {streamer.DeliveredCount} chunks in {Stopwatch.GetElapsedTime(_startTimestamp).TotalSeconds:F2} s. Worker time: generation {streamer.GenerationTime.TotalSeconds:F2} s, meshing {streamer.MeshingTime.TotalSeconds:F2} s. Upload to the GPU: {renderer.ChunkUploadTime.TotalSeconds:F2} s. Chunk work in each frame: results {Distribution(_resultTimes)}, upload {Distribution(_uploadTimes)}.");
+        }
+    }
+
+    // The median, the 95th percentile and the maximum.
+    private static string Distribution(List<double> times)
+    {
+        if (times.Count == 0)
+        {
+            return "no frame";
+        }
+
+        times.Sort();
+        return $"median {times[times.Count / 2]:F2} ms, 95 % {times[(int)(times.Count * 0.95)]:F2} ms, maximum {times[^1]:F2} ms ({times.Count} frames)";
+    }
+
+    // Receives the results in groups, until the maximum number of results or the maximum time of the frame (#6).
+    // A chunk can be in two groups. The upload queue keeps only its newer mesh.
+    private void ReceiveResults()
+    {
+        long start = Stopwatch.GetTimestamp();
+        int received = 0;
+        while (received < settings.MaxResultsPerFrame)
+        {
+            int group = Math.Min(settings.ResultGroupSize, settings.MaxResultsPerFrame - received);
+            int count = streamer.Update(_batch, group);
+            received += count;
+            if (count < group || Stopwatch.GetElapsedTime(start).TotalMilliseconds >= settings.MaxResultMillisecondsPerFrame)
+            {
+                return;
+            }
         }
     }
 
