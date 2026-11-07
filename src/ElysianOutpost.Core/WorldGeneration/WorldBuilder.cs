@@ -41,7 +41,7 @@ public sealed class WorldBuilder
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(palette);
-        _generation = new MainGeneration(settings.ChunkSize, settings.Seed);
+        _generation = new MainGeneration(settings.ChunkSize, settings.Seed, settings.ChunkLayers);
         _palette = palette;
         _positions = settings.GetChunkPositions(center);
         _plannedPositions = [.. _positions];

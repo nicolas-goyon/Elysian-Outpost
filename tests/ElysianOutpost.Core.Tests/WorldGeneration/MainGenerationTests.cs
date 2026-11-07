@@ -76,4 +76,56 @@ public sealed class MainGenerationTests
 
         Assert.Equal(expected, chunk[x - chunkPosition.X, y - chunkPosition.Y, z - chunkPosition.Z]);
     }
+
+    // The acceptance test of #49: with 2 chunk layers of 32 voxels, the terrain uses the full world height of 64 voxels.
+    // These settings give the same terrain as one layer of 64 voxels, cut into two layers.
+    [Fact]
+    public void GenerateChunkAt_TwoChunkLayers_GivesTheTerrainOfTheWorldHeight()
+    {
+        var oneLayer = new MainGeneration(new int3(16, 64, 16), 123, chunkLayers: 1);
+        var twoLayers = new MainGeneration(new int3(16, 32, 16), 123, chunkLayers: 2);
+
+        ushort[,,] full = oneLayer.GenerateChunkAt(new int3(0, 0, 0));
+        ushort[,,] lower = twoLayers.GenerateChunkAt(new int3(0, 0, 0));
+        ushort[,,] upper = twoLayers.GenerateChunkAt(new int3(0, 32, 0));
+
+        int solidInUpper = 0;
+        for (int x = 0; x < 16; x++)
+        {
+            for (int y = 0; y < 64; y++)
+            {
+                for (int z = 0; z < 16; z++)
+                {
+                    ushort split = y < 32 ? lower[x, y, z] : upper[x, y - 32, z];
+                    Assert.Equal(full[x, y, z], split);
+                    solidInUpper += y >= 32 && split != 0 ? 1 : 0;
+                }
+            }
+        }
+
+        // The terrain at (0, 0) has its grass at y = 36: in the second layer.
+        Assert.True(solidInUpper > 0);
+        Assert.Equal(16, upper[0, 36 - 32, 0]);
+    }
+
+    // The legacy code returned the block type ERROR (26) at y = 159 and y = 160 under a high terrain. #49 removes this debug code.
+    [Fact]
+    public void GenerateChunkAt_HighWorld_HasNoErrorBlock()
+    {
+        var generation = new MainGeneration(new int3(16, 64, 16), 123, chunkLayers: 4);
+        for (int layer = 0; layer < 4; layer++)
+        {
+            foreach (int3 column in new[] { new int3(0, 0, 0), new int3(-200, 0, -5), new int3(160, 0, 96) })
+            {
+                ushort[,,] chunk = generation.GenerateChunkAt(new int3(column.X, layer * 64, column.Z));
+                Assert.DoesNotContain((ushort)26, chunk.Cast<ushort>());
+            }
+        }
+    }
+
+    [Fact]
+    public void Constructor_WithLessThanOneChunkLayer_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MainGeneration(new int3(16, 64, 16), 123, chunkLayers: 0));
+    }
 }
