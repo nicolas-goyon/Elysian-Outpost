@@ -155,6 +155,59 @@ public sealed class VoxelWorld
         FloorToMultiple(position.Z, ChunkSize.Z));
 
     /// <summary>
+    /// Gives the chunks whose mesh changes when the voxel at a world position changes (#48): the chunk of the voxel,
+    /// and each neighbor chunk that touches the voxel. A voxel on a corner of a chunk touches up to three neighbor chunks.
+    /// With a chunk size of 1 on an axis, the method gives only the neighbor on the negative side of that axis.
+    /// </summary>
+    /// <param name="position">The world position of the voxel.</param>
+    /// <param name="chunks">The span that receives the chunk positions. It must have space for 4 positions.</param>
+    /// <returns>The number of chunk positions. The method gives only the chunks that the world has. Thus the value is 0 if no chunk contains the voxel.</returns>
+    /// <exception cref="ArgumentException"><paramref name="chunks"/> has space for less than 4 positions.</exception>
+    public int GetChunksToMesh(int3 position, Span<int3> chunks)
+    {
+        if (chunks.Length < 4)
+        {
+            throw new ArgumentException("The span must have space for 4 positions.", nameof(chunks));
+        }
+
+        int3 chunk = GetChunkPosition(position);
+        if (!_chunks.ContainsKey(chunk))
+        {
+            return 0;
+        }
+
+        int count = 0;
+        chunks[count++] = chunk;
+        int3 local = position - chunk;
+        ReadOnlySpan<int> coordinates = [local.X, local.Y, local.Z];
+        ReadOnlySpan<int> sizes = [ChunkSize.X, ChunkSize.Y, ChunkSize.Z];
+        for (int axis = 0; axis < 3; axis++)
+        {
+            Span<int> offset = [0, 0, 0];
+            if (coordinates[axis] == 0)
+            {
+                offset[axis] = -sizes[axis];
+            }
+            else if (coordinates[axis] == sizes[axis] - 1)
+            {
+                offset[axis] = sizes[axis];
+            }
+            else
+            {
+                continue;
+            }
+
+            int3 neighbor = chunk + new int3(offset[0], offset[1], offset[2]);
+            if (_chunks.ContainsKey(neighbor))
+            {
+                chunks[count++] = neighbor;
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>
     /// Gets a value that tells if the voxel at a world position is solid: its block type is not 0.
     /// </summary>
     /// <param name="position">The world position of the voxel.</param>

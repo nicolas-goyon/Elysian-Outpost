@@ -3,6 +3,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Brutal.Numerics;
 using ElysianOutpost.Core.Voxels;
 
 namespace ElysianOutpost.Core.Meshing;
@@ -13,8 +14,12 @@ namespace ElysianOutpost.Core.Meshing;
 /// <remarks>
 /// <para>
 /// For each of the six face directions, the mesher goes through the slices of the chunk. In each slice, it writes a mask:
-/// the block type of each visible face, or 0 for no face. A face is visible if the neighbor voxel in the face direction is air
-/// or outside the chunk. Thus each chunk mesh has the faces at the chunk borders (#48 changes this).
+/// the block type of each visible face, or 0 for no face. A face is visible if the neighbor voxel in the face direction is air.
+/// </para>
+/// <para>
+/// At a chunk border, the neighbor voxel is in the neighbor chunk (#48). With a <see cref="VoxelWorld"/>, the mesher reads the border voxels
+/// of the neighbor chunks in the world. A neighbor chunk that the world does not have is air. Thus, when the neighbor chunk arrives
+/// or changes, the caller must mesh the chunk again. Without a world, all the voxels outside the chunk are air, as before #48.
 /// </para>
 /// <para>
 /// The mesher then reads the mask row by row. At the first face that is not in a rectangle, it makes the rectangle as wide as possible,
@@ -36,7 +41,7 @@ public sealed class GreedyMesher
     private ushort[] _mask = [];
 
     /// <summary>
-    /// Makes the quads of a chunk.
+    /// Makes the quads of a chunk. All the voxels outside the chunk are air.
     /// </summary>
     /// <param name="chunk">The chunk.</param>
     /// <returns>A new list with the quads, in chunk coordinates.</returns>
@@ -45,30 +50,50 @@ public sealed class GreedyMesher
     {
         ArgumentNullException.ThrowIfNull(chunk);
         var quads = new List<MeshQuad>();
-        Mesh(chunk.VoxelData, (int)chunk.XDepth, (int)chunk.YDepth, (int)chunk.ZDepth, quads);
+        Mesh(chunk.VoxelData, (int)chunk.XDepth, (int)chunk.YDepth, (int)chunk.ZDepth, null, default, quads);
         return quads;
     }
 
     /// <summary>
-    /// Makes the quads of the voxels of a chunk, with no copy of the voxels.
+    /// Makes the quads of the voxels of a chunk, with no copy of the voxels. All the voxels outside the chunk are air.
     /// </summary>
     /// <param name="voxels">The block types of the chunk, with the indices [x, y, z].</param>
     /// <returns>A new list with the quads, in chunk coordinates.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="voxels"/> is <c>null</c>.</exception>
-    public List<MeshQuad> Mesh(ushort[,,] voxels)
+    public List<MeshQuad> Mesh(ushort[,,] voxels) => Mesh(voxels, null, default);
+
+    /// <summary>
+    /// Makes the quads of the voxels of a chunk, with no copy of the voxels. The neighbor chunks in the world hide the faces at the borders (#48).
+    /// </summary>
+    /// <param name="voxels">The block types of the chunk, with the indices [x, y, z].</param>
+    /// <param name="world">
+    /// The world that has the neighbor chunks, or <c>null</c>. The chunk size of the world must be the size of <paramref name="voxels"/>.
+    /// A neighbor chunk that the world does not have is air.
+    /// </param>
+    /// <param name="chunkPosition">The world position of the first voxel of the chunk.</param>
+    /// <returns>A new list with the quads, in chunk coordinates.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="voxels"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">The size of <paramref name="voxels"/> is not the chunk size of <paramref name="world"/>.</exception>
+    public List<MeshQuad> Mesh(ushort[,,] voxels, VoxelWorld? world, int3 chunkPosition)
     {
         ArgumentNullException.ThrowIfNull(voxels);
+        if (world is not null
+            && (voxels.GetLength(0) != world.ChunkSize.X || voxels.GetLength(1) != world.ChunkSize.Y || voxels.GetLength(2) != world.ChunkSize.Z))
+        {
+            throw new ArgumentException("The size of the voxels is not the chunk size of the world.", nameof(voxels));
+        }
 
-        // A ushort[x, y, z] array is one block of memory, in the same order as the index of Chunk.
-        ReadOnlySpan<ushort> data = voxels.Length == 0
-            ? []
-            : MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetArrayDataReference(voxels)), voxels.Length);
         var quads = new List<MeshQuad>();
-        Mesh(data, voxels.GetLength(0), voxels.GetLength(1), voxels.GetLength(2), quads);
+        Mesh(AsSpan(voxels), voxels.GetLength(0), voxels.GetLength(1), voxels.GetLength(2), world, chunkPosition, quads);
         return quads;
     }
 
-    private void Mesh(ReadOnlySpan<ushort> voxels, int sizeX, int sizeY, int sizeZ, List<MeshQuad> quads)
+    // A ushort[x, y, z] array is one block of memory, in the same order as the index of Chunk.
+    private static ReadOnlySpan<ushort> AsSpan(ushort[,,] voxels) => voxels.Length == 0
+        ? []
+        : MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetArrayDataReference(voxels)), voxels.Length);
+
+    private void Mesh(ReadOnlySpan<ushort> voxels, int sizeX, int sizeY, int sizeZ, VoxelWorld? world, int3 chunkPosition, List<MeshQuad> quads)
     {
         if (voxels.IsEmpty)
         {
@@ -84,10 +109,14 @@ public sealed class GreedyMesher
                 _mask = new ushort[width * height];
             }
 
+            // The neighbor chunk on the side of the faces of this direction. Its voxels hide the faces of the border slice.
+            ReadOnlySpan<ushort> neighbor = world is not null && world.TryGetChunk(chunkPosition + size.NeighborOffset(direction), out ushort[,,]? neighborVoxels)
+                ? AsSpan(neighborVoxels)
+                : [];
             Span<ushort> mask = _mask.AsSpan(0, width * height);
             for (int slice = 0; slice < depth; slice++)
             {
-                if (FillMask(voxels, size, direction, slice, width, height, mask))
+                if (FillMask(voxels, neighbor, size, direction, slice, width, height, mask))
                 {
                     MergeFaces(mask, size, direction, slice, width, height, quads);
                 }
@@ -107,7 +136,7 @@ public sealed class GreedyMesher
     ];
 
     // Writes the block type of each visible face of the slice in the mask, or 0. Returns true if the slice has a visible face.
-    private static bool FillMask(ReadOnlySpan<ushort> voxels, ChunkSize size, Direction direction, int slice, int width, int height, Span<ushort> mask)
+    private static bool FillMask(ReadOnlySpan<ushort> voxels, ReadOnlySpan<ushort> neighbor, ChunkSize size, Direction direction, int slice, int width, int height, Span<ushort> mask)
     {
         bool any = false;
         for (int planeY = 0; planeY < height; planeY++)
@@ -117,7 +146,7 @@ public sealed class GreedyMesher
                 (int x, int y, int z) = size.ToVoxel(direction, slice, planeX, planeY);
                 ushort block = voxels[size.Index(x, y, z)];
                 ushort face = 0;
-                if (block != 0 && IsNeighborTransparent(voxels, size, direction, x, y, z))
+                if (block != 0 && IsNeighborTransparent(voxels, neighbor, size, direction, x, y, z))
                 {
                     face = block;
                     any = true;
@@ -131,7 +160,9 @@ public sealed class GreedyMesher
     }
 
     // An ascending direction shows the negative face of a voxel, and a descending direction the positive face (legacy mesher).
-    private static bool IsNeighborTransparent(ReadOnlySpan<ushort> voxels, ChunkSize size, Direction direction, int x, int y, int z)
+    // Outside the chunk, the neighbor voxel is in the neighbor chunk: at the same position, minus or plus one chunk size on the axis.
+    // An empty span is a neighbor chunk of air.
+    private static bool IsNeighborTransparent(ReadOnlySpan<ushort> voxels, ReadOnlySpan<ushort> neighbor, ChunkSize size, Direction direction, int x, int y, int z)
     {
         int step = direction.Descending ? 1 : -1;
         switch (direction.Axis)
@@ -147,7 +178,12 @@ public sealed class GreedyMesher
                 break;
         }
 
-        return x < 0 || y < 0 || z < 0 || x >= size.X || y >= size.Y || z >= size.Z || voxels[size.Index(x, y, z)] == 0;
+        if (x >= 0 && y >= 0 && z >= 0 && x < size.X && y < size.Y && z < size.Z)
+        {
+            return voxels[size.Index(x, y, z)] == 0;
+        }
+
+        return neighbor.IsEmpty || neighbor[size.Index((x + size.X) % size.X, (y + size.Y) % size.Y, (z + size.Z) % size.Z)] == 0;
     }
 
     // Merges the faces of the mask into rectangles, and writes one quad for each rectangle.
@@ -271,6 +307,18 @@ public sealed class GreedyMesher
     private readonly record struct ChunkSize(int X, int Y, int Z)
     {
         public int Index(int x, int y, int z) => (((x * Y) + y) * Z) + z;
+
+        // The offset from the chunk to its neighbor chunk on the side of the faces of a direction.
+        public int3 NeighborOffset(Direction direction)
+        {
+            int sign = direction.Descending ? 1 : -1;
+            return direction.Axis switch
+            {
+                Axis.X => new int3(sign * X, 0, 0),
+                Axis.Y => new int3(0, sign * Y, 0),
+                _ => new int3(0, 0, sign * Z),
+            };
+        }
 
         public (int Width, int Height, int Depth) Plane(Axis axis) => axis switch
         {
