@@ -11,9 +11,6 @@ layout(push_constant) uniform PushConstants
     // The view matrix multiplied by the projection matrix (FreeFlyCamera and CameraLens).
     // The C# matrices use the row-vector convention. GLSL reads the same memory as the transposed matrix, thus M * p is correct.
     mat4 viewProjection;
-
-    // The world position of the first voxel of the chunk. The shader does not use the W value.
-    vec4 chunkPosition;
 } pushConstants;
 
 // The 64 colors of the palette (BlockPalette), as specialization constants. Each value is an sRGB color with alpha:
@@ -91,6 +88,9 @@ const vec3 normals[6] = vec3[](
 
 layout(location = 0) in uvec2 inVertex;
 
+// The world position of the first voxel of the chunk, one value for each instance (#52). The shader does not use the W value.
+layout(location = 1) in vec4 inChunkPosition;
+
 layout(location = 0) out vec3 outNormal;
 layout(location = 1) out vec3 outColor;
 
@@ -117,7 +117,7 @@ void main()
 
     uint packed = inVertex.x;
     vec3 position = vec3(packed & 0xFFu, (packed >> 8u) & 0xFFu, (packed >> 16u) & 0xFFu);
-    gl_Position = pushConstants.viewProjection * vec4(position + pushConstants.chunkPosition.xyz, 1.0);
+    gl_Position = pushConstants.viewProjection * vec4(position + inChunkPosition.xyz, 1.0);
     outNormal = normals[(packed >> 24u) & 0x7u];
     outColor = srgbToLinear(unpackUnorm4x8(palette[inVertex.y & 63u]).rgb);
 }

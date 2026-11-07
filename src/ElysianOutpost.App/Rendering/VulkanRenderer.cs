@@ -92,7 +92,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             }
 
             _log.Info($"The chunk and selection box pipelines are ready in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F0} ms, with the depth format {_depthFormat}.");
-            _chunkMeshes = new ChunkMeshes(_gpu);
+            _chunkMeshes = new ChunkMeshes(_gpu, FramesInFlight);
             _gpuTimer = new GpuTimer(_gpu, FramesInFlight);
         }
         catch
@@ -153,7 +153,9 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             (long)statistics.AllocationBytes,
             (long)statistics.BlockBytes,
             _chunkMeshes.BufferCount,
-            _chunkMeshes.BufferBytes);
+            _chunkMeshes.BufferBytes,
+            _chunkMeshes.BlockBytes,
+            2L * ChunkMeshes.SharedBufferBytes);
     }
 
     /// <summary>
@@ -480,7 +482,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         commandBuffer.SetScissor(0, [new VkRect2D(extent)]);
         commandBuffer.BindPipeline(VkPipelineBindPoint.Graphics, _chunkPipeline.Pipeline);
         commandBuffer.PushConstants(_chunkPipeline.Layout, VkShaderStageFlags.VertexBit, 0, MemoryMarshal.AsBytes(new ReadOnlySpan<float4x4>(ref viewProjection)));
-        DrawnChunkCount = _chunkMeshes.Record(commandBuffer, _chunkPipeline.Layout, ViewFrustum.FromViewProjection(viewProjection));
+        DrawnChunkCount = _chunkMeshes.Record(commandBuffer, _frame, ViewFrustum.FromViewProjection(viewProjection));
     }
 
     private static void TransitionImage(

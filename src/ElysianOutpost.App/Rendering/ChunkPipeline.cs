@@ -23,7 +23,8 @@ namespace ElysianOutpost.App.Rendering;
 /// Thus the front face is <see cref="VkFrontFace.Clockwise"/>, and the pipeline does not draw the back faces.
 /// </para>
 /// <para>
-/// The push constants have the view-projection matrix (bytes 0 to 63) and the world position of the chunk (bytes 64 to 79).
+/// The push constants have the view-projection matrix (bytes 0 to 63). The world position of each chunk comes from a second vertex buffer,
+/// one value for each instance: the indirect draw command of a chunk selects its value with its first instance (#52).
 /// The light values of <see cref="SceneLighting"/> are specialization constants of the fragment shader.
 /// </para>
 /// <para>
@@ -36,12 +37,12 @@ internal sealed unsafe class ChunkPipeline : IDisposable
     /// <summary>
     /// The size of the push constants, in bytes.
     /// </summary>
-    public const int PushConstantSize = 80;
+    public const int PushConstantSize = 64;
 
     /// <summary>
-    /// The offset of the chunk position in the push constants, in bytes.
+    /// The size of the chunk position in the instance buffer, in bytes: a <c>float4</c> (#52).
     /// </summary>
-    public const int ChunkPositionOffset = 64;
+    public const int ChunkPositionSize = 16;
 
     // Thirty-four values: the direction to the light (3 floats), the light color (3 floats),
     // the nine ambient coefficients (27 floats), and the sRGB conversion (a 32-bit boolean).
@@ -216,19 +217,29 @@ internal sealed unsafe class ChunkPipeline : IDisposable
         };
 
         // The layout of ChunkVertex (#51): two 32-bit unsigned integers. The vertex shader unpacks them.
-        var binding = new VkVertexInputBindingDescription
+        // Binding 1 (#52): the world position of the chunk, one float4 for each instance.
+        VkVertexInputBindingDescription* bindings = stackalloc VkVertexInputBindingDescription[2];
+        bindings[0] = new VkVertexInputBindingDescription
         {
             Binding = 0,
             Stride = (ByteSize32)ChunkVertex.SizeInBytes,
             InputRate = VkVertexInputRate.Vertex,
         };
-        var attribute = new VkVertexInputAttributeDescription { Location = 0, Binding = 0, Format = VkFormat.R32G32UInt, Offset = default };
+        bindings[1] = new VkVertexInputBindingDescription
+        {
+            Binding = 1,
+            Stride = (ByteSize32)ChunkPositionSize,
+            InputRate = VkVertexInputRate.Instance,
+        };
+        VkVertexInputAttributeDescription* attributes = stackalloc VkVertexInputAttributeDescription[2];
+        attributes[0] = new VkVertexInputAttributeDescription { Location = 0, Binding = 0, Format = VkFormat.R32G32UInt, Offset = default };
+        attributes[1] = new VkVertexInputAttributeDescription { Location = 1, Binding = 1, Format = VkFormat.R32G32B32A32SFloat, Offset = default };
         var vertexInput = new VkPipelineVertexInputStateCreateInfo
         {
-            VertexBindingDescriptionCount = 1,
-            VertexBindingDescriptions = &binding,
-            VertexAttributeDescriptionCount = 1,
-            VertexAttributeDescriptions = &attribute,
+            VertexBindingDescriptionCount = 2,
+            VertexBindingDescriptions = bindings,
+            VertexAttributeDescriptionCount = 2,
+            VertexAttributeDescriptions = attributes,
         };
         var inputAssembly = new VkPipelineInputAssemblyStateCreateInfo { Topology = VkPrimitiveTopology.TriangleList };
         var viewport = new VkPipelineViewportStateCreateInfo { ViewportCount = 1, ScissorCount = 1 };

@@ -12,5 +12,7 @@ namespace ElysianOutpost.App.Rendering;
 /// Thus this value is usually more than <paramref name="AllocationBytes"/>.
 /// </param>
 /// <param name="ChunkBufferCount">The number of buffers of the chunk meshes: two buffers for each chunk that has quads.</param>
-/// <param name="ChunkBufferBytes">The bytes of the buffers of the chunk meshes, as the app requested them.</param>
-internal readonly record struct GpuMemoryStatistics(long AllocationCount, long AllocationBytes, long BlockBytes, int ChunkBufferCount, long ChunkBufferBytes);
+/// <param name="ChunkBufferBytes">The bytes of the mesh data of the chunks.</param>
+/// <param name="ChunkBlockBytes">The bytes of the blocks of the shared chunk buffers that the meshes use (#52). A block has a size of a power of two.</param>
+/// <param name="ChunkCapacityBytes">The capacity of the shared vertex buffer and index buffer together (#52).</param>
+internal readonly record struct GpuMemoryStatistics(long AllocationCount, long AllocationBytes, long BlockBytes, int ChunkBufferCount, long ChunkBufferBytes, long ChunkBlockBytes, long ChunkCapacityBytes);

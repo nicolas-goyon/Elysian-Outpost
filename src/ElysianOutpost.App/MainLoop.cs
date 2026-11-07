@@ -199,7 +199,7 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
 
         world.LogIfIncomplete();
         GpuMemoryStatistics memory = renderer.CalculateMemoryStatistics();
-        log.Info($"GPU memory at the end: {memory.AllocationCount} VMA allocations, {memory.AllocationBytes} bytes. Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes} bytes.");
+        log.Info($"GPU memory at the end: {memory.AllocationCount} VMA allocations, {memory.AllocationBytes} bytes. Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes} bytes in blocks of {memory.ChunkBlockBytes} bytes.");
         log.Info($"The main loop stops after {clock.TickCount} ticks.");
     }
 
