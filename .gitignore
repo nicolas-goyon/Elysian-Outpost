@@ -5,3 +5,6 @@ obj/
 .vs/
 TestResults/
 /.idea/
+
+# Reports of the benchmarks (#43)
+BenchmarkDotNet.Artifacts/
