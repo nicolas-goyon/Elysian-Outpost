@@ -146,7 +146,7 @@ internal sealed class DebugOverlay
             if (GpuMemory is GpuMemoryStatistics memory)
             {
                 ImGui.Text($"GPU memory: {memory.AllocationCount} allocations, {memory.AllocationBytes / BytesPerMebibyte:F1} MiB (VMA blocks: {memory.BlockBytes / BytesPerMebibyte:F1} MiB)");
-                ImGui.Text($"Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes / BytesPerMebibyte:F2} MiB");
+                ImGui.Text($"Chunk meshes: {memory.ChunkBufferCount} buffers, {memory.ChunkBufferBytes / BytesPerMebibyte:F2} MiB in blocks of {memory.ChunkBlockBytes / BytesPerMebibyte:F2} MiB (capacity {memory.ChunkCapacityBytes / BytesPerMebibyte:F0} MiB)");
             }
             if (Target is VoxelRayHit target)
             {

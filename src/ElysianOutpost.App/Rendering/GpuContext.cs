@@ -53,6 +53,8 @@ internal sealed unsafe class GpuContext : IDisposable
             TimestampPeriod = properties.Limits.TimestampPeriod;
             GpuInfo = CreateGpuInfo(PhysicalDevice, GpuName, in properties);
             TimestampValidBits = GetTimestampValidBits(PhysicalDevice, QueueFamily);
+            VkPhysicalDeviceFeatures features = PhysicalDevice.GetFeatures();
+            MultiDrawIndirect = features.MultiDrawIndirect && features.DrawIndirectFirstInstance;
             Device = CreateDevice(PhysicalDevice, QueueFamily);
             Queue = Device.GetQueue(QueueFamily, 0);
             Allocator = Device.CreateVmaAllocator(new VmaAllocatorCreateInfo
@@ -68,6 +70,12 @@ internal sealed unsafe class GpuContext : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets a value that tells if the device has the features multiDrawIndirect and drawIndirectFirstInstance (#52).
+    /// The device enables them when the GPU has them.
+    /// </summary>
+    public bool MultiDrawIndirect { get; }
 
     /// <summary>
     /// Gets the GPU values of the hardware report (#81).
@@ -326,13 +334,26 @@ internal sealed unsafe class GpuContext : IDisposable
             Synchronization2 = true,
         };
 
+        // The chunk meshes draw with indirect commands (#52). multiDrawIndirect draws all the chunks with one command,
+        // and drawIndirectFirstInstance gives each chunk its position. Without them, ChunkMeshes draws one chunk for each command.
+        VkPhysicalDeviceFeatures supported = physicalDevice.GetFeatures();
+        var features2 = new VkPhysicalDeviceFeatures2
+        {
+            Features = new VkPhysicalDeviceFeatures
+            {
+                MultiDrawIndirect = supported.MultiDrawIndirect,
+                DrawIndirectFirstInstance = supported.DrawIndirectFirstInstance,
+            },
+            Next = &features13,
+        };
+
         var extensions = new HashSet<string> { VK.KHR_SWAPCHAIN_EXTENSION_NAME };
         VulkanHelpers.AddMandatoryIfSupportedDeviceExtensions(extensions, physicalDevice);
         return physicalDevice.CreateDevice(new DeviceEx.CreateInfo
         {
             Extensions = extensions,
             QueueCreateInfos = new ReadOnlySpan<VkDeviceQueueCreateInfo>(&queueInfo, 1),
-            Next = &features13,
+            Next = &features2,
         });
     }
 }
