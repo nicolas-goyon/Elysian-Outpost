@@ -19,11 +19,24 @@ public class Chunk
 {
     private readonly ushort[] _voxels;
 
-
+    /// <summary>
+    /// Gets the number of voxels on the X axis.
+    /// </summary>
     public uint XDepth { get; }
+
+    /// <summary>
+    /// Gets the number of voxels on the Y axis.
+    /// </summary>
     public uint YDepth { get; }
+
+    /// <summary>
+    /// Gets the number of voxels on the Z axis.
+    /// </summary>
     public uint ZDepth { get; }
 
+    /// <summary>
+    /// Gets the world position of the first voxel of the chunk. A chunk read from a file has the position (0, 0, 0).
+    /// </summary>
     public int3 WorldPosition { get; }
 
     /// <summary>
@@ -33,9 +46,13 @@ public class Chunk
 
     private static Voxel EmptyVoxel => default;
 
-
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Chunk"/> class with a copy of generated voxels.
+    /// </summary>
+    /// <param name="voxelArray">The block types, for example the result of <see cref="WorldGeneration.MainGeneration.GenerateChunkAt"/>.</param>
+    /// <param name="position">The world position of the first voxel of the chunk.</param>
     public Chunk(ushort[,,] voxelArray, int3 position)
     {
         XDepth = (uint)voxelArray.GetLength(0);
@@ -50,11 +67,14 @@ public class Chunk
     }
 
     /// <summary>
-    /// Initializes a new chunk from a file on disk.
-    /// The first line contains the comma separated dimensions (X,Y,Z)
-    /// and the second line contains all voxel IDs in X-Y-Z order, separated by commas.
+    /// Initializes a new instance of the <see cref="Chunk"/> class from a file of <see cref="Save"/>.
+    /// The first line contains the sizes X, Y and Z, with commas between them.
+    /// The second line contains all the block types in the order X, Y, Z, with commas between them.
     /// The file does not contain the world position of the chunk. TODO(#70): the save format of the world gives the chunk positions.
     /// </summary>
+    /// <param name="fileName">The path of the file.</param>
+    /// <exception cref="ArgumentException">The file has less than two lines.</exception>
+    /// <exception cref="FormatException">The first line does not have three values, or the number of block types is not X × Y × Z.</exception>
     public Chunk(string fileName)
     {
         string[] lines = File.ReadAllLines(fileName);
@@ -99,9 +119,13 @@ public class Chunk
     #region Getters and Setters
 
     /// <summary>
-    /// Retrieves the voxel at the given position (X,Y,Z), ignoring the axis fields for now.
-    /// Throws if out of range, or you could choose to return null.
+    /// Gets the voxel at a position in the chunk.
     /// </summary>
+    /// <param name="x">The X coordinate in the chunk.</param>
+    /// <param name="y">The Y coordinate in the chunk.</param>
+    /// <param name="z">The Z coordinate in the chunk.</param>
+    /// <returns>The voxel.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the chunk.</exception>
     public Voxel Get(uint x, uint y, uint z)
     {
         if (x >= XDepth || y >= YDepth || z >= ZDepth)
@@ -112,6 +136,12 @@ public class Chunk
         return new Voxel(_voxels[Index(x, y, z)]);
     }
 
+    /// <summary>
+    /// Gets the voxel at a world position.
+    /// </summary>
+    /// <param name="worldPosition">The world position of the voxel.</param>
+    /// <returns>The voxel.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the chunk.</exception>
     public Voxel GetAtWorldPosition(int3 worldPosition)
     {
         int localX = worldPosition.X - WorldPosition.X;
@@ -128,8 +158,13 @@ public class Chunk
     }
 
     /// <summary>
-    /// Sets a voxel at the given position (X,Y,Z). 
+    /// Sets the voxel at a position in the chunk.
     /// </summary>
+    /// <param name="x">The X coordinate in the chunk.</param>
+    /// <param name="y">The Y coordinate in the chunk.</param>
+    /// <param name="z">The Z coordinate in the chunk.</param>
+    /// <param name="voxel">The new voxel.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the chunk.</exception>
     public void Set(uint x, uint y, uint z, Voxel voxel)
     {
         if (x >= XDepth || y >= YDepth || z >= ZDepth)
@@ -140,6 +175,12 @@ public class Chunk
         _voxels[Index(x, y, z)] = voxel.ID;
     }
 
+    /// <summary>
+    /// Sets the voxel at a world position.
+    /// </summary>
+    /// <param name="worldPosition">The world position of the voxel.</param>
+    /// <param name="voxel">The new voxel.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the chunk.</exception>
     public void SetAtWorldPosition(int3 worldPosition, Voxel voxel)
     {
         int localX = worldPosition.X - WorldPosition.X;
@@ -162,6 +203,13 @@ public class Chunk
     // The index of the voxel (x, y, z) in the array. The caller checks the bounds.
     private int Index(uint x, uint y, uint z) => (int)((((x * YDepth) + y) * ZDepth) + z);
 
+    /// <summary>
+    /// Gets a value that tells if a position is outside the chunk.
+    /// </summary>
+    /// <param name="x">The X coordinate in the chunk.</param>
+    /// <param name="y">The Y coordinate in the chunk.</param>
+    /// <param name="z">The Z coordinate in the chunk.</param>
+    /// <returns><c>true</c> if the position is outside the chunk.</returns>
     public bool IsOutOfBound(uint x, uint y, uint z)
     {
         return x >= XDepth || y >= YDepth || z >= ZDepth;
@@ -172,8 +220,8 @@ public class Chunk
     #region Mesh Generation
 
     /// <summary>
-    /// Builds a mesh that contains every face for each solid voxel in the chunk.
-    /// This is a naïve implementation without any form of optimization.
+    /// Makes a mesh with all six faces of each solid voxel of the chunk, also the hidden faces.
+    /// This simple mesh is the reference of the tests of <see cref="GreedyMesher"/>.
     /// </summary>
     public Mesh ToMesh()
     {
@@ -267,11 +315,11 @@ public class Chunk
     #region Saving and Loading
 
     /// <summary>
-    /// Saves this chunk to a file. The first line contains the dimensions
-    /// (X,Y,Z) separated by commas. The second line contains all voxel IDs
-    /// separated by commas in X-Y-Z order.
+    /// Writes the chunk to a file. The first line contains the sizes X, Y and Z, with commas between them.
+    /// The second line contains all the block types in the order X, Y, Z, with commas between them.
     /// The file does not contain the world position of the chunk. TODO(#70): the save format of the world gives the chunk positions.
     /// </summary>
+    /// <param name="fileName">The path of the file. The method replaces a file that exists.</param>
     public void Save(string fileName)
     {
         using StreamWriter writer = new(fileName);
@@ -296,6 +344,12 @@ public class Chunk
 
     #region Chunk interactions
 
+    /// <summary>
+    /// Removes a voxel: its block type becomes air (0).
+    /// </summary>
+    /// <param name="position">The position in the chunk.</param>
+    /// <returns>The voxel before the change.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the chunk.</exception>
     public Voxel RemoveVoxel(uint3 position)
     {
         if (IsOutOfBound(position.X, position.Y, position.Z))
@@ -309,6 +363,12 @@ public class Chunk
         return removedVoxel;
     }
 
+    /// <summary>
+    /// Sets the voxel at a position in the chunk.
+    /// </summary>
+    /// <param name="position">The position in the chunk.</param>
+    /// <param name="voxel">The new voxel.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the chunk.</exception>
     public void PlaceVoxel(uint3 position, Voxel voxel)
     {
         if (IsOutOfBound(position.X, position.Y, position.Z))

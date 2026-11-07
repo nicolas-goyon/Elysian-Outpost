@@ -46,11 +46,11 @@ public class MainGeneration
         };
     }
 
-    /**
-     * Génère un chunk à la position donnée (en coordonnées monde)
-     * @param chunkPosition Position du chunk en coordonnées monde (doit être un multiple de chunkSize)
-     * @return Tableau 3D de ushort représentant les types de blocs dans le chunk
-     */
+    /// <summary>
+    /// Generates the voxels of a chunk.
+    /// </summary>
+    /// <param name="chunkPosition">The world position of the first voxel of the chunk. Each coordinate is a multiple of the chunk size.</param>
+    /// <returns>The block types of the chunk, in an array of the chunk size.</returns>
     public ushort[,,] GenerateChunkAt(int3 chunkPosition)
     {
         int chunkX = chunkPosition.X;
@@ -91,7 +91,7 @@ public class MainGeneration
 
     private ushort? GetBlockTypeAt(int3 chunkPosition, int3 localPosition)
     {
-        // Coordonnées monde
+        // The world position of the voxel.
         int worldX = chunkPosition.X + localPosition.X;
         int worldY = chunkPosition.Y + localPosition.Y;
         int worldZ = chunkPosition.Z + localPosition.Z;
@@ -128,7 +128,7 @@ public class MainGeneration
         };
     }
 
-    // Calcule la hauteur normalisée [0,1] à partir de toutes les couches
+    // The terrain height from 0 to 1: the weighted mean of the heights of all the layers.
     private float GetHeight01At(int worldX, int worldZ)
     {
         float sum = 0f;
@@ -142,6 +142,6 @@ public class MainGeneration
             totalAmp += amp;
         }
 
-        return totalAmp <= 0f ? 0f : Math.Clamp(sum / totalAmp, 0f, 1f); // height01 final
+        return totalAmp <= 0f ? 0f : Math.Clamp(sum / totalAmp, 0f, 1f);
     }
 }
