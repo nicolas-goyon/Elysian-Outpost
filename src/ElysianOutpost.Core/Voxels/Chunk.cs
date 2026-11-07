@@ -6,9 +6,18 @@ using Vector3 = System.Numerics.Vector3;
 
 namespace ElysianOutpost.Core.Voxels;
 
+/// <summary>
+/// The voxels of one chunk, for the mesher.
+/// </summary>
+/// <remarks>
+/// The chunk stores the block types in one <c>ushort</c> array (#5). The index of the voxel (x, y, z) is
+/// <c>(x × YDepth + y) × ZDepth + z</c>. This is the order of a <c>ushort[x, y, z]</c> array.
+/// Thus the constructor copies the generated voxels with one block copy.
+/// Before #5, the chunk made one <see cref="Voxel"/> object for each voxel: about 16.8 million objects for the default world.
+/// </remarks>
 public class Chunk
 {
-    private readonly Voxel[,,] _voxels;
+    private readonly ushort[] _voxels;
 
 
     public uint XDepth { get; }
@@ -17,7 +26,7 @@ public class Chunk
 
     public int3 WorldPosition { get; }
 
-    private Voxel EmptyVoxel => new Voxel(0);
+    private static Voxel EmptyVoxel => default;
 
 
     #region Constructors
@@ -29,20 +38,10 @@ public class Chunk
         ZDepth = (uint)voxelArray.GetLength(2);
         WorldPosition = position;
 
-        _voxels = new Voxel[XDepth, YDepth, ZDepth];
+        _voxels = new ushort[voxelArray.Length];
 
-        // Initialize from the ushort array
-        for (uint x = 0; x < XDepth; x++)
-        {
-            for (uint y = 0; y < YDepth; y++)
-            {
-                for (uint z = 0; z < ZDepth; z++)
-                {
-                    ushort value = voxelArray[x, y, z];
-                    _voxels[x, y, z] = new Voxel(value);
-                }
-            }
-        }
+        // A ushort[,,] array is one block of memory in the order [x, y, z]: the same order as the index of the chunk.
+        Buffer.BlockCopy(voxelArray, 0, _voxels, 0, voxelArray.Length * sizeof(ushort));
     }
 
     /// <summary>
@@ -69,7 +68,7 @@ public class Chunk
         YDepth = uint.Parse(sizes[1]);
         ZDepth = uint.Parse(sizes[2]);
 
-        _voxels = new Voxel[XDepth, YDepth, ZDepth];
+        _voxels = new ushort[XDepth * YDepth * ZDepth];
 
         string[] voxelIds = lines[1].Split(',', StringSplitOptions.RemoveEmptyEntries);
         if (voxelIds.Length != XDepth * YDepth * ZDepth)
@@ -84,8 +83,7 @@ public class Chunk
             {
                 for (uint z = 0; z < ZDepth; z++)
                 {
-                    ushort id = ushort.Parse(voxelIds[index++]);
-                    _voxels[x, y, z] = new Voxel(id);
+                    _voxels[Index(x, y, z)] = ushort.Parse(voxelIds[index++]);
                 }
             }
         }
@@ -106,7 +104,7 @@ public class Chunk
             {
                 for (uint z = 0; z < ZDepth; z++)
                 {
-                    yield return _voxels[x, y, z];
+                    yield return new Voxel(_voxels[Index(x, y, z)]);
                 }
             }
         }
@@ -123,7 +121,7 @@ public class Chunk
             throw new ArgumentOutOfRangeException("Requested voxel coordinates are out of bounds.");
         }
 
-        return _voxels[x, y, z];
+        return new Voxel(_voxels[Index(x, y, z)]);
     }
 
     public Voxel GetAtWorldPosition(int3 worldPosition)
@@ -138,7 +136,7 @@ public class Chunk
             throw new ArgumentOutOfRangeException("Requested world position is out of chunk bounds.");
         }
 
-        return _voxels[localX, localY, localZ];
+        return new Voxel(_voxels[Index((uint)localX, (uint)localY, (uint)localZ)]);
     }
 
     /// <summary>
@@ -151,7 +149,7 @@ public class Chunk
             throw new ArgumentOutOfRangeException("Requested voxel coordinates are out of bounds.");
         }
 
-        _voxels[x, y, z] = voxel;
+        _voxels[Index(x, y, z)] = voxel.ID;
     }
 
     public void SetAtWorldPosition(int3 worldPosition, Voxel voxel)
@@ -166,7 +164,7 @@ public class Chunk
             throw new ArgumentOutOfRangeException("Requested world position is out of chunk bounds.");
         }
 
-        _voxels[localX, localY, localZ] = voxel;
+        _voxels[Index((uint)localX, (uint)localY, (uint)localZ)] = voxel.ID;
     }
 
     /// <summary>
@@ -282,6 +280,9 @@ public class Chunk
     }
 
 
+    // The index of the voxel (x, y, z) in the array. The caller checks the bounds.
+    private int Index(uint x, uint y, uint z) => (int)((((x * YDepth) + y) * ZDepth) + z);
+
     public bool IsOutOfBound(uint x, uint y, uint z)
     {
         return x >= GetDepth(Axis.X)
@@ -330,11 +331,11 @@ public class Chunk
             {
                 for (uint z = 0; z < ZDepth; z++)
                 {
-                    Voxel voxel = _voxels[x, y, z];
-                    if (!voxel.IsSolid)
+                    ushort id = _voxels[Index(x, y, z)];
+                    if (id == 0)
                         continue;
 
-                    list.AddRange(CreateVoxelQuads(x, y, z, voxel.ID));
+                    list.AddRange(CreateVoxelQuads(x, y, z, id));
                 }
             }
         }
@@ -429,7 +430,7 @@ public class Chunk
             {
                 for (uint z = 0; z < ZDepth; z++)
                 {
-                    ids.Add(_voxels[x, y, z].ID.ToString());
+                    ids.Add(_voxels[Index(x, y, z)].ToString());
                 }
             }
         }
@@ -448,8 +449,9 @@ public class Chunk
             throw new ArgumentOutOfRangeException("Requested voxel coordinates are out of bounds.");
         }
 
-        Voxel removedVoxel = _voxels[position.X, position.Y, position.Z];
-        _voxels[position.X, position.Y, position.Z] = EmptyVoxel;
+        int index = Index(position.X, position.Y, position.Z);
+        var removedVoxel = new Voxel(_voxels[index]);
+        _voxels[index] = EmptyVoxel.ID;
         return removedVoxel;
     }
 
@@ -460,7 +462,7 @@ public class Chunk
             throw new ArgumentOutOfRangeException("Requested voxel coordinates are out of bounds.");
         }
 
-        _voxels[position.X, position.Y, position.Z] = voxel;
+        _voxels[Index(position.X, position.Y, position.Z)] = voxel.ID;
     }
 
     #endregion

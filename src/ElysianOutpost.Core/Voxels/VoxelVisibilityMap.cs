@@ -47,8 +47,7 @@ public class VoxelVisibilityMap
     {
         if (_chunk.IsOutOfBound(x, y, z)) return true;
 
-        Voxel adjacentVoxel = _chunk.Get(x, y, z);
-        return adjacentVoxel == null || !adjacentVoxel.IsSolid;
+        return !_chunk.Get(x, y, z).IsSolid;
     }
 
     public VoxelFace GetVisibleFaces(uint x, uint y, uint z)

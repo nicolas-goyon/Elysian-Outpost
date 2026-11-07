@@ -62,7 +62,7 @@ public class DisjointSetVisiblePlaneOptimizer
 
         // Expand to the right
         while (x + currentWidth < _width &&
-               _voxels[x + currentWidth, y]?.ID == rootVoxel.ID &&
+               _voxels[x + currentWidth, y]?.ID == rootVoxel.Value.ID &&
                !IsNotAlone(x + currentWidth, y))
         {
             currentWidth++;
@@ -75,7 +75,7 @@ public class DisjointSetVisiblePlaneOptimizer
             for (int dx = 0; dx < currentWidth; dx++)
             {
                 Voxel? v = _voxels[x + dx, y + currentHeight];
-                if (v?.ID != rootVoxel.ID || IsNotAlone(x + dx, y + currentHeight))
+                if (v?.ID != rootVoxel.Value.ID || IsNotAlone(x + dx, y + currentHeight))
                 {
                     canExpand = false;
                     break;
@@ -119,7 +119,7 @@ public class DisjointSetVisiblePlaneOptimizer
         Voxel? v1 = _voxels[x1, y1];
         Voxel? v2 = _voxels[x2, y2];
         if (v1 == null || v2 == null) return false;
-        return v1.ID == v2.ID &&
+        return v1.Value.ID == v2.Value.ID &&
                _disjointSet.Find(ToIndex(x2, y2)) == _disjointSet.Find(ToIndex(x1, y1));
     }
 
@@ -168,7 +168,7 @@ public class DisjointSetVisiblePlaneOptimizer
 
 
 
-            uint voxelId = _voxels[minX, minY]!.ID;
+            uint voxelId = _voxels[minX, minY]!.Value.ID;
 
 
             switch (_plane.MajorAxis, _plane.MajorAxisOrder)

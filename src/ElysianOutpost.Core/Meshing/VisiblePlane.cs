@@ -50,7 +50,7 @@ public class VisiblePlane
     /// The exact dimensions depend on the axes forming the plane. For instance:
     /// - If MinorAxis is Z, the plane dimensions are Voxels[x, y].
     /// </summary>
-    public Voxel[,]
+    public Voxel?[,]
         Voxels
     {
         get;
@@ -85,7 +85,7 @@ public class VisiblePlane
 
 
         SliceIndex = sliceIndex;
-        Voxels = new Voxel[width, height];
+        Voxels = new Voxel?[width, height];
 
     }
 
@@ -102,7 +102,7 @@ public class VisiblePlane
             {
                 for (int y = 0; y < h; y++)
                 {
-                    if (Voxels[x, y] != null && Voxels[x, y]!.IsSolid) return false;
+                    if (Voxels[x, y] is Voxel voxel && voxel.IsSolid) return false;
                 }
             }
 
@@ -153,8 +153,8 @@ public class VisiblePlane
             sb.Append($"Row {y}: ");
             for (int x = 0; x < width; x++)
             {
-                Voxel v = Voxels[x, y];
-                sb.Append(v is null ? ". " : $"{v.ID} ");
+                Voxel? v = Voxels[x, y];
+                sb.Append(v is Voxel voxel ? $"{voxel.ID} " : ". ");
             }
 
             sb.AppendLine();
@@ -180,10 +180,10 @@ public class VisiblePlane
         {
             for (int y = 0; y < height; y++)
             {
-                Voxel voxel = Voxels[x, y];
+                Voxel? voxel = Voxels[x, y];
                 pixelArray[x, y] =
-                    (voxel != null)
-                        ? voxel.ID
+                    voxel is Voxel value
+                        ? value.ID
                         : -1; // TODO : Get a look at this later on, we may need to throw errors.
             }
         }
