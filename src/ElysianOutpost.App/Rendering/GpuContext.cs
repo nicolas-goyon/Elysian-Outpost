@@ -6,6 +6,7 @@ using Brutal.Logging;
 using Brutal.VulkanApi;
 using Brutal.VulkanApi.Abstractions;
 using Brutal.VulkanApi.Vma;
+using ElysianOutpost.Core.Diagnostics;
 
 namespace ElysianOutpost.App.Rendering;
 
@@ -50,6 +51,7 @@ internal sealed unsafe class GpuContext : IDisposable
             GpuName = VulkanDeviceInfo.GetDeviceName(in properties);
             LogPhysicalDevice(log, GpuName, in properties);
             TimestampPeriod = properties.Limits.TimestampPeriod;
+            GpuInfo = CreateGpuInfo(PhysicalDevice, GpuName, in properties);
             TimestampValidBits = GetTimestampValidBits(PhysicalDevice, QueueFamily);
             Device = CreateDevice(PhysicalDevice, QueueFamily);
             Queue = Device.GetQueue(QueueFamily, 0);
@@ -66,6 +68,11 @@ internal sealed unsafe class GpuContext : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets the GPU values of the hardware report (#81).
+    /// </summary>
+    public GpuInfo GpuInfo { get; } = null!;
 
     /// <summary>
     /// Gets the number of nanoseconds for one unit of a GPU timestamp.
@@ -245,6 +252,29 @@ internal sealed unsafe class GpuContext : IDisposable
         return selected is null
             ? throw new InvalidOperationException("No GPU supports Vulkan 1.3 and the presentation to the window.")
             : (selected, selectedFamily);
+    }
+
+    private static GpuInfo CreateGpuInfo(PhysicalDevice device, string name, in VkPhysicalDeviceProperties properties)
+    {
+        VkPhysicalDeviceMemoryProperties memory = device.GetMemoryProperties();
+        long deviceLocal = 0;
+        for (int i = 0; i < memory.MemoryHeapCount; i++)
+        {
+            VkMemoryHeap heap = memory.MemoryHeaps[i];
+            if (heap.Flags.HasFlag(VkMemoryHeapFlags.DeviceLocalBit))
+            {
+                // ByteSize64 has an implicit conversion to int, which cuts sizes of 2 GiB or more. Value gives the full 64-bit size.
+                deviceLocal += (long)heap.Size.Value;
+            }
+        }
+
+        return new GpuInfo(
+            name,
+            GpuInfo.VendorName(properties.VendorID),
+            properties.DeviceType.ToString(),
+            VulkanDeviceInfo.FormatDriverVersion(in properties),
+            VulkanDeviceInfo.FormatApiVersion(properties.ApiVersion),
+            deviceLocal);
     }
 
     private static int GetTimestampValidBits(PhysicalDevice device, int family)

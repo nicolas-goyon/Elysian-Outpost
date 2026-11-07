@@ -58,7 +58,11 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
         var world = new WorldLoader(streamer, WorldSettings.SampleScene.GetChunkPositions(default), uploader, renderer, uploadSettings, worldLog);
         using var editInput = new VoxelEditInput(window, InputSettings.Default);
         var editor = new VoxelEditor(editInput, streamer, uploader, renderer, BlockPalette.Game, LogCategory.Make("Edit"));
-        var profiler = new PerformanceProfiler(Path.Combine(AppContext.BaseDirectory, "profiles"), LogCategory.Make("Profile"));
+        var profiler = new PerformanceProfiler(
+            Path.Combine(AppContext.BaseDirectory, "profiles"),
+            () => HardwareReports.Create(window, renderer, SystemInfo.Collect()),
+            LogCategory.Make("Profile"));
+        ui.Overlay.HardwareReport = HardwareReports.Create(window, renderer, SystemInfo.Collect());
         ui.Console.RegisterCommand(profiler.ConsoleCommand);
         if (profileAtStart)
         {
