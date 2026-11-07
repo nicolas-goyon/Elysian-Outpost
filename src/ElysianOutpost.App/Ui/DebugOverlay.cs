@@ -62,6 +62,16 @@ internal sealed class DebugOverlay
     public GpuMemoryStatistics? GpuMemory { get; set; }
 
     /// <summary>
+    /// Gets or sets the number of chunks that the last frame drew (#50). The overlay shows it.
+    /// </summary>
+    public int DrawnChunkCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of chunks with quads on the GPU.
+    /// </summary>
+    public int ChunkCount { get; set; }
+
+    /// <summary>
     /// Gets or sets the current block type of the voxel edits (#41). The overlay shows it.
     /// </summary>
     public ushort BlockType { get; set; }
@@ -110,6 +120,7 @@ internal sealed class DebugOverlay
             }
 
             ImGui.Text($"GPU: {_gpuName}");
+            ImGui.Text($"Chunks drawn: {DrawnChunkCount} of {ChunkCount}");
             if (GpuMemory is GpuMemoryStatistics memory)
             {
                 ImGui.Text($"GPU memory: {memory.AllocationCount} allocations, {memory.AllocationBytes / BytesPerMebibyte:F1} MiB (VMA blocks: {memory.BlockBytes / BytesPerMebibyte:F1} MiB)");

@@ -91,6 +91,8 @@ internal sealed class MainLoop(GlfwWindow window, VulkanRenderer renderer, UserI
             ui.Overlay.Target = editor.Target;
             ui.Overlay.BlockType = editor.BlockType;
             ui.Overlay.BlockName = editor.BlockName;
+            ui.Overlay.DrawnChunkCount = renderer.DrawnChunkCount;
+            ui.Overlay.ChunkCount = renderer.ChunkCount;
             if (memoryUpdate is not TimeSpan last || frameStart - last >= _memoryPeriod)
             {
                 ui.Overlay.GpuMemory = renderer.CalculateMemoryStatistics();

@@ -7,6 +7,7 @@ using Brutal.Numerics;
 using Brutal.VulkanApi;
 using Brutal.VulkanApi.Abstractions;
 using Brutal.VulkanApi.Vma;
+using ElysianOutpost.Core.Cameras;
 using ElysianOutpost.Core.Meshing;
 using ElysianOutpost.Core.WorldGeneration;
 
@@ -205,20 +206,32 @@ internal sealed unsafe class ChunkMeshes : IDisposable
     }
 
     /// <summary>
-    /// Records the draw commands of all the chunks. The pipeline must be bound, with the view-projection matrix in its push constants.
+    /// Records the draw commands of the chunks in the camera view. The pipeline must be bound, with the view-projection matrix in its push constants.
     /// </summary>
     /// <param name="commandBuffer">The command buffer, in a rendering scope.</param>
     /// <param name="layout">The layout of the chunk pipeline.</param>
-    public void Record(CommandBuffer commandBuffer, VkPipelineLayout layout)
+    /// <param name="frustum">The planes of the camera view. The method skips a chunk whose box is outside them (#50).</param>
+    /// <returns>The number of chunks that the method draws.</returns>
+    public int Record(CommandBuffer commandBuffer, VkPipelineLayout layout, in ViewFrustum frustum)
     {
+        int drawn = 0;
         foreach (GpuChunk chunk in _chunks.Values)
         {
+            // A chunk whose box is outside the camera view does not need a draw (#50).
+            if (!frustum.Intersects(chunk.BoundsMin, chunk.BoundsMax))
+            {
+                continue;
+            }
+
+            drawn++;
             float4 position = chunk.Position;
             commandBuffer.BindVertexBuffers(0, [chunk.VertexBuffer], [default(ByteSize64)]);
             commandBuffer.BindIndexBuffer(chunk.IndexBuffer, default, VkIndexType.UInt32);
             commandBuffer.PushConstants(layout, VkShaderStageFlags.VertexBit, ChunkPipeline.ChunkPositionOffset, MemoryMarshal.AsBytes(new ReadOnlySpan<float4>(ref position)));
             commandBuffer.DrawIndexed(chunk.IndexCount, 1, 0, 0, 0);
         }
+
+        return drawn;
     }
 
     /// <summary>
@@ -293,6 +306,7 @@ internal sealed unsafe class ChunkMeshes : IDisposable
             throw;
         }
 
+        var origin = new float3(chunk.Position.X, chunk.Position.Y, chunk.Position.Z);
         _chunks.Add(chunk.Position, new GpuChunk(
             vertexBuffer,
             vertexAllocation,
@@ -300,7 +314,9 @@ internal sealed unsafe class ChunkMeshes : IDisposable
             indexAllocation,
             chunk.Mesh.Indices.Length,
             new float4(chunk.Position.X, chunk.Position.Y, chunk.Position.Z, 0f),
-            vertices.Length + indices.Length));
+            vertices.Length + indices.Length,
+            origin + chunk.Mesh.BoundsMin,
+            origin + chunk.Mesh.BoundsMax));
         BufferBytes += vertices.Length + indices.Length;
 
         _commandBuffer.CopyBuffer(staging, vertexBuffer, [new VkBufferCopy { SrcOffset = (ByteSize64)offset, DstOffset = default, Size = (ByteSize64)vertices.Length }]);
@@ -359,5 +375,7 @@ internal sealed unsafe class ChunkMeshes : IDisposable
         VmaAllocation IndexAllocation,
         int IndexCount,
         float4 Position,
-        long Bytes);
+        long Bytes,
+        float3 BoundsMin,
+        float3 BoundsMax);
 }

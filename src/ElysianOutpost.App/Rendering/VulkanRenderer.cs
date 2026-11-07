@@ -109,6 +109,16 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     public CameraLens Lens { get; } = new();
 
     /// <summary>
+    /// Gets the number of chunks that the last frame drew: the chunks with quads in the camera view (#50).
+    /// </summary>
+    public int DrawnChunkCount { get; private set; }
+
+    /// <summary>
+    /// Gets the number of chunks with quads on the GPU.
+    /// </summary>
+    public int ChunkCount => _chunkMeshes.ChunkCount;
+
+    /// <summary>
     /// Calculates the statistics of the GPU memory (#7).
     /// </summary>
     /// <returns>The statistics.</returns>
@@ -447,7 +457,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         commandBuffer.SetScissor(0, [new VkRect2D(extent)]);
         commandBuffer.BindPipeline(VkPipelineBindPoint.Graphics, _chunkPipeline.Pipeline);
         commandBuffer.PushConstants(_chunkPipeline.Layout, VkShaderStageFlags.VertexBit, 0, MemoryMarshal.AsBytes(new ReadOnlySpan<float4x4>(ref viewProjection)));
-        _chunkMeshes.Record(commandBuffer, _chunkPipeline.Layout);
+        DrawnChunkCount = _chunkMeshes.Record(commandBuffer, _chunkPipeline.Layout, ViewFrustum.FromViewProjection(viewProjection));
     }
 
     private static void TransitionImage(
