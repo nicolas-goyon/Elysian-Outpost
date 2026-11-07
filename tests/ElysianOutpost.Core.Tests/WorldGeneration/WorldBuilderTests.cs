@@ -31,17 +31,28 @@ public sealed class WorldBuilderTests
     }
 
     // The builder must give the same result as the terrain generation, the mesher and the mesh data, step by step.
-    [Fact]
-    public void TryBuildNext_GivesTheMeshDataOfTheGeneratedChunk()
+    // The builder meshes a chunk when all its neighbors are generated (#48). Thus each mesh is the mesh in the complete world.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void TryBuildNext_GivesTheMeshDataOfTheChunkInTheCompleteWorld(int radiusInChunks)
     {
-        var builder = new WorldBuilder(_smallWorld, BlockPalette.Game, default);
-        var generation = new MainGeneration(_smallWorld.ChunkSize, _smallWorld.Seed);
-        long quadCount = 0;
+        var settings = new WorldSettings(seed: 123, chunkSize: new int3(16, 64, 16), radiusInChunks: radiusInChunks, chunkLayers: 1);
+        var builder = new WorldBuilder(settings, BlockPalette.Game, default);
+        var generation = new MainGeneration(settings.ChunkSize, settings.Seed);
+        var completeWorld = new VoxelWorld(settings.ChunkSize);
+        foreach (int3 position in settings.GetChunkPositions(default))
+        {
+            completeWorld.AddChunk(position, generation.GenerateChunkAt(position));
+        }
 
+        long quadCount = 0;
+        var built = new HashSet<int3>();
         while (builder.TryBuildNext(out BuiltChunk chunk))
         {
-            var voxels = new Chunk(generation.GenerateChunkAt(chunk.Position), chunk.Position);
-            ChunkMeshData expected = ChunkMeshData.Build(new GreedyMesher().Mesh(voxels), BlockPalette.Game);
+            Assert.True(built.Add(chunk.Position), "The builder gave a chunk two times.");
+            Assert.True(completeWorld.TryGetChunk(chunk.Position, out ushort[,,]? voxels));
+            ChunkMeshData expected = ChunkMeshData.Build(new GreedyMesher().Mesh(voxels, completeWorld, chunk.Position), BlockPalette.Game);
             Assert.Equal(expected.Vertices, chunk.Mesh.Vertices);
             Assert.Equal(expected.Indices, chunk.Mesh.Indices);
             Assert.True(chunk.Mesh.QuadCount > 0);
@@ -49,6 +60,23 @@ public sealed class WorldBuilderTests
         }
 
         Assert.Equal(quadCount, builder.QuadCount);
+        Assert.Equal(settings.GetChunkPositions(default).ToHashSet(), built);
+    }
+
+    // The faces between two chunks are hidden (#48). Thus the world has fewer quads than the sum of the chunks meshed alone.
+    [Fact]
+    public void TryBuildNext_MakesFewerQuadsThanTheChunksMeshedAlone()
+    {
+        var settings = new WorldSettings(seed: 123, chunkSize: new int3(16, 64, 16), radiusInChunks: 3, chunkLayers: 1);
+        var builder = new WorldBuilder(settings, BlockPalette.Game, default);
+        var generation = new MainGeneration(settings.ChunkSize, settings.Seed);
+        long alone = 0;
+        while (builder.TryBuildNext(out BuiltChunk chunk))
+        {
+            alone += new GreedyMesher().Mesh(generation.GenerateChunkAt(chunk.Position)).Count;
+        }
+
+        Assert.True(builder.QuadCount < alone, $"With the neighbors: {builder.QuadCount} quads. Alone: {alone} quads.");
     }
 
     [Fact]
@@ -60,7 +88,8 @@ public sealed class WorldBuilderTests
 
         while (builder.TryBuildNext(out BuiltChunk chunk))
         {
-            Assert.Equal(builder.BuiltChunkCount, builder.Voxels.ChunkCount);
+            // The builder generates the chunks before their mesh. Thus the world can have more chunks than the builder gave.
+            Assert.True(builder.Voxels.ChunkCount >= builder.BuiltChunkCount);
             ushort[,,] expected = generation.GenerateChunkAt(chunk.Position);
             for (int x = 0; x < expected.GetLength(0); x++)
             {
@@ -96,7 +125,7 @@ public sealed class WorldBuilderTests
         Assert.Equal(built.Position, chunk);
         BuiltChunk changed = builder.RebuildChunk(chunk);
         Assert.True(builder.Voxels.TryGetChunk(chunk, out ushort[,,]? voxels));
-        var expected = ChunkMeshData.Build(new GreedyMesher().Mesh(new Chunk(voxels, chunk)), BlockPalette.Game);
+        var expected = ChunkMeshData.Build(new GreedyMesher().Mesh(voxels, builder.Voxels, chunk), BlockPalette.Game);
         Assert.Equal(expected.Vertices, changed.Mesh.Vertices);
         Assert.Equal(expected.Indices, changed.Mesh.Indices);
         Assert.NotEqual(built.Mesh.QuadCount, changed.Mesh.QuadCount);

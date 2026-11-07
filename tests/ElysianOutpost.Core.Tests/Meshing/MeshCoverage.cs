@@ -10,9 +10,8 @@ namespace ElysianOutpost.Core.Tests.Meshing;
 /// </summary>
 /// <remarks>
 /// This class does not use the code of the mesher. It finds the visible faces directly from the block types.
-/// A face of a solid voxel is visible if its neighbor voxel is air or is outside the chunk.
-/// The mesher uses the same rule (<c>GreedyMesher</c>): it makes quads on all the borders of the chunk.
-/// Issue #48 changes this rule.
+/// A face of a solid voxel is visible if its neighbor voxel is air.
+/// By default, the voxels outside the chunk are air. With a function for the outside voxels, the oracle reads the neighbor chunks (#48).
 /// </remarks>
 internal static class MeshCoverage
 {
@@ -23,7 +22,8 @@ internal static class MeshCoverage
     /// </summary>
     /// <param name="voxels">The block types of the chunk, with the indices [x, y, z]. The block type 0 is air.</param>
     /// <returns>The block type of the voxel of each visible face.</returns>
-    public static Dictionary<Face, ushort> FindVisibleFaces(ushort[,,] voxels)
+    /// <param name="outside">The block type at a position outside the chunk, in chunk coordinates, or <c>null</c> for air.</param>
+    public static Dictionary<Face, ushort> FindVisibleFaces(ushort[,,] voxels, Func<(int X, int Y, int Z), ushort>? outside = null)
     {
         var faces = new Dictionary<Face, ushort>();
         foreach ((int x, int y, int z) in VoxelGrid.Positions(voxels))
@@ -37,7 +37,7 @@ internal static class MeshCoverage
             foreach (FaceDirection direction in FaceDirections.All)
             {
                 var face = new Face(x, y, z, direction);
-                if (BlockTypeAt(voxels, face.Neighbor) == 0)
+                if (BlockTypeAt(voxels, face.Neighbor, outside) == 0)
                 {
                     faces.Add(face, blockType);
                 }
@@ -69,10 +69,10 @@ internal static class MeshCoverage
     /// <item>A visible face in no quad.</item>
     /// </list>
     /// </remarks>
-    public static List<string> FindProblems(ushort[,,] voxels, IReadOnlyList<MeshQuad> quads, int3 chunkOrigin)
+    public static List<string> FindProblems(ushort[,,] voxels, IReadOnlyList<MeshQuad> quads, int3 chunkOrigin, Func<(int X, int Y, int Z), ushort>? outside = null)
     {
         ArgumentNullException.ThrowIfNull(quads);
-        Dictionary<Face, ushort> visibleFaces = FindVisibleFaces(voxels);
+        Dictionary<Face, ushort> visibleFaces = FindVisibleFaces(voxels, outside);
         var quadOfFace = new Dictionary<Face, int>();
         var problems = new List<string>();
         for (int i = 0; i < quads.Count; i++)
@@ -93,7 +93,7 @@ internal static class MeshCoverage
                 };
                 if (!visibleFaces.TryGetValue(face, out ushort blockType))
                 {
-                    problems.Add($"Quad {i} ({shape}) covers the {face}. {WhyNotVisible(voxels, face)}");
+                    problems.Add($"Quad {i} ({shape}) covers the {face}. {WhyNotVisible(voxels, face, outside)}");
                 }
                 else if (blockType != shape.BlockType)
                 {
@@ -124,27 +124,33 @@ internal static class MeshCoverage
     /// <param name="voxels">The block types of the chunk, with the indices [x, y, z]. The block type 0 is air.</param>
     /// <param name="quads">The quads that the mesher made for the chunk.</param>
     /// <param name="chunkOrigin">The expected position of the chunk corner in the coordinates of the quads. See <see cref="FindProblems"/>.</param>
-    public static void AssertCoversEachVisibleFaceOnce(ushort[,,] voxels, IReadOnlyList<MeshQuad> quads, int3 chunkOrigin)
+    /// <param name="outside">The block type at a position outside the chunk, in chunk coordinates, or <c>null</c> for air.</param>
+    public static void AssertCoversEachVisibleFaceOnce(ushort[,,] voxels, IReadOnlyList<MeshQuad> quads, int3 chunkOrigin, Func<(int X, int Y, int Z), ushort>? outside = null)
     {
-        List<string> problems = FindProblems(voxels, quads, chunkOrigin);
+        List<string> problems = FindProblems(voxels, quads, chunkOrigin, outside);
         Assert.True(
             problems.Count == 0,
             $"The mesh has {problems.Count} problems. The first problems:{Environment.NewLine}{string.Join(Environment.NewLine, problems.Take(MaxProblemsInMessage))}");
     }
 
-    // Gives the block type at a position, or 0 (air) for a position outside the chunk.
-    private static ushort BlockTypeAt(ushort[,,] voxels, (int X, int Y, int Z) position) =>
-        VoxelGrid.IsInside(voxels, position) ? voxels[position.X, position.Y, position.Z] : (ushort)0;
+    // Gives the block type at a position. Outside the chunk, it asks the function, or gives 0 (air).
+    private static ushort BlockTypeAt(ushort[,,] voxels, (int X, int Y, int Z) position, Func<(int X, int Y, int Z), ushort>? outside) =>
+        VoxelGrid.IsInside(voxels, position) ? voxels[position.X, position.Y, position.Z] : outside?.Invoke(position) ?? 0;
 
-    private static string WhyNotVisible(ushort[,,] voxels, Face face)
+    private static string WhyNotVisible(ushort[,,] voxels, Face face, Func<(int X, int Y, int Z), ushort>? outside)
     {
         if (!VoxelGrid.IsInside(voxels, (face.X, face.Y, face.Z)))
         {
             return "This voxel is outside the chunk.";
         }
 
-        return voxels[face.X, face.Y, face.Z] == 0
-            ? "This voxel is air."
-            : "The neighbor voxel is solid, thus the face is not visible.";
+        if (voxels[face.X, face.Y, face.Z] == 0)
+        {
+            return "This voxel is air.";
+        }
+
+        return VoxelGrid.IsInside(voxels, face.Neighbor)
+            ? "The neighbor voxel is solid, thus the face is not visible."
+            : "The neighbor voxel is solid in the neighbor chunk, thus the face is not visible.";
     }
 }

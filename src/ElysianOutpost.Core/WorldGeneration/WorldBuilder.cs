@@ -13,6 +13,12 @@ namespace ElysianOutpost.Core.WorldGeneration;
 /// <remarks>
 /// The builder uses the terrain generation of #33 and the greedy mesher of #45. It measures the time of each step.
 /// It keeps the voxels of each chunk in <see cref="Voxels"/>, for example for the voxel ray (#40).
+/// <para>
+/// The mesh of a chunk hides the faces at its borders with the neighbor chunks (#48). Thus the builder generates the chunks before their mesh:
+/// it meshes a chunk when all its neighbor chunks of the world are generated. With the order of <see cref="WorldSettings.GetChunkPositions"/>,
+/// the generation is approximately one column of chunks before the mesh. Each chunk gets one mesh, and no chunk must be meshed again.
+/// At the edge of the world, the voxels outside the world are air.
+/// </para>
 /// </remarks>
 public sealed class WorldBuilder
 {
@@ -20,6 +26,9 @@ public sealed class WorldBuilder
     private readonly BlockPalette _palette;
     private readonly GreedyMesher _mesher = new();
     private readonly int3[] _positions;
+    private readonly HashSet<int3> _plannedPositions;
+    private readonly List<int3> _waitingForMesh = [];
+    private int _generatedCount;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WorldBuilder"/> class.
@@ -35,11 +44,13 @@ public sealed class WorldBuilder
         _generation = new MainGeneration(settings.ChunkSize, settings.Seed);
         _palette = palette;
         _positions = settings.GetChunkPositions(center);
+        _plannedPositions = [.. _positions];
         Voxels = new VoxelWorld(settings.ChunkSize);
     }
 
     /// <summary>
-    /// Gets the voxels of the chunks that the builder made. The builder adds each chunk before <see cref="TryBuildNext"/> returns it.
+    /// Gets the voxels of the chunks that the builder generated. The builder adds each chunk before its mesh.
+    /// Thus <see cref="Voxels"/> can have chunks that <see cref="TryBuildNext"/> did not return yet.
     /// </summary>
     public VoxelWorld Voxels { get; }
 
@@ -74,10 +85,14 @@ public sealed class WorldBuilder
     public TimeSpan MeshingTime { get; private set; }
 
     /// <summary>
-    /// Generates and meshes the next chunk, in the order of <see cref="WorldSettings.GetChunkPositions"/>.
+    /// Meshes the next chunk whose neighbor chunks are all generated. Before, the method generates the chunks that the mesh needs,
+    /// in the order of <see cref="WorldSettings.GetChunkPositions"/>.
     /// </summary>
     /// <param name="chunk">The position and the mesh data of the chunk, if the method returns <c>true</c>.</param>
     /// <returns><c>true</c> if the builder made a chunk. <c>false</c> if the builder made all the chunks before this call.</returns>
+    /// <remarks>
+    /// The first call generates approximately one column of chunks. Thus it takes more time than the next calls.
+    /// </remarks>
     public bool TryBuildNext(out BuiltChunk chunk)
     {
         if (IsComplete)
@@ -86,24 +101,61 @@ public sealed class WorldBuilder
             return false;
         }
 
-        int3 position = _positions[BuiltChunkCount];
-        long start = Stopwatch.GetTimestamp();
-        ushort[,,] voxels = _generation.GenerateChunkAt(position);
-        long generated = Stopwatch.GetTimestamp();
-        Voxels.AddChunk(position, voxels);
-        ChunkMeshData mesh = BuildMesh(position, voxels);
-        long meshed = Stopwatch.GetTimestamp();
+        int ready;
+        while ((ready = _waitingForMesh.FindIndex(AreNeighborsGenerated)) < 0)
+        {
+            GenerateNext();
+        }
 
-        GenerationTime += Stopwatch.GetElapsedTime(start, generated);
-        MeshingTime += Stopwatch.GetElapsedTime(generated, meshed);
+        int3 position = _waitingForMesh[ready];
+        _waitingForMesh.RemoveAt(ready);
+        long start = Stopwatch.GetTimestamp();
+        Voxels.TryGetChunk(position, out ushort[,,]? voxels);
+        ChunkMeshData mesh = BuildMesh(position, voxels!);
+        MeshingTime += Stopwatch.GetElapsedTime(start);
         QuadCount += mesh.QuadCount;
         BuiltChunkCount++;
         chunk = new BuiltChunk(position, mesh);
         return true;
     }
 
+    // Generates the next chunk of the order, and adds it to the voxel world and to the chunks that wait for their mesh.
+    private void GenerateNext()
+    {
+        int3 position = _positions[_generatedCount];
+        long start = Stopwatch.GetTimestamp();
+        ushort[,,] voxels = _generation.GenerateChunkAt(position);
+        GenerationTime += Stopwatch.GetElapsedTime(start);
+        Voxels.AddChunk(position, voxels);
+        _waitingForMesh.Add(position);
+        _generatedCount++;
+    }
+
+    // A neighbor chunk that is not in the world does not stop the mesh: its voxels are air.
+    private bool AreNeighborsGenerated(int3 position)
+    {
+        int3 size = Voxels.ChunkSize;
+        ReadOnlySpan<int3> offsets =
+        [
+            new(-size.X, 0, 0), new(size.X, 0, 0),
+            new(0, -size.Y, 0), new(0, size.Y, 0),
+            new(0, 0, -size.Z), new(0, 0, size.Z),
+        ];
+        foreach (int3 offset in offsets)
+        {
+            int3 neighbor = position + offset;
+            if (_plannedPositions.Contains(neighbor) && !Voxels.TryGetChunk(neighbor, out _))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Meshes a chunk again from its voxels in <see cref="Voxels"/>, for example after a voxel edit (#41).
+    /// An edit on a chunk border also changes the mesh of the neighbor chunk. <see cref="VoxelWorld.GetChunksToMesh"/> gives these chunks.
     /// </summary>
     /// <param name="chunkPosition">The position of the chunk.</param>
     /// <returns>The position and the new mesh data of the chunk.</returns>
@@ -118,9 +170,9 @@ public sealed class WorldBuilder
         return new BuiltChunk(chunkPosition, BuildMesh(chunkPosition, voxels));
     }
 
-    // The greedy mesher of #45. Each chunk mesh has the faces at the chunk borders. Thus a change of a chunk does not change its neighbors (#48 changes this).
+    // The greedy mesher of #45, with the neighbor chunks of the voxel world (#48).
     private ChunkMeshData BuildMesh(int3 position, ushort[,,] voxels)
     {
-        return ChunkMeshData.Build(_mesher.Mesh(voxels), _palette);
+        return ChunkMeshData.Build(_mesher.Mesh(voxels, Voxels, position), _palette);
     }
 }
