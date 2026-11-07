@@ -53,7 +53,7 @@ public class Chunk
     /// Initializes a new chunk from a file on disk.
     /// The first line contains the comma separated dimensions (X,Y,Z)
     /// and the second line contains all voxel IDs in X-Y-Z order, separated by commas.
-    /// TODO : Need to hold the world position of the chunk as well.
+    /// The file does not contain the world position of the chunk. TODO(#70): the save format of the world gives the chunk positions.
     /// </summary>
     public Chunk(string fileName)
     {
@@ -270,7 +270,7 @@ public class Chunk
     /// Saves this chunk to a file. The first line contains the dimensions
     /// (X,Y,Z) separated by commas. The second line contains all voxel IDs
     /// separated by commas in X-Y-Z order.
-    /// TODO : Need to save the world position of the chunk as well.
+    /// The file does not contain the world position of the chunk. TODO(#70): the save format of the world gives the chunk positions.
     /// </summary>
     public void Save(string fileName)
     {
