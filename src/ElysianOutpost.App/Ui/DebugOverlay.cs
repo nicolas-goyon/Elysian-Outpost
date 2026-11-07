@@ -6,6 +6,7 @@ using Brutal.Numerics;
 using ElysianOutpost.App.Rendering;
 using ElysianOutpost.Core.Diagnostics;
 using ElysianOutpost.Core.Voxels;
+using ElysianOutpost.Core.WorldGeneration;
 
 namespace ElysianOutpost.App.Ui;
 
@@ -77,6 +78,16 @@ internal sealed class DebugOverlay
     public ushort BlockType { get; set; }
 
     /// <summary>
+    /// Gets or sets the number of chunk meshes that wait for the GPU upload (#6).
+    /// </summary>
+    public int UploadQueueLength { get; set; }
+
+    /// <summary>
+    /// Gets or sets the upload budget of each frame, with the measurements of the last upload (#6).
+    /// </summary>
+    public ChunkUploadBudget? UploadBudget { get; set; }
+
+    /// <summary>
     /// Gets or sets the name of the current block type.
     /// </summary>
     public string BlockName { get; set; } = string.Empty;
@@ -121,6 +132,11 @@ internal sealed class DebugOverlay
 
             ImGui.Text($"GPU: {_gpuName}");
             ImGui.Text($"Chunks drawn: {DrawnChunkCount} of {ChunkCount}");
+            if (UploadBudget is ChunkUploadBudget budget)
+            {
+                ChunkUploadSettings limits = budget.Settings;
+                ImGui.Text($"Upload queue: {UploadQueueLength} chunks. Last upload: {budget.LastChunkCount} chunks in {budget.LastTime.TotalMilliseconds:F2} ms (budget: {budget.ChunkCount} of {limits.MaxChunksPerFrame} chunks, {limits.MaxUploadMillisecondsPerFrame:F1} ms)");
+            }
             if (GpuMemory is GpuMemoryStatistics memory)
             {
                 ImGui.Text($"GPU memory: {memory.AllocationCount} allocations, {memory.AllocationBytes / BytesPerMebibyte:F1} MiB (VMA blocks: {memory.BlockBytes / BytesPerMebibyte:F1} MiB)");
