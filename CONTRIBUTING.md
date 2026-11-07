@@ -79,6 +79,8 @@ The first line has this format: `type(#issue): Description`
 11. Merge a pull request into `main`, and a pull request from `main` into `develop`, with a merge commit. Then `main` and `develop` keep the same commits.
 12. Do not use a rebase merge.
 
+13. A `TODO` or `FIXME` comment gives its issue: `TODO(#123): ...`. Open an issue first. The CI fails on a `TODO` or a `FIXME` without an issue number (#13).
+
 These pull requests have no issue:
 
 - A typo fix uses `N/A` in the title, and has no `Fixes` line.

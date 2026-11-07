@@ -45,6 +45,15 @@ jobs:
       - name: Test
         run: dotnet test ElysianOutpost.sln --no-build --configuration Release
 
+      # Each TODO or FIXME comment must give its issue: TODO(#123) or FIXME(#123) (#13). The check runs on Linux only.
+      - name: Check the TODO and FIXME comments
+        if: runner.os == 'Linux'
+        run: |
+          if grep -rnE "TODO|FIXME" src tests --exclude-dir=bin --exclude-dir=obj | grep -vE "(TODO|FIXME)\(#[0-9]+\)"; then
+            echo "::error::Each TODO or FIXME comment must give its issue, for example TODO(#123). See CONTRIBUTING.md."
+            exit 1
+          fi
+
       # The format check runs on Linux only. The result does not depend on the operating system.
       - name: Check the format
         if: runner.os == 'Linux'
