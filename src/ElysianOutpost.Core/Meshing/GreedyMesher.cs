@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
 using System.Numerics;
-using Brutal.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Brutal.Numerics;
 using ElysianOutpost.Core.Voxels;
 
 namespace ElysianOutpost.Core.Meshing;
