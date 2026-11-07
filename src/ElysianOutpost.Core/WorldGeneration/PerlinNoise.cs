@@ -2,6 +2,13 @@
 
 namespace ElysianOutpost.Core.WorldGeneration;
 
+/// <summary>
+/// Two-dimensional Perlin noise (improved noise of Ken Perlin, 2002), with a permutation that the seed shuffles.
+/// </summary>
+/// <remarks>
+/// The noise repeats every 256 units on each axis. The terrain generation of the legacy project uses it: do not change the values,
+/// because the tests compare the terrain with reference values of the legacy code.
+/// </remarks>
 public class PerlinNoise
 {
 
@@ -24,6 +31,10 @@ public class PerlinNoise
             138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
         };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PerlinNoise"/> class.
+    /// </summary>
+    /// <param name="seed">The seed. 0 keeps the permutation of the reference implementation. Another value shuffles it with <see cref="Random"/>.</param>
     public PerlinNoise(int seed = 0)
     {
         p = new int[512];
@@ -45,6 +56,12 @@ public class PerlinNoise
         }
     }
 
+    /// <summary>
+    /// Gets the noise value at a position.
+    /// </summary>
+    /// <param name="x">The X coordinate.</param>
+    /// <param name="y">The Y coordinate.</param>
+    /// <returns>The noise value, from 0 to 1. The value at each integer position is 0.5.</returns>
     public float Noise(float x, float y)
     {
         int X = (int)MathF.Floor(x) & 255;

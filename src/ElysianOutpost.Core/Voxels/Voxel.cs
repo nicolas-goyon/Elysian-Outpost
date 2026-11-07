@@ -44,14 +44,44 @@ public readonly struct Voxel(ushort id) : IEquatable<Voxel>
 
 
 
+/// <summary>
+/// The faces of a voxel, as flags. <see cref="VoxelRay"/> gives the face that a ray hits.
+/// </summary>
 [Flags]
 public enum VoxelFace
 {
+    /// <summary>
+    /// No face.
+    /// </summary>
     NONE = 0,
-    Zpos = 1 << 0, // Back
-    Zneg = 1 << 1, // Front
-    Xneg = 1 << 2, // Left
-    Xpos = 1 << 3, // Right
-    Ypos = 1 << 4, // Top
-    Yneg = 1 << 5 // Bottom
+
+    /// <summary>
+    /// The face on the +Z side (the back face in the legacy project).
+    /// </summary>
+    Zpos = 1 << 0,
+
+    /// <summary>
+    /// The face on the −Z side (the front face in the legacy project).
+    /// </summary>
+    Zneg = 1 << 1,
+
+    /// <summary>
+    /// The face on the −X side (the left face).
+    /// </summary>
+    Xneg = 1 << 2,
+
+    /// <summary>
+    /// The face on the +X side (the right face).
+    /// </summary>
+    Xpos = 1 << 3,
+
+    /// <summary>
+    /// The face on the +Y side (the top face).
+    /// </summary>
+    Ypos = 1 << 4,
+
+    /// <summary>
+    /// The face on the −Y side (the bottom face).
+    /// </summary>
+    Yneg = 1 << 5,
 }
