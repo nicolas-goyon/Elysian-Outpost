@@ -23,13 +23,16 @@ namespace ElysianOutpost.App;
 /// <para>
 /// At <see cref="Stop"/>, the profiler writes the file, and writes a summary and its own cost to the log.
 /// The file name contains the local date and time of the start, for example <c>profile-20261107-231500.csv</c>.
+/// The hardware report of the start goes next to it, for example <c>profile-20261107-231500.hardware.json</c> (#81).
 /// </para>
 /// </remarks>
 internal sealed class PerformanceProfiler
 {
     private readonly LogCategory _log;
     private readonly string _folder;
+    private readonly Func<HardwareReport> _hardwareReport;
     private FrameProfile? _profile;
+    private HardwareReport? _report;
     private DateTime _startTime;
     private long _startTimestamp;
     private bool _hasPending;
@@ -41,10 +44,12 @@ internal sealed class PerformanceProfiler
     /// Initializes a new instance of the <see cref="PerformanceProfiler"/> class.
     /// </summary>
     /// <param name="folder">The folder of the CSV files. The profiler makes it if it does not exist.</param>
+    /// <param name="hardwareReport">The method that makes the hardware report of the profile (#81). The profiler calls it at the start.</param>
     /// <param name="log">The log category of the profiler.</param>
-    public PerformanceProfiler(string folder, LogCategory log)
+    public PerformanceProfiler(string folder, Func<HardwareReport> hardwareReport, LogCategory log)
     {
         _folder = folder;
+        _hardwareReport = hardwareReport;
         _log = log;
     }
 
@@ -70,6 +75,9 @@ internal sealed class PerformanceProfiler
         }
 
         _profile = new FrameProfile();
+
+        // The report gives the values at the start: the window size and the available RAM can change during the profile.
+        _report = _hardwareReport();
         _startTime = DateTime.Now;
         _startTimestamp = Stopwatch.GetTimestamp();
         _hasPending = false;
@@ -126,13 +134,20 @@ internal sealed class PerformanceProfiler
         }
 
         long writeStart = Stopwatch.GetTimestamp();
-        string path = Path.Combine(_folder, $"profile-{_startTime.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.csv");
+        string name = $"profile-{_startTime.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}";
+        string path = Path.Combine(_folder, name + ".csv");
         try
         {
             Directory.CreateDirectory(_folder);
             using (var writer = new StreamWriter(path, append: false))
             {
                 profile.WriteCsv(writer);
+            }
+
+            // The hardware report goes next to the profile (#81).
+            if (_report is not null)
+            {
+                File.WriteAllText(Path.Combine(_folder, name + ".hardware.json"), _report.ToJson());
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

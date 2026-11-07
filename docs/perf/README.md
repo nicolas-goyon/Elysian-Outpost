@@ -73,6 +73,20 @@ At the stop, the app writes the file `profiles/profile-<date>-<time>.csv` in the
 
 The 1 % low is the mean frame time of the slowest 1 % of the frames, and of one frame or more.
 
+### Hardware report
+
+Next to each profile, the app writes the hardware report of the start of the profile (#81): `profile-<date>-<time>.hardware.json`. The "Hardware" section of the debug overlay (F3) shows the same values.
+
+| Group | Values |
+|---|---|
+| `system` | The operating system and its architecture, the CPU model, the number of cores and of threads, the total RAM and the available RAM, the .NET version. On Linux, the values come from `/proc/cpuinfo` and `/proc/meminfo`. On Windows, they come from the registry, `GetLogicalProcessorInformationEx` and `GlobalMemoryStatusEx`. |
+| `gpu` | The GPU name, the vendor, the type, the driver version, the Vulkan version and the size of the device-local memory heaps. |
+| `monitors` | For each monitor, the primary monitor first: the resolution and the refresh rate of the current video mode, and the content scale. |
+| `window` | The window size, the framebuffer size, the presentation mode (FIFO: vertical synchronization on) and the window platform. |
+| `appVersion` | The version of the app, with the commit. |
+
+The report contains no personal data: no user name, no computer name, no serial number and no network address. The monitors have no name, because a monitor name can contain a serial number. The app keeps the report on the computer and does not send it (#84).
+
 ### File format
 
 The file has one header line, then one line for each frame. The separator is a comma, and the decimal separator is a period. All times are in milliseconds, with 3 decimals.

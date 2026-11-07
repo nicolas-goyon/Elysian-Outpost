@@ -14,6 +14,7 @@ using ElysianOutpost.Core.Cameras;
 using ElysianOutpost.Core.Lighting;
 using ElysianOutpost.Core.Voxels;
 using ElysianOutpost.Core.WorldGeneration;
+using ElysianOutpost.Core.Diagnostics;
 
 namespace ElysianOutpost.App.Rendering;
 
@@ -105,6 +106,16 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     /// Gets the GPU time of the last frame that the GPU completed, in milliseconds, or -1 if it is not known (#80).
     /// </summary>
     public double LastGpuFrameMilliseconds => _gpuTimer?.LastFrameMilliseconds ?? -1;
+
+    /// <summary>
+    /// The presentation mode of the swapchain. FIFO waits for the vertical synchronization (#81).
+    /// </summary>
+    public const string PresentMode = "FIFO";
+
+    /// <summary>
+    /// Gets the GPU values of the hardware report (#81).
+    /// </summary>
+    public GpuInfo GpuInfo => _gpu.GpuInfo;
 
     /// <summary>
     /// Gets the name of the GPU, for example for the debug overlay.

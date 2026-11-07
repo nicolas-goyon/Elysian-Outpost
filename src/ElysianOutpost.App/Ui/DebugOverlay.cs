@@ -26,6 +26,7 @@ internal sealed class DebugOverlay
     private const int HistoryCapacity = 4096;
 
     private const double BytesPerMebibyte = 1024 * 1024;
+    private const double BytesPerGibibyte = 1024.0 * 1024 * 1024;
 
     private static readonly TimeSpan _statisticsPeriod = TimeSpan.FromSeconds(0.5);
     private static readonly float2 _windowPosition = new(10, 10);
@@ -76,6 +77,11 @@ internal sealed class DebugOverlay
     /// Gets or sets the current block type of the voxel edits (#41). The overlay shows it.
     /// </summary>
     public ushort BlockType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the hardware report of the computer (#81). The "Hardware" section of the window shows it.
+    /// </summary>
+    public HardwareReport? HardwareReport { get; set; }
 
     /// <summary>
     /// Gets or sets the number of chunk meshes that wait for the GPU upload (#6).
@@ -154,6 +160,7 @@ internal sealed class DebugOverlay
             ImGui.Text($"Block type: {BlockName} ({BlockType})");
 
             DrawFrameTimeGraph();
+            DrawHardwareReport();
             if (ImGui.Button("Credits (F1)"u8))
             {
                 _credits.Open = true;
@@ -171,6 +178,31 @@ internal sealed class DebugOverlay
         {
             Visible = false;
         }
+    }
+
+    // The "Hardware" section: closed by default, because the report is long (#81).
+    private void DrawHardwareReport()
+    {
+        if (HardwareReport is not HardwareReport report || !ImGui.CollapsingHeader("Hardware"u8, ImGuiTreeNodeFlags.None))
+        {
+            return;
+        }
+
+        SystemInfo system = report.System;
+        GpuInfo gpu = report.Gpu;
+        WindowInfo window = report.Window;
+        ImGui.Text($"OS: {system.OperatingSystem} ({system.Architecture}), {system.DotNetVersion}");
+        ImGui.Text($"CPU: {system.CpuModel}, {system.CpuCores} cores, {system.CpuThreads} threads");
+        ImGui.Text($"RAM: {system.TotalRamBytes / BytesPerGibibyte:F1} GiB, {system.AvailableRamBytes / BytesPerGibibyte:F1} GiB available at the start");
+        ImGui.Text($"GPU: {gpu.Name} ({gpu.Vendor}, {gpu.Type}), {gpu.DeviceLocalMemoryBytes / BytesPerGibibyte:F1} GiB");
+        ImGui.Text($"Driver: {gpu.DriverVersion}, Vulkan {gpu.VulkanVersion}");
+        foreach (MonitorInfo monitor in report.Monitors)
+        {
+            ImGui.Text($"Monitor{(monitor.Primary ? " (primary)" : string.Empty)}: {monitor.Width}x{monitor.Height}, {monitor.RefreshRate} Hz, scale {monitor.ContentScale:F2}");
+        }
+
+        ImGui.Text($"Window: {window.Width}x{window.Height} ({window.FramebufferWidth}x{window.FramebufferHeight} pixels), {window.PresentMode}, {window.Platform}");
+        ImGui.Text($"App version: {report.AppVersion}");
     }
 
     // The names of the faces are constant strings. Thus the text of the overlay does not format an enumeration in each frame.
