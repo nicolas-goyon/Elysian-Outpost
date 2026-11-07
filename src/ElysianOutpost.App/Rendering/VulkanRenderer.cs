@@ -57,6 +57,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
     private readonly CommandBuffer[] _commandBuffers = new CommandBuffer[FramesInFlight];
     private readonly VkSemaphore[] _imageAvailable = new VkSemaphore[FramesInFlight];
     private readonly VkFence[] _inFlight = new VkFence[FramesInFlight];
+    private readonly GpuTimer? _gpuTimer;
     private int _frame;
     private int2 _swapchainFramebufferSize;
     private bool _swapchainOutdated;
@@ -91,6 +92,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
             _log.Info($"The chunk and selection box pipelines are ready in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F0} ms, with the depth format {_depthFormat}.");
             _chunkMeshes = new ChunkMeshes(_gpu);
+            _gpuTimer = new GpuTimer(_gpu, FramesInFlight);
         }
         catch
         {
@@ -98,6 +100,11 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets the GPU time of the last frame that the GPU completed, in milliseconds, or -1 if it is not known (#80).
+    /// </summary>
+    public double LastGpuFrameMilliseconds => _gpuTimer?.LastFrameMilliseconds ?? -1;
 
     /// <summary>
     /// Gets the name of the GPU, for example for the debug overlay.
@@ -199,6 +206,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
         VkFence fence = _inFlight[_frame];
         _gpu.Device.WaitForFences([fence], true, -1);
+        _gpuTimer?.ReadResult(_frame);
 
         int imageIndex;
         try
@@ -256,6 +264,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
 
             // The memory allocator of the GPU context must not have buffers or images at its release.
             _chunkMeshes?.Dispose();
+            _gpuTimer?.Dispose();
             _chunkPipeline?.Dispose();
             _selectionBoxPipeline?.Dispose();
             _depthBuffer?.Dispose();
@@ -353,6 +362,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         DepthBuffer depthBuffer = _depthBuffer!;
         commandBuffer.Reset();
         commandBuffer.Begin(VkCommandBufferUsageFlags.OneTimeSubmitBit);
+        _gpuTimer?.Begin(commandBuffer, _frame);
 
         // The previous content of the image is not necessary, because the clear operation replaces it.
         TransitionImage(
@@ -441,6 +451,7 @@ internal sealed unsafe class VulkanRenderer : IDisposable
             VkAccessFlags2.ColorAttachmentWriteBit,
             VkPipelineStageFlags2.ColorAttachmentOutputBit,
             VkAccessFlags2.None);
+        _gpuTimer?.End(commandBuffer, _frame);
         commandBuffer.End();
     }
 

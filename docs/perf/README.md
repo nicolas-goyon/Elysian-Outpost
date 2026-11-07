@@ -1,6 +1,6 @@
 # Performance measurements
 
-This folder contains the benchmarks procedure and the measured results of the core library (#43).
+This folder contains the benchmarks procedure and the measured results of the core library (#43), and the format of the performance profiles of the app (#80).
 M2 changes the core library for speed and memory. Each optimization pull request gives the benchmark results before and after its change.
 
 | File | Content |
@@ -55,3 +55,42 @@ The program also measures the managed memory of the full default world after a f
 - Run the benchmarks of the two versions one after the other, with no change of the computer.
 - For a pull request, give the table of BenchmarkDotNet for the two versions, and the output of the memory measurement.
 - A change of less than 5 % on a computer of the cloud is not significant. The other virtual machines on the same host change the speed.
+
+## Performance profiles of the app
+
+The app records the performance of each frame of a session in a CSV file (#80). The benchmarks measure the core library alone. A profile measures the full app: the window, the GPU and the world generation.
+
+### Record a profile
+
+- In the app, open the console (see the console key in the README) and enter `profile start`. Enter `profile stop` to stop the profile.
+- Or start the app with the option `--profile`. The profile starts with the main loop and stops when the window closes. With `--exit-after 60`, the session takes 60 seconds:
+
+  ```shell
+  dotnet run -c Release --project src/ElysianOutpost.App -- --profile --exit-after 60
+  ```
+
+At the stop, the app writes the file `profiles/profile-<date>-<time>.csv` in the folder of the executable. The date and the time are the local time of the start, for example `profile-20261107-232926.csv`. The log gets a summary: the number of frames, the average, the median, the 1 % low and the maximum frame time, the average GPU time, the garbage collections, and the cost of the profiler.
+
+The 1 % low is the mean frame time of the slowest 1 % of the frames, and of one frame or more.
+
+### File format
+
+The file has one header line, then one line for each frame. The separator is a comma, and the decimal separator is a period. All times are in milliseconds, with 3 decimals.
+
+| Column | Value |
+|---|---|
+| `time_ms` | The start of the frame, from the start of the profile. |
+| `frame_ms` | The time from the start of the frame to the start of the next frame. It contains the wait for the next frame. The last frame of a profile has no next frame, thus the file does not contain it. |
+| `events_ms` | The window events (GLFW). |
+| `update_ms` | The update of the user interface, the camera and the voxel editor. |
+| `tick_ms` | The simulation ticks of the frame. |
+| `ticks` | The number of simulation ticks of the frame. |
+| `world_ms` | The chunk work of the main thread: the worker results and the GPU uploads (#47, #6). |
+| `render_ms` | The renderer on the CPU: the ImGui frame, the wait for a free frame in flight, the commands and the presentation. |
+| `gpu_ms` | The GPU time between the first and the last command of a frame, from Vulkan timestamps. It is the time of an earlier frame: the frame that used the same frame slot, 2 frames before. The field is empty when the time is not known, for example in the first frames or on a GPU queue without timestamps. |
+| `managed_bytes` | The managed memory after the frame (`GC.GetTotalMemory(false)`). |
+| `gc0`, `gc1`, `gc2` | The total number of garbage collections of each generation, since the start of the process. |
+| `gpu_bytes` | The GPU memory of the VMA allocations. The app measures it two times in each second. |
+| `chunk_queue` | The number of chunk meshes that wait for the GPU upload (#6). |
+
+The profiler keeps the values in memory, and writes the file only at the stop. Its cost in each frame is in the summary of the log. On lavapipe with 2 CPU cores, it is approximately 0.006 ms.

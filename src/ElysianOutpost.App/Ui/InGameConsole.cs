@@ -30,6 +30,7 @@ namespace ElysianOutpost.App.Ui;
 /// <para>
 /// The commands are the commands of the legacy console, with the same names and descriptions:
 /// <c>log</c>, <c>clear</c>, <c>close</c>, <c>copy</c> and <c>help</c>. The app has no NavMesh. Thus it has no <c>navmesh_bake</c> command.
+/// Other parts of the app add their commands with <see cref="RegisterCommand"/>, for example <c>profile</c> (#80).
 /// The terminal of BRUTAL reads the command line. A semicolon separates two commands on one line.
 /// </para>
 /// <para>
@@ -54,7 +55,7 @@ internal sealed class InGameConsole
     private readonly ConsoleLog _log;
     private readonly ConsoleLogReader _reader;
     private readonly LogCategory _commandLog;
-    private readonly string _helpText;
+    private readonly StringBuilder _helpText = new("Available Commands:");
 
     // The color of the text for each value of ConsoleMessageLevel.
     private readonly ImColor8[] _levelColors;
@@ -83,15 +84,10 @@ internal sealed class InGameConsole
         // The order of the legacy console. The terminal of BRUTAL also has the commands "help" and "clear".
         // These commands write directly to the console window, not to the console log. Commands with the same names replace them.
         Delegate[] commands = [LogCommand, ClearCommand, CloseCommand, CopyCommand, HelpCommand];
-        var help = new StringBuilder("Available Commands:");
         foreach (Delegate command in commands)
         {
-            _window.Terminal.RegisterCommand(command);
-            TerminalActionAttribute action = command.Method.GetCustomAttribute<TerminalActionAttribute>()!;
-            help.Append('\n').Append(action.CommandName).Append(": ").Append(action.Description);
+            RegisterCommand(command);
         }
-
-        _helpText = help.ToString();
 
         // The terminal gives the errors of the command line with this event, for example a wrong number of arguments.
         _window.Terminal.OnOutput += OnTerminalOutput;
@@ -100,6 +96,17 @@ internal sealed class InGameConsole
         // and ImGui ignores the characters of the next frames. With this value, the command line stays active after Enter.
         // The app has no other ImGui text field.
         ImGui.GetIO().ConfigInputTextEnterKeepActive = true;
+    }
+
+    /// <summary>
+    /// Adds a command to the console, and to the text of the <c>help</c> command.
+    /// </summary>
+    /// <param name="command">The method of the command. It must have a <see cref="TerminalActionAttribute"/>.</param>
+    public void RegisterCommand(Delegate command)
+    {
+        _window.Terminal.RegisterCommand(command);
+        TerminalActionAttribute action = command.Method.GetCustomAttribute<TerminalActionAttribute>()!;
+        _helpText.Append('\n').Append(action.CommandName).Append(": ").Append(action.Description);
     }
 
     /// <summary>
@@ -192,7 +199,7 @@ internal sealed class InGameConsole
     private void CopyCommand() => Glfw.SetClipboard(_log.GetText());
 
     [TerminalAction("help", "Displays a list of available commands.")]
-    private void HelpCommand() => _log.Add(_helpText, ConsoleMessageLevel.Information);
+    private void HelpCommand() => _log.Add(_helpText.ToString(), ConsoleMessageLevel.Information);
 
     private void OnTerminalOutput(string text, TerminalInterfaceOutputType type)
     {

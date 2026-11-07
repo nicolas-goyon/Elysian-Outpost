@@ -14,19 +14,31 @@ using Microsoft.Extensions.Logging;
 
 // The option "--exit-after <seconds>" closes the window after a time limit, for automatic tests.
 // The limit is more than 0 seconds and not more than one day.
+// The option "--profile" starts a performance profile at the start of the main loop (#80).
 const double MaxTimeLimitSeconds = 86_400;
 TimeSpan? timeLimit = null;
-if (args is ["--exit-after", string value]
-    && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
-    && seconds > 0
-    && seconds <= MaxTimeLimitSeconds)
+bool profile = false;
+for (int i = 0; i < args.Length; i++)
 {
-    timeLimit = TimeSpan.FromSeconds(seconds);
-}
-else if (args.Length > 0)
-{
-    Console.Error.WriteLine($"Usage: ElysianOutpost.App [--exit-after <seconds>], with 0 < seconds <= {MaxTimeLimitSeconds}");
-    return 2;
+    if (args[i] == "--exit-after"
+        && timeLimit is null
+        && i + 1 < args.Length
+        && double.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+        && seconds > 0
+        && seconds <= MaxTimeLimitSeconds)
+    {
+        timeLimit = TimeSpan.FromSeconds(seconds);
+        i++;
+    }
+    else if (args[i] == "--profile" && !profile)
+    {
+        profile = true;
+    }
+    else
+    {
+        Console.Error.WriteLine($"Usage: ElysianOutpost.App [--exit-after <seconds>] [--profile], with 0 < seconds <= {MaxTimeLimitSeconds}");
+        return 2;
+    }
 }
 
 // The log file is in the folder of the executable. Each start of the app replaces it.
@@ -98,7 +110,7 @@ try
         using var imGui = new ImGuiHost(window);
         using var renderer = new VulkanRenderer(window, imGui, LogCategory.Make("Renderer"));
         using var ui = new UserInterface(window, imGui, renderer, consoleLog, LogCategory.Make("Ui"));
-        new MainLoop(window, renderer, ui, log, timeLimit).Run();
+        new MainLoop(window, renderer, ui, log, timeLimit, profile).Run();
     }
     finally
     {

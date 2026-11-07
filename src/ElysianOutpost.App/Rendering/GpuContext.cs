@@ -49,6 +49,8 @@ internal sealed unsafe class GpuContext : IDisposable
             VkPhysicalDeviceProperties properties = PhysicalDevice.GetProperties();
             GpuName = VulkanDeviceInfo.GetDeviceName(in properties);
             LogPhysicalDevice(log, GpuName, in properties);
+            TimestampPeriod = properties.Limits.TimestampPeriod;
+            TimestampValidBits = GetTimestampValidBits(PhysicalDevice, QueueFamily);
             Device = CreateDevice(PhysicalDevice, QueueFamily);
             Queue = Device.GetQueue(QueueFamily, 0);
             Allocator = Device.CreateVmaAllocator(new VmaAllocatorCreateInfo
@@ -64,6 +66,16 @@ internal sealed unsafe class GpuContext : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets the number of nanoseconds for one unit of a GPU timestamp.
+    /// </summary>
+    public float TimestampPeriod { get; }
+
+    /// <summary>
+    /// Gets the number of valid bits of a timestamp of the queue. Zero: the queue has no timestamps.
+    /// </summary>
+    public int TimestampValidBits { get; }
 
     /// <summary>
     /// Gets a value that tells if the Vulkan validation layers are on.
@@ -233,6 +245,14 @@ internal sealed unsafe class GpuContext : IDisposable
         return selected is null
             ? throw new InvalidOperationException("No GPU supports Vulkan 1.3 and the presentation to the window.")
             : (selected, selectedFamily);
+    }
+
+    private static int GetTimestampValidBits(PhysicalDevice device, int family)
+    {
+        int count = device.GetQueueFamilyProperties_Count();
+        Span<VkQueueFamilyProperties> families = stackalloc VkQueueFamilyProperties[count];
+        device.GetQueueFamilyProperties_Write(families);
+        return (int)families[family].TimestampValidBits;
     }
 
     private static int FindQueueFamily(PhysicalDevice device, VkSurfaceKHR surface)
