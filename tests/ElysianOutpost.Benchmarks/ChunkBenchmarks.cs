@@ -15,6 +15,7 @@ namespace ElysianOutpost.Benchmarks;
 [MemoryDiagnoser]
 public class ChunkBenchmarks
 {
+    private readonly GreedyMesher _mesher = new();
     private MainGeneration _generation = null!;
     private ushort[,,] _terrain = null!;
     private ushort[,,] _checkerboard = null!;
@@ -51,9 +52,6 @@ public class ChunkBenchmarks
     [Benchmark]
     public ChunkMeshData MeshCheckerboardChunk() => Mesh(_checkerboard);
 
-    private static ChunkMeshData Mesh(ushort[,,] voxels)
-    {
-        List<MeshQuad> quads = new DisjointSetMeshOptimizer(new Mesh()).Optimize(new Chunk(voxels, default(int3))).Quads;
-        return ChunkMeshData.Build(quads, BlockPalette.Game);
-    }
+    // The same steps as the world builder: one mesher for all the chunks, and the voxels with no copy.
+    private ChunkMeshData Mesh(ushort[,,] voxels) => ChunkMeshData.Build(_mesher.Mesh(voxels), BlockPalette.Game);
 }

@@ -26,6 +26,11 @@ public class Chunk
 
     public int3 WorldPosition { get; }
 
+    /// <summary>
+    /// Gets the block types of the chunk, in the order of the index of the chunk. The mesher reads them with no copy.
+    /// </summary>
+    internal ReadOnlySpan<ushort> VoxelData => _voxels;
+
     private static Voxel EmptyVoxel => default;
 
 
@@ -94,23 +99,6 @@ public class Chunk
     #region Getters and Setters
 
     /// <summary>
-    /// Returns all voxels in this chunk in no guaranteed order.
-    /// </summary>
-    public IEnumerable<Voxel> GetVoxels()
-    {
-        for (uint x = 0; x < XDepth; x++)
-        {
-            for (uint y = 0; y < YDepth; y++)
-            {
-                for (uint z = 0; z < ZDepth; z++)
-                {
-                    yield return new Voxel(_voxels[Index(x, y, z)]);
-                }
-            }
-        }
-    }
-
-    /// <summary>
     /// Retrieves the voxel at the given position (X,Y,Z), ignoring the axis fields for now.
     /// Throws if out of range, or you could choose to return null.
     /// </summary>
@@ -167,150 +155,16 @@ public class Chunk
         _voxels[Index((uint)localX, (uint)localY, (uint)localZ)] = voxel.ID;
     }
 
-    /// <summary>
-    /// Simple helper to pick the chunk’s dimension (depth) by axis.
-    /// </summary>
-    public uint GetDepth(Axis axis)
-    {
-        return axis switch
-        {
-            Axis.X => XDepth,
-            Axis.Y => YDepth,
-            Axis.Z => ZDepth,
-            _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Unknown axis.")
-        };
-    }
-
     #endregion
 
-    #region Iteration Over Coordinates
-
-    /// <summary>
-    /// Iterates over every (X,Y,Z) in the chunk in the order of three distinct axes 
-    /// (Major, Middle, Minor). The callback receives a VoxelPosition that includes 
-    /// the coordinate plus the iteration axes for debugging or advanced logic.
-    /// </summary>
-    public void ForEachCoordinate(
-        Axis majorA, AxisOrder majorAsc,
-        Axis middleA, AxisOrder middleAsc,
-        Axis minorA, AxisOrder minorAsc,
-        Action<uint, uint, uint> action
-    )
-    {
-        // 2) Ensure all axes are distinct
-        if (majorA == middleA || middleA == minorA || majorA == minorA)
-        {
-            throw new ArgumentException("All three HumanAxis values must target different axes (X/Y/Z).");
-        }
-
-        // 4) Triple-nested loop in the order: major -> middle -> minor
-        //    We find which axis is major, middle, minor, then nest them accordingly.
-        foreach (uint majorVal in BuildRange(GetDepth(majorA), majorAsc))
-        {
-            foreach (uint midVal in BuildRange(GetDepth(middleA), middleAsc))
-            {
-                foreach (uint minVal in BuildRange(GetDepth(minorA), minorAsc))
-                {
-                    uint x = 0, y = 0, z = 0;
-
-                    switch (majorA)
-                    {
-                        case Axis.X:
-                            x = majorVal;
-                            break;
-                        case Axis.Y:
-                            y = majorVal;
-                            break;
-                        case Axis.Z:
-                            z = majorVal;
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException(nameof(majorA), majorA, null);
-                    }
-
-                    switch (middleA)
-                    {
-                        case Axis.X:
-                            x = midVal;
-                            break;
-                        case Axis.Y:
-                            y = midVal;
-                            break;
-                        case Axis.Z:
-                            z = midVal;
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException(nameof(middleA), middleA, null);
-                    }
-
-                    switch (minorA)
-                    {
-                        case Axis.X:
-                            x = minVal;
-                            break;
-                        case Axis.Y:
-                            y = minVal;
-                            break;
-                        case Axis.Z:
-                            z = minVal;
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException(nameof(minorA), minorA, null);
-                    }
-
-                    action(x, y, z);
-                }
-            }
-        }
-    }
-
-
-    private IEnumerable<uint> BuildRange(uint size, AxisOrder order)
-    {
-        if (order == AxisOrder.ASCENDING)
-        {
-            for (uint i = 0; i < size; i++)
-                yield return i;
-        }
-        else
-        {
-            for (int i = (int)size - 1; i >= 0; i--)
-                yield return (uint)i;
-        }
-    }
-
+    #region Bounds
 
     // The index of the voxel (x, y, z) in the array. The caller checks the bounds.
     private int Index(uint x, uint y, uint z) => (int)((((x * YDepth) + y) * ZDepth) + z);
 
     public bool IsOutOfBound(uint x, uint y, uint z)
     {
-        return x >= GetDepth(Axis.X)
-               || y >= GetDepth(Axis.Y)
-               || z >= GetDepth(Axis.Z);
-    }
-
-    public bool AreDifferentAxis(
-        Axis major,
-        Axis middle,
-        Axis minor
-    )
-    {
-        return major != middle && middle != minor && minor != major;
-    }
-
-    public (uint planeWidth, uint planeHeight) GetPlaneDimensions(
-        Axis major,
-        Axis middle,
-        Axis minor
-    )
-    {
-        // "Plane dimensions" = minor dimension (x-axis of the plane),
-        //                      middle dimension (y-axis of the plane).
-        uint planeWidth = GetDepth(middle);
-        uint planeHeight = GetDepth(minor);
-
-        return (planeWidth, planeHeight);
+        return x >= XDepth || y >= YDepth || z >= ZDepth;
     }
 
     #endregion

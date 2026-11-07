@@ -11,13 +11,14 @@ namespace ElysianOutpost.Core.WorldGeneration;
 /// Generates and meshes the chunks of a world, one chunk for each call. The caller decides how many chunks to build in each frame.
 /// </summary>
 /// <remarks>
-/// The builder uses the terrain generation of #33 and the mesher of #31. It measures the time of each step.
+/// The builder uses the terrain generation of #33 and the greedy mesher of #45. It measures the time of each step.
 /// It keeps the voxels of each chunk in <see cref="Voxels"/>, for example for the voxel ray (#40).
 /// </remarks>
 public sealed class WorldBuilder
 {
     private readonly MainGeneration _generation;
     private readonly BlockPalette _palette;
+    private readonly GreedyMesher _mesher = new();
     private readonly int3[] _positions;
 
     /// <summary>
@@ -117,10 +118,9 @@ public sealed class WorldBuilder
         return new BuiltChunk(chunkPosition, BuildMesh(chunkPosition, voxels));
     }
 
-    // The mesher of #31. Each chunk mesh has the faces at the chunk borders. Thus a change of a chunk does not change its neighbors (#48 changes this).
+    // The greedy mesher of #45. Each chunk mesh has the faces at the chunk borders. Thus a change of a chunk does not change its neighbors (#48 changes this).
     private ChunkMeshData BuildMesh(int3 position, ushort[,,] voxels)
     {
-        List<MeshQuad> quads = new DisjointSetMeshOptimizer(new Mesh()).Optimize(new Chunk(voxels, position)).Quads;
-        return ChunkMeshData.Build(quads, _palette);
+        return ChunkMeshData.Build(_mesher.Mesh(voxels), _palette);
     }
 }
