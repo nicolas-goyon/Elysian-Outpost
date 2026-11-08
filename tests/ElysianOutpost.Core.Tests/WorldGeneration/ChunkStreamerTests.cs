@@ -375,4 +375,18 @@ public sealed class ChunkStreamerTests
             Thread.Sleep(1);
         }
     }
+
+    // The reference computer of #44 has 4 cores and 8 threads: 3 workers, not 7 (#6).
+    [Theory]
+    [InlineData(4, 8, 3)]
+    [InlineData(2, 2, 1)]
+    [InlineData(1, 2, 1)]
+    [InlineData(8, 16, 7)]
+    [InlineData(0, 8, 7)]
+    [InlineData(0, 1, 1)]
+    [InlineData(16, 4, 3)]
+    public void DefaultWorkerCount_IsThePhysicalCoresMinusOne(int cores, int threads, int expected)
+    {
+        Assert.Equal(expected, ChunkStreamer.DefaultWorkerCount(cores, threads));
+    }
 }
