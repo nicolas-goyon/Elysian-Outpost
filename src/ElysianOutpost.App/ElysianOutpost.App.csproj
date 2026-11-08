@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- The Vulkan bindings use pointers to native structures (#35). -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <!-- A publish for a runtime compiles the code ahead of time (ReadyToRun). The first use of a method then needs no JIT compilation,
+         thus the first frames and the first frame of the world are shorter (#6). It has no effect on dotnet build and dotnet run. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>

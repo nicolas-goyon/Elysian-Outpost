@@ -431,15 +431,27 @@ internal sealed unsafe class VulkanRenderer : IDisposable
         commandBuffer.BeginRendering(in renderingInfo);
 
         // The start screen hides the world (BRUTAL License v1.0, section 2.2: the logo shows before the gameplay).
+        // During the start screen, the renderer also draws the chunks, then clears the color image again (#6).
+        // Thus the GPU driver prepares the chunk draws before the first visible frame of the world, and that frame is not long.
+        RecordChunks(commandBuffer, swapchain.Extent, viewProjection);
         if (showScene)
         {
-            RecordChunks(commandBuffer, swapchain.Extent, viewProjection);
-
             // The box uses the depth of the chunks. Thus it comes after them.
             if (selectedVoxel is int3 voxel)
             {
                 _selectionBoxPipeline.Record(commandBuffer, viewProjection, voxel);
             }
+        }
+        else
+        {
+            var clearAttachment = new VkClearAttachment
+            {
+                AspectMask = VkImageAspectFlags.ColorBit,
+                ColorAttachment = 0,
+                ClearValue = colorAttachment.ClearValue,
+            };
+            var clearRect = new VkClearRect { Rect = new VkRect2D(swapchain.Extent), LayerCount = 1 };
+            commandBuffer.ClearAttachments([clearAttachment], [clearRect]);
         }
 
         commandBuffer.EndRendering();

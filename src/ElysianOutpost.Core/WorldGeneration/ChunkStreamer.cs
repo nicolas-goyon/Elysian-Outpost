@@ -3,6 +3,7 @@
 using System.Diagnostics;
 using System.Threading.Channels;
 using Brutal.Numerics;
+using ElysianOutpost.Core.Diagnostics;
 using ElysianOutpost.Core.Meshing;
 using ElysianOutpost.Core.Voxels;
 
@@ -68,7 +69,7 @@ public sealed class ChunkStreamer : IDisposable
     /// </summary>
     /// <param name="settings">The settings of the world: the seed, the chunk size and the chunk layers.</param>
     /// <param name="palette">The palette that gives the colors of the block types.</param>
-    /// <param name="workerCount">The number of worker threads. Default: the number of processors minus one, and at least one.</param>
+    /// <param name="workerCount">The number of worker threads. Default: <see cref="DefaultWorkerCount"/> for this computer.</param>
     /// <param name="onError">
     /// The method that receives the exceptions of the workers, with a description of the job. A worker calls it on its own thread.
     /// Default: the exceptions go to <see cref="Trace"/>.
@@ -79,7 +80,7 @@ public sealed class ChunkStreamer : IDisposable
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(palette);
-        int count = workerCount ?? Math.Max(1, Environment.ProcessorCount - 1);
+        int count = workerCount ?? DefaultWorkerCount(SystemInfo.Collect().CpuCores, Environment.ProcessorCount);
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 1, nameof(workerCount));
         _generation = new MainGeneration(settings.ChunkSize, settings.Seed, settings.ChunkLayers);
         _palette = palette;
@@ -90,9 +91,27 @@ public sealed class ChunkStreamer : IDisposable
         CancellationToken stop = _stop.Token;
         for (int i = 0; i < count; i++)
         {
-            _workers[i] = new Thread(() => Work(stop)) { IsBackground = true, Name = $"Chunk worker {i + 1}" };
+            // A priority below normal: the main thread and the GPU driver get the CPU first, thus the frames stay regular during the load (#6).
+            _workers[i] = new Thread(() => Work(stop)) { IsBackground = true, Name = $"Chunk worker {i + 1}", Priority = ThreadPriority.BelowNormal };
             _workers[i].Start();
         }
+    }
+
+    /// <summary>
+    /// Gets the default number of worker threads: the number of physical CPU cores minus one, and at least one (#6).
+    /// </summary>
+    /// <remarks>
+    /// The main thread and the GPU driver keep one core. The second hardware thread of a core (hyper-threading) adds little to the generation,
+    /// and a worker on it takes CPU time from the main thread. On the reference computer (4 cores, 8 threads), 7 workers gave frames
+    /// of 20 to 60 ms during the load. If the number of cores is not known, the method uses the number of logical processors minus one.
+    /// </remarks>
+    /// <param name="physicalCores">The number of physical CPU cores, or 0 if it is not known.</param>
+    /// <param name="logicalProcessors">The number of logical processors.</param>
+    /// <returns>The number of workers.</returns>
+    public static int DefaultWorkerCount(int physicalCores, int logicalProcessors)
+    {
+        int cores = physicalCores > 0 ? Math.Min(physicalCores, logicalProcessors) : logicalProcessors;
+        return Math.Max(1, cores - 1);
     }
 
     /// <summary>
